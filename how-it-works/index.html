@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How it works — indusmova</title>
+  <meta name="description" content="What happens between a question and an answer on indusmova: ask, research, filter, understand — plus exactly which Wikimedia APIs are used and what is never done.">
+  <link rel="canonical" href="https://indusmova.pages.dev/how-it-works/">
+  <meta name="theme-color" content="#101713">
+  <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=3.0.0">
+  <link rel="stylesheet" href="/assets/css/app.css?v=3.0.0">
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/#/">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40"><defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#173b32"></stop><stop offset="1" stop-color="#b46a45"></stop></linearGradient></defs><rect width="40" height="40" rx="12" fill="url(#bm)"></rect><g fill="none" stroke="#f5f0e6" stroke-width="2.7" stroke-linecap="round"><path d="M10.2 16.5c2.85-3.5 5.7-3.5 8.55 0s5.7 3.5 8.55 0"></path><path d="M12.4 23.5c2.85-3.5 5.7-3.5 8.55 0s5.7 3.5 8.55 0"></path></g></svg>
+        </span>
+        <span class="brand-text"><strong>indusmova</strong><small>Wikipedia, understood</small></span>
+      </a>
+      <nav class="topnav" aria-label="Primary">
+        <a href="/#/explore">Explore</a>
+        <a href="/topics/">Topics</a>
+        <a href="/questions/">Questions</a>
+        <a href="/help/">Help</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap-narrow" tabindex="-1">
+    <div class="article-head">
+      <h1 class="article-title">How it works</h1>
+      <p class="article-sub">Four steps, no black box. Every sentence you read was written by a Wikipedia editor and is quoted, not generated.</p>
+    </div>
+
+    <div class="page">
+      <div class="howsteps">
+        <article class="howstep"><h3>1. Ask</h3><p>You write a question in your own words, in any of 280+ languages, or pick a topic.</p></article>
+        <article class="howstep"><h3>2. Research</h3><p>indusmova queries the Wikipedia search API, resolves your question to the article that fits best, and pulls the full article and its metadata.</p></article>
+        <article class="howstep"><h3>3. Filter</h3><p>The article is cleaned — navigation boxes, edit links and footnote markers dropped — then split into a lead and topic sections, and its sentences are scored against your question.</p></article>
+        <article class="howstep"><h3>4. Understand</h3><p>You get a direct answer, key points, a topic-wise breakdown, the infobox as facts, and every source with a link back to Wikipedia.</p></article>
+      </div>
+
+      <h2>Which APIs are used</h2>
+      <ul>
+        <li><strong>Wikipedia Action API</strong> — search, article parsing, sections, random articles, prefix suggestions, plain-text extracts.</li>
+        <li><strong>Wikipedia REST API</strong> — page summaries, related articles, the <em>On this day</em> feed, featured content.</li>
+        <li><strong>Wikimedia pageviews API</strong> — the "most read right now" list.</li>
+        <li><strong>Wikidata</strong> — structured facts behind a topic.</li>
+        <li><strong>Wikimedia Commons</strong> — image credits and licences.</li>
+      </ul>
+      <p>All of these are public, need no key, and are called directly from your browser. There is no indusmova server in the path.</p>
+
+      <h2>How sentences are chosen</h2>
+      <p>The default ranker is a keyword overlap score: each word in your question is weighted by how rare it is across the article, and sentences that match are scored higher. A sentence containing a date or a number, and one that opens a paragraph, get a small bonus. The optional <strong>Understand meaning</strong> switch instead loads a small open sentence-embedding model (about 23 MB, once) and re-orders the same sentences by cosine similarity to your question. Either way, the sentences themselves are never rewritten.</p>
+
+      <h2>What indusmova never does</h2>
+      <ul>
+        <li>It does not generate prose, summaries or claims of its own.</li>
+        <li>It does not store your questions on a server — there is no server.</li>
+        <li>It does not track you, sell data, or show advertising.</li>
+        <li>It does not claim to be affiliated with the Wikimedia Foundation.</li>
+      </ul>
+
+      <h2>Licences</h2>
+      <p>Wikipedia article text is available under the Creative Commons Attribution-ShareAlike Licence (CC BY-SA 4.0). Wikidata data is released under CC0 1.0. Files on Wikimedia Commons carry their own licence, shown with each image. Reuse must respect those terms.</p>
+
+      <p><a class="btn btn-primary" href="/#/">Try it</a> <a class="btn btn-ghost" href="/#/sources">Sources &amp; attribution</a></p>
+    </div>
+  </main>
+
+  <footer class="site-foot">
+    <div class="foot-inner">
+      <div class="foot-col">
+        <div class="foot-brand"><strong>indusmova</strong></div>
+        <p>A Wikipedia-based knowledge explorer. It turns free knowledge into a core answer, a topic-wise breakdown and Markdown you can keep.</p>
+      </div>
+      <div class="foot-col">
+        <strong>Project</strong>
+        <ul>
+          <li><a href="/topics/">Topics</a></li>
+          <li><a href="/questions/">Questions</a></li>
+          <li><a href="/how-it-works/">How it works</a></li>
+          <li><a href="/help/">Help</a></li>
+          <li><a href="/#/sources">Sources &amp; attribution</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-legal">
+      <p>Wikipedia article text is available under CC BY-SA 4.0. Wikidata data is released under CC0 1.0. indusmova is an independent reader and is not affiliated with or endorsed by the Wikimedia Foundation.</p>
+      <p class="foot-version">indusmova v3.0.0</p>
+    </div>
+  </footer>
+</body>
+</html>
