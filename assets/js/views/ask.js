@@ -25,12 +25,13 @@ import { composeAnswer } from '../answer.js';
 import { answerToMarkdown, download } from '../markdown.js';
 import {
   evidenceStrip, topicBlocks, methodNote, factsBox, sourcesGroup,
-  scopeNote, feedback, curatedNote,
+  scopeNote, feedback, curatedNote, markdownActions, railActions, selectedNote,
 } from '../answerui.js';
 import { sectionHead, card, errorBox, emptyState, toast } from '../components.js';
 import { mountOpenSources } from './library.js';
 import { composerForm, depthControl, attachSuggest } from '../composer.js';
 import { articleHref, searchHref } from '../router.js';
+import { jumper } from './article.js';
 
 export async function renderAsk(ctx, route) {
   const wrap = el('div', { class: 'wrap-narrow' });
@@ -48,7 +49,7 @@ export async function renderAsk(ctx, route) {
     return wrap;
   }
 
-  const mount = el('div', { class: 'qa' });
+  const mount = el('div', { class: 'qa qa-wide' });
   wrap.append(mount);
   mount.append(el('div', { class: 'state', html: `<span class="spinner" aria-hidden="true"></span><p>${esc(t('loading'))}</p>` }));
 
@@ -152,7 +153,20 @@ async function paint(ctx, mount, state) {
   state.answer = answer;
 
   mount.innerHTML = '';
-  mount.append(evidenceStrip({
+
+  // Contents and actions live in the rail beside the answer; the answer itself
+  // is the reading column. Same shape as the article view, because the reader
+  // asked for one architecture across the whole site.
+  const wide = typeof window !== 'undefined' && window.matchMedia('(min-width: 1040px)').matches;
+  const grid = el('div', { class: `article-grid${wide ? ' rail-open' : ''}` });
+  const content = el('div', { class: 'panel' });
+  const rail = el('aside', { class: 'toc-rail', 'aria-label': t('jumpToSection') });
+  rail.append(jumper(state, answer));
+  rail.append(railActions(articleActions(ctx, answer)));
+  grid.append(content, rail);
+  mount.append(grid);
+
+  content.append(evidenceStrip({
     matched: answer.rankedCount,
     considered: answer.method.sentencesConsidered,
     sections: answer.method.sectionsRead,
@@ -160,9 +174,11 @@ async function paint(ctx, mount, state) {
     deep: ctx.state.deepRank,
   }));
 
-  // The direct answer.
+  // The direct answer, kept short: the depth presets cap it at three to
+  // sixteen sentences, so the breakdown stays a summary rather than a dump.
   const qaAnswer = el('div', { class: 'qa-answer' });
   qaAnswer.append(el('h2', { text: t('coreAnswer') }));
+  qaAnswer.append(selectedNote(answer.title, state.lang, answer.wikiUrl));
   if (answer.core.length) {
     const list = el('ul', { class: 'line-list' });
     answer.core.forEach((sentence) => list.append(el('li', { text: sentence })));
@@ -170,13 +186,7 @@ async function paint(ctx, mount, state) {
   } else {
     qaAnswer.append(el('p', { class: 'prose', text: clamp(answer.leadText, 400) }));
   }
-  mount.append(qaAnswer);
-
-  const srcLine = el('p', { class: 'point-from-static' });
-  srcLine.append(el('a', { href: answer.wikiUrl, target: '_blank', rel: 'noopener noreferrer', text: `${state.lang}.wikipedia.org › ${answer.title}` }));
-  mount.append(srcLine);
-
-  mount.append(articleActions(ctx, answer));
+  content.append(qaAnswer);
 
   // Key points.
   if (answer.keyPoints.length > 1) {
@@ -190,14 +200,14 @@ async function paint(ctx, mount, state) {
       ol.append(li);
     });
     card.append(ol);
-    mount.append(card);
+    content.append(card);
   }
 
   // The topic-wise breakdown: short by default, extended at deep-dive depth.
   if (answer.topics.length) {
-    mount.append(sectionHead({ title: t('inDepth') }));
-    mount.append(topicBlocks(answer.topics, { open: ctx.state.depth === 'deep' }));
-    mount.append(curatedNote(t('depthFootnote', {
+    content.append(sectionHead({ title: t('inDepth') }));
+    content.append(topicBlocks(answer.topics, { open: ctx.state.depth === 'deep' }));
+    content.append(curatedNote(t('depthFootnote', {
       shown: answer.method.topicsShown,
       total: answer.method.sectionsRead,
       depth: t(answer.method.depth === 'quick' ? 'quickAnswer' : answer.method.depth === 'deep' ? 'deepDive' : 'detailed'),
@@ -206,13 +216,14 @@ async function paint(ctx, mount, state) {
 
   // Facts.
   const facts = factsBox(answer.facts, answer.title);
-  if (facts) mount.append(facts);
+  if (facts) content.append(facts);
 
-  // Sources, method and scope.
-  mount.append(sourcesGroup({ lang: state.lang, title: answer.title, wikiUrl: answer.wikiUrl, citations: answer.citations }));
-  mount.append(methodNote(answer.method, { revid: answer.revid, lang: state.lang, title: answer.title, wikiUrl: answer.wikiUrl }));
-  mount.append(scopeNote(t('scopeAnswer')));
-  mount.append(feedback(ctx, `ask:${state.lang}:${answer.title}`));
+  // How it was made, and what it does not claim. The numbered Wikipedia
+  // reference list is deliberately not repeated here — it belongs to the full
+  // article, not to the breakdown.
+  content.append(methodNote(answer.method, { revid: answer.revid, lang: state.lang, title: answer.title, wikiUrl: answer.wikiUrl }));
+  content.append(scopeNote(t('scopeAnswer')));
+  content.append(feedback(ctx, `ask:${state.lang}:${answer.title}`));
 
   loadRelated(ctx, mount, { title: answer.title, lang: state.lang });
 }

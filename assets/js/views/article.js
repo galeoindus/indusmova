@@ -21,7 +21,7 @@ import { composeAnswer } from '../answer.js';
 import { articleToMarkdown, download } from '../markdown.js';
 import {
   evidenceStrip, topicBlocks, methodNote, factsBox, sourcesGroup, scopeNote, feedback, referencesBlock, selectedNote,
-  markdownActions,
+  markdownActions, railActions,
 } from '../answerui.js';
 import { sectionHead, card, errorBox, emptyState, toast, breadcrumbs } from '../components.js';
 import { mountOpenSources } from './library.js';
@@ -129,7 +129,6 @@ function render(ctx, mount, state) {
   head.append(meta);
   mount.append(head);
 
-  mount.append(actions(ctx, state));
   mount.append(languageBar(state));
 
   const tabs = buildTabs();
@@ -185,8 +184,10 @@ async function repaintBreakdown(ctx, state) {
       lang: state.lang,
       title: state.data.title,
       mode: 'article',
-      // Opening an article shows the article: every section, in order.
-      maxSections: Infinity,
+      // The breakdown is a summary, not the whole article. It follows the
+      // depth control — a handful of sections — while the Full article tab
+      // carries every section. The reader asked for the breakdown to stay
+      // short, roughly ten to twenty points.
     });
   } catch (err) {
     mount.innerHTML = '';
@@ -208,6 +209,7 @@ async function repaintBreakdown(ctx, state) {
   const content = el('div', { class: 'panel' });
   const rail = el('aside', { class: 'toc-rail', 'aria-label': t('jumpToSection') });
   rail.append(jumper(state, answer));
+  rail.append(railActions(actionControls(ctx, state)));
   grid.append(content, rail);
   mount.append(grid);
   // Everything below belongs in the content column, beside the contents rail.
@@ -283,7 +285,7 @@ async function repaintBreakdown(ctx, state) {
  * being read, and the progress is given as text as well as a bar, so it is not
  * colour alone.
  */
-function jumper(state, answer) {
+export function jumper(state, answer) {
   const topics = answer.topics || [];
   const wrap = el('div', { class: 'toc-jump', id: 'sectionJump' });
 
@@ -320,7 +322,8 @@ function jumper(state, answer) {
       history.replaceState(null, '', `${base}?s=${encodeURIComponent(topic.id)}`);
       target.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
       if (!target.classList.contains('is-open')) target.querySelector('.topic-more')?.click();
-      hide();
+      // Jumping is a navigation, not a request to close the contents: leave the
+      // rail open so the reader can jump again.
     });
     li.append(a);
     links.set(topic.id, li);
@@ -770,9 +773,13 @@ function languageBar(state) {
 
 /* --------------------------------------------------------------- actions */
 
-function actions(ctx, state) {
+/**
+ * The article's actions, returned as separate controls so the view can place
+ * them in the rail rather than in a row across the top.
+ */
+function actionControls(ctx, state) {
   const { data, lang, wikiUrl, root } = state;
-  const row = el('div', { class: 'article-actions' });
+  const out = [];
   const id = `article:${lang}:${data.title}`;
 
   const save = el('button', { type: 'button', class: `btn btn-ghost${ctx.isBookmarked(id) ? ' is-on' : ''}`, html: `${icon('bookmark')}<span>${esc(ctx.isBookmarked(id) ? t('savedOnDevice') : t('bookmarks'))}</span>` });
@@ -785,9 +792,9 @@ function actions(ctx, state) {
     save.classList.toggle('is-on', saved);
     toast(saved ? t('savedOnDevice') : t('removedFromSaved'));
   });
-  row.append(save);
+  out.push(save);
 
-  row.append(markdownActions({
+  out.push(markdownActions({
     getText: () => articleToMarkdown(root, { title: data.title, url: wikiUrl }),
     filename: data.title,
   }));
@@ -798,10 +805,10 @@ function actions(ctx, state) {
     if (navigator.share) { try { await navigator.share({ title: data.title, url }); } catch { /* cancelled */ } }
     else { try { await navigator.clipboard.writeText(url); toast(t('linkCopied')); } catch { /* ignore */ } }
   });
-  row.append(share);
+  out.push(share);
 
-  row.append(el('a', { class: 'btn btn-ghost', href: wikiUrl, target: '_blank', rel: 'noopener noreferrer', html: `${esc(t('readOnWikipedia'))} ↗` }));
-  return row;
+  out.push(el('a', { class: 'btn btn-ghost', href: wikiUrl, target: '_blank', rel: 'noopener noreferrer', html: `${icon('external')}<span>${esc(t('readOnWikipedia'))}</span>` }));
+  return out;
 }
 
 async function loadRelated(ctx, mount, { title, lang }) {

@@ -65,7 +65,100 @@ for (const file of files) {
   }
 }
 
-// 3. no obvious debris
+// 3. every cross-module name used in a file is actually imported there.
+//    The old check only proved imports resolved; it could not see a name that
+//    was used but never imported. That mistake throws at runtime and can
+//    silently truncate a whole view — it did exactly that to the Ask page.
+//
+//    Strings and comments are removed by a small scanner rather than by
+//    regular expressions, because a regex cannot tell code from the word
+//    "article (" inside a sentence of interface copy.
+function codeOnly(src) {
+  let out = '';
+  let i = 0;
+  const n = src.length;
+  while (i < n) {
+    const c = src[i];
+    const next = src[i + 1];
+    if (c === '/' && next === '/') { while (i < n && src[i] !== '\n') i++; continue; }
+    if (c === '/' && next === '*') { i += 2; while (i < n && !(src[i] === '*' && src[i + 1] === '/')) i++; i += 2; continue; }
+    if (c === '/') {
+      // A slash is a regex literal, not a division or a comment, when the last
+      // meaningful character before it could not end an expression.
+      const before = out.replace(/\s+$/, '').slice(-1);
+      const word = (out.replace(/\s+$/, '').match(/([A-Za-z_$][A-Za-z0-9_$]*)$/) || [])[1] || '';
+      const regexAllowed = !before || '([{,;:=!&|?+-*%~^<>'.includes(before)
+        || ['return', 'typeof', 'case', 'in', 'of', 'new', 'delete', 'void', 'instanceof', 'do', 'else'].includes(word);
+      if (regexAllowed) {
+        i++;
+        let inClass = false;
+        while (i < n) {
+          if (src[i] === '\\') { i += 2; continue; }
+          if (src[i] === '[') inClass = true;
+          else if (src[i] === ']') inClass = false;
+          else if (src[i] === '/' && !inClass) { i++; break; }
+          else if (src[i] === '\n') break;
+          i++;
+        }
+        while (i < n && /[a-z]/.test(src[i])) i++;
+        out += ' /regex/ ';
+        continue;
+      }
+    }
+    if (c === '"' || c === "'" || c === '`') {
+      const quote = c; i++;
+      while (i < n) {
+        if (src[i] === '\\') { i += 2; continue; }
+        if (src[i] === quote) { i++; break; }
+        if (quote === '`' && src[i] === '$' && src[i + 1] === '{') {
+          // Keep the inside of an interpolation: it is code.
+          i += 2; let depth = 1; let inner = '';
+          while (i < n && depth > 0) {
+            if (src[i] === '{') depth++;
+            else if (src[i] === '}') { depth--; if (!depth) { i++; break; } }
+            inner += src[i]; i++;
+          }
+          out += ` ${codeOnly(inner)} `;
+          continue;
+        }
+        i++;
+      }
+      out += ' ';
+      continue;
+    }
+    out += c; i++;
+  }
+  return out;
+}
+
+const allExports = new Set();
+for (const names of exportsOf.values()) for (const n of names) allExports.add(n);
+
+for (const file of files) {
+  const src = readFileSync(file, 'utf8');
+  const imported = new Set();
+  for (const m of src.matchAll(/import\s*\{([^}]*)\}\s*from\s*['"][^'"]+['"]/g)) {
+    for (const n of m[1].split(',').map((x) => x.trim().split(' as ').pop().trim()).filter(Boolean)) imported.add(n);
+  }
+  for (const m of src.matchAll(/import\s+([A-Za-z0-9_$]+)\s+from/g)) imported.add(m[1]);
+
+  const code = codeOnly(src);
+  const defined = new Set();
+  for (const m of code.matchAll(/(?:function|class)\s+([A-Za-z0-9_$]+)/g)) defined.add(m[1]);
+  for (const m of code.matchAll(/(?:const|let|var)\s+([A-Za-z0-9_$]+)/g)) defined.add(m[1]);
+
+  for (const name of allExports) {
+    if (imported.has(name) || defined.has(name)) continue;
+    // A method definition (async search(query) { … }) defines the name too.
+    if (new RegExp(`(?<![.\\w$])${name}\\s*\\([^)]*\\)\\s*\\{`).test(code)) continue;
+    // Only a bare call counts; api.article(…) and ctx.isBookmarked(…) are fine.
+    if (new RegExp(`(?<![.\\w$])${name}\\s*\\(`).test(code)) {
+      problems.push(`missing import: ${relative(ROOT, file)} calls ${name}() but never imports it`);
+    }
+  }
+}
+
+// 4. no obvious debris
 for (const file of files) {
   const src = readFileSync(file, 'utf8');
   if (/console\.(log|debug)\(/.test(src)) problems.push(`leftover debug: ${relative(ROOT, file)}`);
