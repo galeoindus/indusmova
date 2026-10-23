@@ -216,6 +216,40 @@ export function referencesBlock(references = []) {
 }
 
 /**
+ * Copy and download, kept behind one control.
+ *
+ * The reader asked for these not to sit in the open: they are a convenience,
+ * not the main path, so a single labelled button reveals them on request.
+ */
+export function markdownActions({ getText, filename }) {
+  const wrap = el('div', { class: 'md-disclosure' });
+  const panelId = 'mdActions';
+  const toggle = el('button', {
+    type: 'button', class: 'btn btn-ghost', 'aria-expanded': 'false', 'aria-controls': panelId,
+    html: `${icon('copy')}<span>${esc(t('markdownActions'))}</span>`,
+  });
+  const panel = el('div', { class: 'md-disclosure-panel', id: panelId, hidden: true });
+
+  const copy = el('button', { type: 'button', class: 'btn btn-ghost btn-sm', html: `${icon('copy')}<span>${esc(t('copyMarkdown'))}</span>` });
+  copy.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(getText()); toast(t('copied')); }
+    catch { toast(t('copyFailed')); }
+  });
+  const dl = el('button', { type: 'button', class: 'btn btn-ghost btn-sm', html: `${icon('download')}<span>${esc(t('downloadMarkdown'))}</span>` });
+  dl.addEventListener('click', () => download(`${String(filename).replace(/[^\w\s-]/g, '')}.md`, getText()));
+  panel.append(copy, dl);
+
+  toggle.addEventListener('click', () => {
+    const open = panel.hasAttribute('hidden');
+    if (open) panel.removeAttribute('hidden'); else panel.setAttribute('hidden', '');
+    toggle.setAttribute('aria-expanded', String(open));
+  });
+
+  wrap.append(toggle, panel);
+  return wrap;
+}
+
+/**
  * The one-line trust statement, kept near the answer rather than in the footer:
  * these passages were selected from a named article, not written.
  */

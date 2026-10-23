@@ -1,0 +1,22 @@
+# Checks and tests on every push and pull request.
+#
+# The audit's F-11 was that nothing verified the code. `npm run verify` parses
+# every module, checks that every import resolves, and runs the unit tests —
+# including the three that pin the routing bug the audit found.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Check every module and run the tests
+        run: npm run verify

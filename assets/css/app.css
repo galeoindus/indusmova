@@ -512,3 +512,37 @@ button, .btn, [role="button"], .tab, .chip, .depth-btn, .chip-btn {
 .method-note > summary { display: flex; align-items: baseline; gap: 10px; }
 .error-query { font-size: 14px; color: var(--text); font-weight: 600; }
 .error-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+
+.foot-build { color: var(--faint); }
+
+/* ======================================================================
+   Contents in the side rail, and the article read as points
+   ====================================================================== */
+
+/* The rail sits at the top of the side and stays put while reading. */
+.toc-rail .toc-jump { position: sticky; top: 84px; }
+.toc-rail .toc-jump-list { max-height: min(62vh, 560px); overflow-y: auto; }
+.article-grid:not(.rail-open) > .toc-rail { display: none; }
+
+/* The article reads the way the breakdown reads: one point per sentence. */
+.points-prose { margin: 0 0 18px; padding-left: 22px; display: grid; gap: 8px; }
+.points-prose > li { line-height: 1.62; max-width: 72ch; }
+.points-prose > li::marker { color: var(--copper); }
+.prose .points-prose { margin-bottom: 20px; }
+
+/* Markdown actions stay out of the way until asked for. */
+.md-disclosure { position: relative; display: inline-block; }
+.md-disclosure-panel {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
+  padding: 10px; border: 1px solid var(--border-2); border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+/* On a phone the rail becomes a block above the content, closed by default. */
+@media (max-width: 1039px) {
+  .article-grid { grid-template-columns: 1fr; }
+  .article-grid > .toc-rail { order: -1; }
+  .article-grid:not(.rail-open) > .toc-rail { display: none; }
+  .toc-rail .toc-jump { position: static; }
+  .toc-rail .toc-jump-list { max-height: 50vh; }
+}

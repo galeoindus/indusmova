@@ -658,5 +658,40 @@ Deep learning's success did not depend on a revolutionary new paradigm or theore
       <p class="foot-version">indusmova v3.0.0</p>
     </div>
   </footer>
+
+<script>
+/* Read the article the way the breakdown reads: one point per sentence.
+   Kept inline so these pages stay standalone and work without the app. */
+(function () {
+  var END = /([.!?][\"'\u201d\u2019)\]]?)\s+(?=[A-Z0-9\"'\u201c([\u0900-\u097F])/g;
+  var SKIP = 'figure, figcaption, table, .infobox, .thumb, .reflist, blockquote';
+  document.querySelectorAll('.prose p').forEach(function (p) {
+    if (p.closest(SKIP) || (p.textContent || '').trim().length < 25) return;
+    var points = [], current = [], flush = function () { if (current.length) { points.push(current); current = []; } };
+    Array.prototype.slice.call(p.childNodes).forEach(function (node) {
+      if (node.nodeType !== 3) { current.push(node.cloneNode(true)); return; }
+      var text = node.textContent, start = 0, m;
+      END.lastIndex = 0;
+      while ((m = END.exec(text))) {
+        var end = m.index + m[1].length;
+        current.push(document.createTextNode(text.slice(start, end)));
+        flush();
+        start = end + (m[0].length - m[1].length);
+      }
+      if (start < text.length) current.push(document.createTextNode(text.slice(start)));
+    });
+    flush();
+    if (points.length < 2) return;
+    var ul = document.createElement('ul');
+    ul.className = 'line-list points-prose';
+    points.forEach(function (nodes) {
+      var li = document.createElement('li');
+      nodes.forEach(function (n) { li.appendChild(n); });
+      ul.appendChild(li);
+    });
+    p.parentNode.replaceChild(ul, p);
+  });
+})();
+</script>
 </body>
 </html>

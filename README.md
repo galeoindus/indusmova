@@ -12,7 +12,7 @@ It is a **static, single-page application**: plain HTML, CSS and ES modules, no 
 
 | Feature | Where |
 |---|---|
-| **Ask** — a question in any of 280+ languages, answered from the best-matching article | `#/ask?q=…` |
+| **Ask** — a question in your own words, answered from the best-matching article | `#/ask?q=…` |
 | **Search** — matching articles as cards | `#/search?q=…` |
 | **Article** — opens as an indusmova **breakdown**, not a Wikipedia page: evidence, the definition, key points, numbered topic blocks that open short and extend on demand, facts, sources, method. Two more tabs carry the full re-set text and the Markdown. | `#/article/<Title>` |
 | **On this day** — events, births, deaths and holidays for any date, as a timeline | `#/today` |
@@ -68,11 +68,24 @@ section unread, being read or read, and marks the current item with
 `aria-current`. Choosing a section scrolls to it, opens it, records it in the
 address bar as `?s=…`, and closes the panel.
 
+### Knowing which build you are on
+
+The footer shows the build: `indusmova v3.0.0+82f1623 · 23 Oct 2026`. A GitHub
+Actions workflow rewrites `assets/version.json` on every push to `main`, so the
+suffix changes with each commit. The page reads that file on load; if the build
+on the server differs from the one running, it clears the caches and reloads
+once. That matters because the service worker used to keep serving a cached
+shell, so a fixed design could look unfixed to a returning reader. Same-origin
+assets are now network-first with the cache as an offline fallback, so a deploy
+takes effect on the next load.
+
 ### Tests and checks
 
 ```bash
 npm run check     # parse every module, verify every import, catch debug leftovers
-npm test          # 20 unit tests: routing, query keys, parsing, slugs, links
+npm test          # 25 unit tests: routing, query keys, parsing, slugs, links,
+                  # and the interface dictionary (duplicate keys, missing
+                  # translations, English copy left in the Hindi block)
 npm run verify    # both
 ```
 
