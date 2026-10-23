@@ -1,6 +1,6 @@
 # indusmova
 
-** From question to understanding. **
+**सवाल से समझ तक — "From question to understanding."**
 
 indusmova is a Wikimedia knowledge research and discovery platform. Ask a question, or open a topic, and get a direct answer, the key points, a topic-wise breakdown, the facts from the infobox, and every source with a link back to Wikipedia.
 
@@ -14,7 +14,7 @@ It is a **static, single-page application**: plain HTML, CSS and ES modules, no 
 |---|---|
 | **Ask** — a question in any of 280+ languages, answered from the best-matching article | `#/ask?q=…` |
 | **Search** — matching articles as cards | `#/search?q=…` |
-| **Article** — the full article, re-set: title block, sticky table of contents, infobox as a factbox, gallery, sources | `#/article/<Title>` |
+| **Article** — opens as an indusmova **breakdown**, not a Wikipedia page: evidence, the definition, key points, numbered topic blocks that open short and extend on demand, facts, sources, method. Two more tabs carry the full re-set text and the Markdown. | `#/article/<Title>` |
 | **On this day** — events, births, deaths and holidays for any date, as a timeline | `#/today` |
 | **Explore** — categories and the most-read articles right now | `#/explore` |
 | **Saved / Bookmarks** — kept on the device | `#/bookmarks` |
@@ -25,6 +25,27 @@ It is a **static, single-page application**: plain HTML, CSS and ES modules, no 
 | **Light / dark / system theme**, reading comfort, reading-progress bar | header buttons |
 | **Voice search**, where the browser supports it | composer |
 | **PWA** — installable, works offline for the shell | `manifest.webmanifest`, `sw.js` |
+
+### The answer architecture
+
+Every answer — asked or opened — is laid out the same way, from components the
+design system already defines:
+
+```
+.evidence      how the answer was ranked, and from how much
+.qa-answer     the sentences that answer it (.line-list)
+.answer-card   the key points (.points-list)
+.topic-block   numbered topics, short by default, each extendable
+.factbox       the infobox, as label/value rows
+.src-group     sources as cards, with licences
+.method-note   exactly how the answer was produced
+.fb-row        emoji feedback
+```
+
+**Answer depth acts immediately.** Quick answer, Detailed and Deep dive
+re-compose the open answer the moment they are clicked — no second submit, no
+reload. Deep dive also opens every topic block extended. A thin `.depth-bar`
+shows which level is active.
 
 ### How an answer is built
 
@@ -77,6 +98,7 @@ indusmova/
 │       ├── store.js           localStorage: bookmarks, history, prefs
 │       ├── theme.js           theme, comfort, reading progress
 │       ├── router.js          hash router
+│       ├── answerui.js        the shared answer architecture
 │       ├── ui.js · icons.js · components.js · composer.js
 │       └── views/             home, search, ask, article, pages
 └── package.json

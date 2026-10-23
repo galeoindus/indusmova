@@ -151,9 +151,134 @@ form.panel .select { cursor: pointer; }
 /* ------------------------------------------------------- small screens */
 
 @media (max-width: 700px) {
-  /* The bottom bar is the mobile navigation; the header keeps only the
-     utility buttons so the topbar stays one line. */
-  .topnav a { display: none; }
-  .topnav .nav-sep { display: none; }
   .dash-hero-badge { align-self: center; text-align: center; }
+  /* Keep every navigation option reachable; just tighten it so it wraps
+     neatly instead of overflowing. */
+  .topbar-inner { gap: 6px; }
+  .topnav { margin-left: auto; }
+  .topnav a { padding: 7px 8px; font-size: 12.5px; }
 }
+
+
+/* ======================================================================
+   The hero assumes a dark panel
+   ======================================================================
+   The design system styles every control inside .dash-hero for a dark
+   background — white text on translucent white. The hero itself is not
+   dark (it inherits the page background, and its own gradient was lost in
+   the capture), so in light mode the depth buttons, the meaning switch, the
+   chips and the clock were white on cream and effectively invisible.
+   Restore the theme-aware styling for all of them. */
+
+.dash-hero .searchbar { background: var(--surface); border-color: var(--border-2); }
+.dash-hero .depth-btn { background: var(--surface); border-color: var(--border-2); color: var(--text); }
+.dash-hero .depth-btn:hover { background: var(--surface-2); color: var(--text); }
+.dash-hero .depth-btn.is-active,
+.dash-hero .depth-btn[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.dash-hero .depth-bar { background: var(--surface-2); border-color: var(--border-2); }
+.dash-hero .mode-btn { color: var(--muted); }
+.dash-hero .mode-btn.is-active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+.dash-hero .chip-btn { background: var(--surface); border-color: var(--border-2); color: var(--text); }
+.dash-hero .chip-btn:hover { background: var(--surface-2); color: var(--text); }
+.dash-hero .chip-btn.is-active { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.dash-hero .chips .chip { background: var(--surface); border-color: var(--border-2); color: var(--text); }
+.dash-hero .chips .chip:hover { background: var(--surface-2); color: var(--accent); }
+.dash-hero .chips > span { color: var(--faint) !important; }
+.dash-hero .trust-strip { color: var(--muted); }
+.dash-hero .trust-strip li::before { color: var(--forest-ink); }
+.dash-hero .hero-clock { background: var(--surface); border-color: var(--border-2); color: var(--text); }
+.dash-hero .hero-clock span { color: var(--muted); }
+.dash-hero .example-prompts button { background: var(--surface); border-color: var(--border-2); color: var(--text); }
+.dash-hero .example-prompts button:hover { background: var(--surface-2); color: var(--accent); }
+
+/* ------------------------------------------------------------ depth bar */
+
+/* A thin bar under the depth control showing where Quick / Detailed / Deep
+   sits, so the current setting reads at a glance. */
+.depth-bar {
+  position: relative;
+  height: 4px;
+  margin: 10px 0 0;
+  border-radius: 999px;
+  border: 1px solid var(--border-2);
+  background: var(--surface-2);
+  overflow: hidden;
+  max-width: 260px;
+}
+.depth-bar > span {
+  display: block;
+  height: 100%;
+  width: 66%;
+  background: linear-gradient(90deg, var(--forest), var(--copper));
+  transition: width 0.28s var(--ease);
+}
+.depth[data-level="quick"] ~ .depth-bar > span { width: 33%; }
+.depth[data-level="detailed"] ~ .depth-bar > span { width: 66%; }
+.depth[data-level="deep"] ~ .depth-bar > span { width: 100%; }
+
+/* ------------------------------------------------------- topic breakdown */
+
+/* Each topic block opens short, with one control to read the whole section. */
+.topic-block .topic-short { margin: 0 0 10px; color: var(--text); font-size: 16px; line-height: 1.7; }
+.topic-block .topic-full[hidden] { display: none; }
+.topic-block .topic-more {
+  margin-top: 10px;
+  border: 1px solid var(--border-2);
+  background: var(--surface-2);
+  color: var(--copper-ink);
+  border-radius: 999px;
+  padding: 5px 13px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.topic-block .topic-more:hover { border-color: var(--accent); }
+.topic-block .topic-more::after { content: " ▾"; }
+.topic-block.is-open .topic-more::after { content: " ▴"; }
+.topic-block .topic-short strong { font-weight: 600; }
+
+/* --------------------------------------------------------------- feedback */
+
+/* The emoji feedback row on answers and articles. */
+.fb-btn { font-family: var(--font-body); font-size: 13.5px; color: var(--text); }
+.fb-emoji { font-family: var(--font-body); }
+
+/* --------------------------------------------------------- language bar */
+
+.langbar { border-radius: var(--radius); margin: 0 0 18px; border: 1px solid var(--border-2); }
+.langbar-inner { flex-wrap: wrap; gap: 8px; }
+.langbar .pill { cursor: pointer; }
+
+/* ------------------------------------------------------------ scope note */
+
+.scope-note {
+  border: 1px solid var(--border-2);
+  border-left: 3px solid var(--copper);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  max-width: var(--measure);
+}
+
+/* -------------------------------------------------------- article tables */
+
+.prose .table-scroll { margin: 18px 0; }
+.prose .table-scroll > table { margin: 0; border-collapse: collapse; font-size: 14px; }
+.prose .table-scroll th,
+.prose .table-scroll td { padding: 8px 12px; border: 1px solid var(--border-2); text-align: left; }
+.prose .table-scroll th { background: var(--surface-2); font-weight: 650; }
+
+/* ----------------------------------------------------------- feedback box */
+
+.feedback { margin: 26px 0 0; padding-top: 18px; border-top: 1px solid var(--border); }
+.feedback .panel-head { margin-bottom: 10px; }
+.feedback .fb-note textarea { font: inherit; font-size: 14.5px; border: 1px solid var(--border-2); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); resize: vertical; }
+.btn-sm { padding: 8px 13px; font-size: 13.5px; }
+
+/* Keep the topbar tidy when the wrapped rows appear on a narrow screen. */
+.topbar-inner { row-gap: 6px; }
+
+/* The depth bar is a flex item; without a basis it collapses to nothing. */
+.depth-bar { flex: 0 0 auto; width: min(240px, 55vw); }

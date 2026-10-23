@@ -13,7 +13,7 @@ import { t } from './i18n.js';
 import { DEPTHS } from './config.js';
 
 /** The text field + tools. `ctx.onSubmit(text)` fires on submit. */
-export function composerForm(ctx, { placeholderKey = 'askPlaceholder', autofocus = false } = {}) {
+export function composerForm(ctx, { placeholderKey = 'askPlaceholder', autofocus = false, initialMode = null } = {}) {
   const form = el('form', { class: 'searchbar glass', id: 'searchForm', role: 'search', autocomplete: 'off' });
 
   const textarea = el('textarea', {
@@ -36,12 +36,13 @@ export function composerForm(ctx, { placeholderKey = 'askPlaceholder', autofocus
 
   // Mode toggle
   const mode = el('div', { class: 'mode', role: 'group', 'aria-label': 'Search or ask' });
+  const active = initialMode || ctx.state.mode;
   for (const value of ['search', 'ask']) {
     const btn = el('button', {
       type: 'button',
-      class: `mode-btn${ctx.state.mode === value ? ' is-active' : ''}`,
+      class: `mode-btn${active === value ? ' is-active' : ''}`,
       dataset: { mode: value },
-      'aria-pressed': String(ctx.state.mode === value),
+      'aria-pressed': String(active === value),
       text: value === 'search' ? t('searchMode') : t('askMode'),
     });
     btn.addEventListener('click', () => {
@@ -59,7 +60,7 @@ export function composerForm(ctx, { placeholderKey = 'askPlaceholder', autofocus
 
   const submitBtn = el('button', {
     type: 'submit', class: 'btn btn-primary',
-    text: ctx.state.mode === 'search' ? t('send') : t('askMode'),
+    text: active === 'search' ? t('send') : t('askMode'),
   });
   tools.append(submitBtn);
   form.append(tools);
@@ -149,11 +150,11 @@ function wireVoice(button, textarea, ctx) {
   });
 }
 
-/** Answer depth + the meaning-ranking switch. */
+/** Answer depth + the meaning-ranking switch + a bar showing the level. */
 export function depthControl(ctx) {
   const wrap = el('div', { class: 'dash-depth' });
 
-  const depth = el('div', { class: 'depth', role: 'group', 'aria-label': t('answerDepth') });
+  const depth = el('div', { class: 'depth', role: 'group', 'aria-label': t('answerDepth'), dataset: { level: ctx.state.depth } });
   depth.append(el('span', { class: 'depth-label', text: t('answerDepth') }));
   for (const preset of Object.values(DEPTHS)) {
     const btn = el('button', {
@@ -165,15 +166,19 @@ export function depthControl(ctx) {
     });
     btn.addEventListener('click', () => {
       ctx.setDepth(preset.id);
+      depth.dataset.level = preset.id;
       depth.querySelectorAll('.depth-btn').forEach((b) => {
         const active = b.dataset.depth === preset.id;
         b.classList.toggle('is-active', active);
         b.setAttribute('aria-pressed', String(active));
       });
+      // Re-render the open answer straight away — no second click, no reload.
+      ctx.optionsChanged?.();
     });
     depth.append(btn);
   }
   wrap.append(depth);
+  wrap.append(el('div', { class: 'depth-bar', 'aria-hidden': 'true', html: '<span></span>' }));
 
   const deep = el('button', {
     type: 'button',
@@ -181,9 +186,12 @@ export function depthControl(ctx) {
     dataset: { deep: ctx.state.deepRank ? 'on' : 'off' },
     'aria-pressed': String(ctx.state.deepRank),
     title: t('understandMeaningTitle'),
-    html: `${icon('sparkle')}${esc(t('understandMeaning'))}`,
+    html: `${icon('sparkle')}<span>${esc(t('understandMeaning'))}</span>`,
   });
-  deep.addEventListener('click', () => ctx.toggleDeepRank(deep));
+  deep.addEventListener('click', () => {
+    ctx.toggleDeepRank(deep);
+    ctx.optionsChanged?.();
+  });
   wrap.append(deep);
 
   return wrap;

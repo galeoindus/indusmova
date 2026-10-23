@@ -86,7 +86,7 @@ export function factsFromInfobox(infoboxHtml) {
  * @param {string} [args.depth]   quick | detailed | deep
  * @param {boolean} [args.deep]   use the on-device meaning model
  */
-export async function composeAnswer({ question, root, sections = [], depth = 'detailed', deep = false, lang = 'en', title = '' }) {
+export async function composeAnswer({ question, root, sections = [], depth = 'detailed', deep = false, lang = 'en', title = '', mode = 'ask' }) {
   const parts = splitArticle(root, sections);
   const preset = DEPTHS[depth] || DEPTHS.detailed;
 
@@ -112,18 +112,26 @@ export async function composeAnswer({ question, root, sections = [], depth = 'de
     .filter((r) => r.score > 0)
     .map((r) => ({ ...pool[r.index], score: r.score }));
 
-  // The direct answer: the strongest sentences, with near-duplicates collapsed.
-  const coreSource = ordered.length ? ordered : pool.map((p, index) => ({ ...p, index, score: 0 }));
-  const core = dedupe(coreSource.map((p) => p.text), preset.sentences);
+  const byQuestion = ordered.length ? ordered : pool.map((p, index) => ({ ...p, index, score: 0 }));
 
-  // Key points, likewise de-duplicated.
-  const keyPointTexts = dedupe((ordered.length ? ordered : pool).map((p) => p.text), 6);
+  // The core answer. In ask mode it is the sentences that best match the
+  // question; opening an article directly, the definition in the lead is the
+  // answer, so that is what leads.
+  const core = mode === 'article'
+    ? dedupe(leadSentences, preset.sentences)
+    : dedupe(byQuestion.map((p) => p.text), preset.sentences);
+
+  // Key points: the next most useful sentences, with the section they came from.
+  const keyPointTexts = mode === 'article'
+    ? dedupe([...leadSentences.slice(core.length), ...sectionTexts.map((s) => s.sentences[0]).filter(Boolean)], 6)
+    : dedupe(byQuestion.map((p) => p.text), 6);
   const keyPoints = keyPointTexts.map((text) => {
-    const hit = (ordered.length ? ordered : pool).find((p) => p.text === text) || {};
+    const hit = byQuestion.find((p) => p.text === text) || {};
     return { text, section: hit.section || '', sectionId: hit.sectionId || '' };
   });
 
-  // Topic blocks, most relevant first.
+  // Topic blocks. Each carries a short read (two sentences) and the full
+  // section, so the breakdown opens brief and extends on demand.
   const topicScores = sectionTexts.map((s) => {
     const score = s.sentences.reduce((sum, text) => {
       const hit = ordered.find((o) => o.text === text);
@@ -131,19 +139,27 @@ export async function composeAnswer({ question, root, sections = [], depth = 'de
     }, 0) / Math.max(1, s.sentences.length);
     return { ...s, score };
   });
-  const topics = (topicScores.some((s) => s.score > 0)
-    ? [...topicScores].sort((a, b) => b.score - a.score)
-    : topicScores)
+  const byRelevance = mode !== 'article' && topicScores.some((s) => s.score > 0);
+  const orderedTopics = byRelevance ? [...topicScores].sort((a, b) => b.score - a.score) : topicScores;
+  const topics = orderedTopics
     .slice(0, preset.sections)
-    .map((s) => ({
-      id: s.id,
-      title: s.line,
-      points: dedupe(s.sentences, 4),
-    }))
+    .map((s, i) => {
+      const points = dedupe(s.sentences, Math.max(4, preset.sentences));
+      return {
+        id: s.id,
+        title: s.line,
+        number: i + 1,
+        short: points.slice(0, 2),
+        full: points,
+        points,
+        score: s.score,
+      };
+    })
     .filter((s) => s.points.length);
 
   return {
     question,
+    mode,
     lang,
     title,
     lead: parts.leadHtml,
@@ -154,8 +170,19 @@ export async function composeAnswer({ question, root, sections = [], depth = 'de
     facts: factsFromInfobox(parts.infoboxHtml),
     infoboxHtml: parts.infoboxHtml,
     images: parts.images.slice(0, 8),
+    tables: parts.tables,
     citations: parts.citations.slice(0, 20),
     sections: parts.sections.map((s) => ({ id: s.id, line: s.line, level: s.level })),
     rankedCount: ordered.length,
+    // Transparency: what the answer was actually built from.
+    method: {
+      depth: preset.id,
+      rankedBy: deep ? 'meaning' : 'relevance',
+      sentencesConsidered: pool.length,
+      sentencesMatched: ordered.length,
+      sectionsRead: parts.sections.length,
+      topicsShown: topics.length,
+      words: parts.leadText.split(/\s+/).filter(Boolean).length,
+    },
   };
 }

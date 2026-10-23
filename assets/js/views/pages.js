@@ -262,14 +262,18 @@ export function renderTopics(ctx) {
   const wrap = el('div', { class: 'wrap' });
   wrap.append(head(t('topics'), t('topicsBlurb')));
   const grid = el('div', { class: 'topics-grid' });
-  for (const cat of CATEGORIES) {
+  CATEGORIES.forEach((cat, i) => {
     const a = el('a', { class: 'topic-card', href: searchHref(cat.query) });
-    a.append(el('span', { class: 'ic', html: icon(cat.icon) }));
-    a.append(el('h3', { text: cat.label }));
+    const topicHead = el('div', { class: 'topic-head' });
+    topicHead.append(el('span', { class: 'topic-num', text: String(i + 1) }));
+    topicHead.append(el('span', { html: `<strong>${esc(cat.label)}</strong>` }));
+    a.append(topicHead);
     a.append(el('p', { text: t('exploreBlurb') }));
+    a.append(el('span', { class: 'topic-goto', text: `${t('viewAll')} →` }));
     grid.append(a);
-  }
+  });
   wrap.append(grid);
+  wrap.append(el('p', { class: 'ask-note', style: 'margin-top:20px', text: t('topicsBlurb') }));
   return wrap;
 }
 
@@ -309,14 +313,6 @@ const STATIC = {
       'If something here is not usable for you, please tell us through the Feedback page. Accessibility reports go to the top of the queue.',
     ],
   },
-  support: {
-    title: 'If you need help',
-    body: [
-      'indusmova is a reading tool, not a source of advice. It cannot help with a medical, legal or personal emergency.',
-      'If you are in distress, please reach out to someone who can help — a doctor, a local emergency number, or a trusted person near you. In India you can call Tele-MANAS on 14416 (toll-free, 24×7) for mental-health support.',
-      'For problems with the site itself — a broken page, a wrong answer, an accessibility barrier — use the Feedback page.',
-    ],
-  },
 };
 
 export function renderStatic(name) {
@@ -331,6 +327,45 @@ export function renderStatic(name) {
     page.append(el('p', { html: `Version <strong>${esc(SITE.version)}</strong> · <a href="${SITE.repo}" target="_blank" rel="noopener noreferrer">Source on GitHub</a>` }));
   }
   wrap.append(page);
+  return wrap;
+}
+
+/* ----------------------------------------------------------------- support */
+
+const HELP_LINES = [
+  { num: '112', name: 'All emergencies', detail: 'One number for police, fire and ambulance, anywhere in India. 24×7.' },
+  { num: '14416', name: 'Tele-MANAS', detail: 'Free mental-health support from the Government of India. Toll-free, 24×7, in many languages.' },
+  { num: '1098', name: 'Childline', detail: 'For children in distress or at risk. 24×7, free.' },
+  { num: '181', name: 'Women’s helpline', detail: 'Support for women facing violence or distress. 24×7.' },
+  { num: '14567', name: 'Elder Line', detail: 'For older people who need help or protection. Toll-free, 24×7.' },
+];
+
+export function renderSupport() {
+  const wrap = el('div', { class: 'wrap-narrow' });
+  wrap.append(head(t('supportLink'), 'indusmova is a reading tool, not a source of advice.'));
+
+  const help = el('div', { class: 'crisis-help shown' });
+  help.append(el('p', { class: 'crisis-where', text: 'If you are in distress, these lines are free, confidential and answered by people.' }));
+
+  for (const line of HELP_LINES) {
+    const a = el('a', { class: 'crisis-line', href: `tel:${line.num}` });
+    a.append(el('span', { class: 'num', text: line.num }));
+    const meta = el('span', { class: 'meta' });
+    meta.append(el('span', { class: 'name', text: line.name }));
+    meta.append(el('span', { class: 'detail', text: line.detail }));
+    a.append(meta);
+    help.append(a);
+  }
+
+  help.append(el('p', { class: 'crisis-emergency', html: 'If you or someone else is in immediate danger, call <strong>112</strong> now.' }));
+
+  const actions = el('div', { class: 'crisis-actions' });
+  actions.append(el('a', { class: 'crisis-btn', href: '#/feedback', text: 'Report a problem with indusmova' }));
+  actions.append(el('a', { class: 'crisis-btn', href: '#/', text: 'Back to indusmova' }));
+  help.append(actions);
+
+  wrap.append(help);
+  wrap.append(el('p', { class: 'ask-note', style: 'margin-top:20px', text: 'indusmova cannot help with a medical, legal or personal emergency, and it cannot contact anyone for you. For problems with the site itself — a broken page, a wrong answer, an accessibility barrier — use the Feedback page.' }));
   return wrap;
 }
 

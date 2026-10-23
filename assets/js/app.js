@@ -20,10 +20,14 @@ import { renderAsk } from './views/ask.js';
 import { renderArticle } from './views/article.js';
 import {
   renderExplore, renderToday, renderBookmarks, renderHistory,
-  renderSources, renderTopics, renderStatic, renderFeedback, renderNotFound,
+  renderSources, renderTopics, renderStatic, renderSupport, renderFeedback, renderNotFound,
 } from './views/pages.js';
 
 /* --------------------------------------------------------------- the context */
+
+// Listeners a view registers (store subscriptions, timers) are dropped before
+// the next view renders, so nothing keeps running against a detached DOM.
+let cleanups = [];
 
 const prefs = store.getPrefs();
 
@@ -69,6 +73,11 @@ const ctx = {
     render(ctx.route);
   },
 
+  on: store.on,
+  onCleanup: (fn) => { cleanups.push(fn); },
+  // The open view sets this so a depth / meaning change re-renders it at once.
+  optionsChanged: () => {},
+
   getBookmarks: store.getBookmarks,
   isBookmarked: store.isBookmarked,
   toggleBookmark: store.toggleBookmark,
@@ -111,13 +120,17 @@ const VIEWS = {
   privacy: () => renderStatic('privacy'),
   terms: () => renderStatic('terms'),
   accessibility: () => renderStatic('accessibility'),
-  support: () => renderStatic('support'),
+  support: () => renderSupport(),
   feedback: () => renderFeedback(ctx),
   notfound: () => renderNotFound(),
 };
 
 async function render(route) {
   ctx.route = route;
+  for (const fn of cleanups.splice(0)) {
+    try { fn(); } catch { /* a failed cleanup must not block the render */ }
+  }
+  ctx.optionsChanged = () => {};
   const main = document.getElementById('main');
   if (!main) return;
   main.innerHTML = '';

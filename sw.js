@@ -27,6 +27,7 @@ const SHELL_ASSETS = [
   '/assets/js/composer.js',
   '/assets/js/parse.js',
   '/assets/js/answer.js',
+  '/assets/js/answerui.js',
   '/assets/js/rank.js',
   '/assets/js/markdown.js',
   '/assets/js/views/home.js',

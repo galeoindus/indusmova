@@ -174,6 +174,60 @@ export function clean(html) {
   return root;
 }
 
+/** Elements that are not prose: tables, captions, images and boxes. */
+const NON_PROSE = 'table, figure, .thumb, .gallery, .infobox, .sidebar, .side-box, .navbox, .metadata, style, sup, .hatnote, .mw-editsection, .mw-empty-elt, .quotebox, .wikitable';
+
+/**
+ * Prose text only.
+ *
+ * The full article keeps its tables and infobox, but none of that belongs in
+ * the sentences we quote — otherwise a reader gets "Predecessor Bindusara
+ * Successor Dasharatha" as an answer. Strip the non-prose first, then read.
+ */
+export function proseText(node) {
+  if (!node) return '';
+  const clone = node.cloneNode(true);
+  clone.querySelectorAll(NON_PROSE).forEach((n) => n.remove());
+  labelLeadIns(clone);
+  return stripNoise(textOf(clone));
+}
+
+/** Characters that only appear in IPA / pronunciation transcriptions. */
+const IPA = /[\u0250-\u02AF\u02C8\u02CC\u02B0-\u02FF\u1D00-\u1D7F]/;
+
+/**
+ * Remove the pronunciation asides Wikipedia puts after a name —
+ * "( ə-SHOH-kə; Sanskrit: [ɐˈɕoːkɐ], IAST: Aśoka; …)" — which otherwise turn
+ * the first sentence of an article into unreadable noise. Ordinary
+ * parentheses, like "(born 3 February 1984)", are left alone.
+ */
+export function stripNoise(text) {
+  return String(text || '')
+    .replace(/\([^()]*\)/g, (m) => (IPA.test(m) ? ' ' : m))
+    .replace(/\[[^\[\]]*\]/g, (m) => (IPA.test(m) ? ' ' : m))
+    .replace(/\s+([,;:.])/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * A paragraph that opens with a short bold phrase is a labelled clause
+ * ("Modern research and observation The first detection…"). Give the label a
+ * dash so it reads as one.
+ */
+function labelLeadIns(root) {
+  root.querySelectorAll('p, li, dd, dt').forEach((block) => {
+    const first = block.firstElementChild;
+    if (!first || !/^(B|STRONG|EM|I)$/.test(first.tagName)) return;
+    const label = (first.textContent || '').trim();
+    if (!label || label.length > 48 || /[.!?:;]$/.test(label)) return;
+    if (label.split(/\s+/).length > 6) return;
+    const rest = block.textContent.slice(label.length).trimStart();
+    if (!rest || !/^[A-Z\u0900-\u097F]/.test(rest)) return;
+    first.after(root.ownerDocument.createTextNode(' — '));
+  });
+}
+
 /** Plain text of a cleaned element, with block boundaries turned into spaces. */
 export function textOf(node) {
   if (!node) return '';
@@ -190,7 +244,7 @@ export function textOf(node) {
 
 /** Split prose into sentences, keeping the text readable. */
 export function sentences(text) {
-  const clean = String(text || '')
+  const clean = stripNoise(String(text || ''))
     .replace(/\{\\displaystyle[^}]*\}/g, ' ')
     .replace(/\\[a-zA-Z]+(\{[^}]*\})?/g, ' ')
     // Words stuck together by markup with no space between the nodes.
@@ -200,13 +254,19 @@ export function sentences(text) {
   if (!clean) return [];
   // Abbreviations and initials shouldn't end a sentence.
   const guarded = clean.replace(
-    /\b(?:Mr|Mrs|Ms|Dr|Prof|St|vs|etc|e\.g|i\.e|No|Fig|approx|ca|cf|Sr|Jr|Ltd|Inc|Co|Gov|Gen|Col|Capt|Lt|Sgt|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\./gi,
+    /\b(?:Mr|Mrs|Ms|Dr|Prof|St|vs|etc|e\.g|i\.e|No|Fig|approx|ca|cf|Sr|Jr|Ltd|Inc|Co|Gov|Gen|Col|Capt|Lt|Sgt|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|c|r|b|d|fl|n|p|pp|ed|trans|lit|viz|al)\./g,
     (m) => m.replace(/\./g, '\u0001'),
   );
   return guarded
     .split(/(?<=[.!?])\s+(?=[A-Z0-9"'“(\u0900-\u097F])/)
-    .map((s) => s.replace(/\u0001/g, '.').trim())
-    .filter((s) => s.length > 2);
+    .map((s) => s.replace(/\u0001/g, '.').replace(/\s+/g, ' ').trim())
+    .filter((s) => s.length > 30)
+    // Drop anything that is mostly symbols — infobox fragments, formula
+    // leftovers, table captions — rather than readable prose.
+    .filter((s) => {
+      const letters = (s.match(/[\p{L}\p{N}]/gu) || []).length;
+      return letters / s.length > 0.6;
+    });
 }
 
 /**
@@ -278,6 +338,9 @@ export function splitArticle(root, sectionMeta = []) {
       if (nextH) {
         const nextLevel = Number(nextH.tagName.slice(1)) || 2;
         if (nextLevel <= level) break;
+        // A deeper heading is its own section; skip it here so a section's
+        // text does not begin with the next subsection's title.
+        continue;
       }
       body.append(blocks[j].node.cloneNode(true));
     }
@@ -290,7 +353,7 @@ export function splitArticle(root, sectionMeta = []) {
         level: meta.level || level,
         index: meta.index || String(sections.length + 1),
         html: body.innerHTML,
-        text: textOf(body),
+        text: proseText(body),
       });
     }
   });
@@ -301,7 +364,7 @@ export function splitArticle(root, sectionMeta = []) {
 
   return {
     leadHtml: lead.innerHTML,
-    leadText: textOf(lead),
+    leadText: proseText(lead),
     sections,
     infoboxHtml: infobox ? infobox.outerHTML : '',
     factboxes: factboxes.map((f) => f.outerHTML),

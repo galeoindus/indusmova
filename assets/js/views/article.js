@@ -1,21 +1,30 @@
 /* indusmova — the article view.
  *
- * The full Wikipedia article, re-set in indusmova's own reading layout: a
- * title block, the action row (save, copy Markdown, download, share, open the
- * source), a sticky table of contents beside the prose, the infobox as a
- * factbox, a gallery for the images, and the sources underneath.
+ * Opening an article does not drop the reader into a Wikipedia page. It opens
+ * the indusmova breakdown first — the same architecture the Ask view uses:
  *
- * A small tab strip switches between the readable article and its Markdown
- * export, so what you can copy is exactly what you can see.
+ *   Breakdown     evidence, the definition, key points, numbered topic blocks
+ *                 (short, extendable), facts, sources, method, feedback
+ *   Full article  the complete text, re-set in the reading layout with a
+ *                 sticky table of contents and the infobox as a factbox
+ *   Markdown      the whole thing as Markdown you can copy or download
+ *
+ * A language bar offers the same topic in the other languages Wikipedia has it
+ * in, so the answer is one tap away in the reader's own language.
  */
 
 import { el, clamp, cleanUrl } from '../ui.js';
 import { icon } from '../icons.js';
 import { t } from '../i18n.js';
 import { clean, wordCount } from '../parse.js';
+import { composeAnswer } from '../answer.js';
 import { articleToMarkdown, download } from '../markdown.js';
+import {
+  evidenceStrip, topicBlocks, methodNote, factsBox, sourcesGroup, scopeNote, feedback,
+} from '../answerui.js';
 import { sectionHead, card, errorBox, emptyState, toast } from '../components.js';
 import { articleHref, searchHref } from '../router.js';
+import { CONTENT_LANGS } from '../config.js';
 
 export async function renderArticle(ctx, route) {
   const title = (route.params.title || '').replace(/_/g, ' ').trim();
@@ -30,68 +39,231 @@ export async function renderArticle(ctx, route) {
   }
 
   const mount = el('div');
-  mount.append(el('div', { class: 'state', html: `<span class="spinner" aria-hidden="true"></span><p>${t('loading')}</p>` }));
+  mount.append(el('div', { class: 'state', html: `<span class="spinner" aria-hidden="true"></span><p>${esc(t('loading'))}</p>` }));
   wrap.append(mount);
-  build(ctx, mount, title);
+
+  const state = {
+    lang: route.query?.lang || ctx.state.contentLang,
+    data: null,
+    root: null,
+    breakdown: null,
+    tabs: null,
+  };
+  ctx.optionsChanged = () => { if (state.breakdown) repaintBreakdown(ctx, state); };
+  ctx.onCleanup(() => { ctx.optionsChanged = () => {}; });
+
+  build(ctx, mount, state, title);
   return wrap;
 }
 
-async function build(ctx, mount, title, retry = 0) {
-  const route = ctx.route || {};
-  const lang = route.query?.lang || ctx.state.contentLang;
+async function build(ctx, mount, state, title, retry = 0) {
   try {
-    const data = await ctx.api.article(lang, title);
-    const root = clean(data.html);
-    render(ctx, mount, { data, root, lang });
-    ctx.pushHistory({ id: `article:${lang}:${data.title}`, kind: 'article', title: data.title, lang, url: articleHref(data.title, lang) });
+    state.data = await ctx.api.article(state.lang, title);
+    state.root = clean(state.data.html);
+    state.wikiUrl = `https://${state.lang}.wikipedia.org/wiki/${encodeURIComponent(state.data.title.replace(/ /g, '_'))}`;
+    render(ctx, mount, state);
+    ctx.pushHistory({
+      id: `article:${state.lang}:${state.data.title}`, kind: 'article',
+      title: state.data.title, lang: state.lang, url: articleHref(state.data.title, state.lang),
+    });
   } catch (err) {
     mount.innerHTML = '';
     const message = err?.status === 404 ? t('notFoundBody') : err?.message;
-    mount.append(errorBox(message, { onRetry: () => build(ctx, mount, title, retry + 1) }));
+    mount.append(errorBox(message, { onRetry: () => build(ctx, mount, state, title, retry + 1) }));
     if (err?.name === 'ApiError' && err.status !== 404 && retry === 0) {
-      setTimeout(() => build(ctx, mount, title, 1), 600);
+      setTimeout(() => build(ctx, mount, state, title, 1), 600);
     }
   }
 }
 
-function render(ctx, mount, { data, root, lang }) {
-  mount.innerHTML = '';
-  const wikiUrl = `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(data.title.replace(/ /g, '_'))}`;
+/* ---------------------------------------------------------------- render */
 
-  // Header
+function render(ctx, mount, state) {
+  const { data, root, lang, wikiUrl } = state;
+  mount.innerHTML = '';
+
   const head = el('div', { class: 'article-head' });
   head.append(el('span', { class: 'kicker', text: `${lang}.wikipedia.org` }));
   head.append(el('h1', { class: 'article-title', text: data.title }));
-
-  // Find the first paragraph for a subtitle, if the API gave us nothing.
   const firstP = root.querySelector('p');
-  const subtitle = firstP ? clamp(firstP.textContent, 200) : '';
-  if (subtitle) head.append(el('p', { class: 'article-sub', text: subtitle }));
-
+  if (firstP) head.append(el('p', { class: 'article-sub', text: clamp(firstP.textContent, 200) }));
   const words = wordCount(data.html);
   const meta = el('p', { class: 'article-sub', style: 'color:var(--faint);font-size:13px' });
-  meta.textContent = `${words.toLocaleString()} ${t('words')} · ~${Math.max(1, Math.round(words / 220))} ${t('minRead')}${data.revid ? ` · rev ${data.revid}` : ''}`;
+  meta.textContent = `${words.toLocaleString()} ${t('words')} · ~${Math.max(1, Math.round(words / 220))} ${t('minRead')}${data.revid ? ` · ${t('revision')} ${data.revid}` : ''}`;
   head.append(meta);
   mount.append(head);
 
-  mount.append(actions(ctx, { title: data.title, lang, wikiUrl, root, data }));
+  mount.append(actions(ctx, state));
+  mount.append(languageBar(state));
 
-  // Tabs: Read | Markdown
-  const { tabs, panelRead, panelMd } = buildTabs(ctx, { data, root, lang, wikiUrl });
-  mount.append(tabs);
+  const tabs = buildTabs();
+  mount.append(tabs.bar);
+  state.tabs = tabs;
 
-  // Read panel. The prose is the wide column; the table of contents and the
-  // infobox sit in the narrow rail beside it.
+  const panelBreakdown = el('div', { class: 'tabpanel', role: 'tabpanel' });
+  const panelFull = el('div', { class: 'tabpanel', role: 'tabpanel', hidden: true });
+  const panelMd = el('div', { class: 'tabpanel', role: 'tabpanel', hidden: true });
+
+  // Breakdown — filled by repaintBreakdown, so depth changes redraw only this.
+  const breakdownMount = el('div');
+  panelBreakdown.append(breakdownMount);
+  state.breakdownMount = breakdownMount;
+
+  // Full article
+  panelFull.append(fullArticle(root, data, lang, state));
+
+  // Markdown
+  const md = el('div', { class: 'md' });
+  const pre = el('pre', { class: 'md-raw' });
+  pre.textContent = articleToMarkdown(root, { title: data.title, url: wikiUrl });
+  const mdActions = el('div', { class: 'md-actions' });
+  const dl = el('button', { type: 'button', class: 'btn btn-primary', html: `${icon('download')}<span>${esc(t('downloadMarkdown'))}</span>` });
+  dl.addEventListener('click', () => download(`${data.title.replace(/[^\w\s-]/g, '')}.md`, pre.textContent));
+  const cp = el('button', { type: 'button', class: 'btn btn-ghost', html: `${icon('copy')}<span>${esc(t('copyMarkdown'))}</span>` });
+  cp.addEventListener('click', async () => { try { await navigator.clipboard.writeText(pre.textContent); toast(t('copied')); } catch { /* ignore */ } });
+  mdActions.append(dl, cp);
+  md.append(mdActions, pre);
+  panelMd.append(md);
+
+  mount.append(panelBreakdown, panelFull, panelMd);
+  tabs.panels = { breakdown: panelBreakdown, full: panelFull, md: panelMd };
+  tabs.show('breakdown');
+
+  repaintBreakdown(ctx, state);
+  loadRelated(ctx, mount, { title: data.title, lang });
+}
+
+/** Redraw only the breakdown — used on first paint and on a depth change. */
+async function repaintBreakdown(ctx, state) {
+  const mount = state.breakdownMount;
+  if (!mount) return;
+  mount.innerHTML = '';
+  mount.append(el('div', { class: 'state', html: `<span class="spinner" aria-hidden="true"></span><p>${esc(t('loading'))}</p>` }));
+
+  let answer;
+  try {
+    answer = await composeAnswer({
+      question: state.data.title,
+      root: state.root,
+      sections: state.data.sections,
+      depth: ctx.state.depth,
+      deep: ctx.state.deepRank,
+      lang: state.lang,
+      title: state.data.title,
+      mode: 'article',
+    });
+  } catch (err) {
+    mount.innerHTML = '';
+    mount.append(errorBox(err?.message));
+    return;
+  }
+  answer.wikiUrl = state.wikiUrl;
+  answer.revid = state.data.revid;
+  state.breakdown = answer;
+
+  mount.innerHTML = '';
+  mount.append(evidenceStrip({
+    matched: answer.method.sentencesMatched,
+    considered: answer.method.sentencesConsidered,
+    sections: answer.method.sectionsRead,
+    title: answer.title,
+    deep: ctx.state.deepRank,
+  }));
+
+  const qa = el('div', { class: 'qa-answer' });
+  qa.append(el('h2', { text: t('answer') }));
+  const list = el('ul', { class: 'line-list' });
+  (answer.core.length ? answer.core : [clamp(answer.leadText, 320)]).forEach((s) => list.append(el('li', { text: s })));
+  qa.append(list);
+  mount.append(qa);
+
+  if (answer.keyPoints.length > 1) {
+    const card = el('div', { class: 'answer-card' });
+    card.append(el('h2', { text: t('keyPoints') }));
+    const ol = el('ol', { class: 'points-list' });
+    answer.keyPoints.forEach((p) => {
+      const li = el('li');
+      li.append(el('span', { class: 'point-text', text: p.text }));
+      if (p.section) li.append(el('span', { class: 'point-from', text: `— ${p.section}` }));
+      ol.append(li);
+    });
+    card.append(ol);
+    mount.append(card);
+  }
+
+  if (answer.topics.length) {
+    mount.append(sectionHead({ title: t('breakdown') }));
+    mount.append(topicBlocks(answer.topics, {
+      open: ctx.state.depth === 'deep',
+      onGoto: (topic) => gotoSection(state, topic),
+    }));
+  }
+
+  const facts = factsBox(answer.facts, answer.title);
+  if (facts) mount.append(facts);
+
+  mount.append(sourcesGroup({ lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl, citations: answer.citations }));
+  mount.append(methodNote(answer.method, { revid: answer.revid, lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl }));
+  mount.append(scopeNote(t('scopeAnswer')));
+  mount.append(feedback(ctx, `article:${state.lang}:${answer.title}`));
+}
+
+/* ------------------------------------------------------------------ tabs */
+
+function buildTabs() {
+  const bar = el('div', { class: 'tabs', role: 'tablist' });
+  const buttons = {};
+  const api = {
+    bar,
+    panels: null,
+    show(name) {
+      for (const [key, panel] of Object.entries(api.panels || {})) panel.hidden = key !== name;
+      for (const [key, btn] of Object.entries(buttons)) btn.setAttribute('aria-selected', String(key === name));
+      api.current = name;
+    },
+    current: 'breakdown',
+  };
+  for (const [name, label] of [['breakdown', t('breakdown')], ['full', t('fullArticle')], ['md', t('markdown')]]) {
+    const btn = el('button', { type: 'button', class: 'tab', role: 'tab', text: label, 'aria-selected': 'false' });
+    btn.addEventListener('click', () => api.show(name));
+    buttons[name] = btn;
+    bar.append(btn);
+  }
+  return api;
+}
+
+/** Jump from a topic block to the same section inside the full article. */
+function gotoSection(state, topic) {
+  state.tabs?.show('full');
+  const target = document.getElementById(topic.id);
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+/* ------------------------------------------------------------ full article */
+
+function fullArticle(root, data, lang, state) {
   const grid = el('div', { class: 'article-grid' });
   const panel = el('div', { class: 'panel' });
   const prose = el('div', { class: 'prose' });
   prose.innerHTML = root.innerHTML;
+
+  const infobox = prose.querySelector('.infobox, table.infobox');
+  const factbox = infobox ? factsBox(factsFrom(infobox), data.title) : null;
+  if (infobox) infobox.remove();
+
+  // Tables scroll on their own instead of breaking the column.
+  prose.querySelectorAll('table').forEach((table) => {
+    const scroll = el('div', { class: 'table-scroll', tabindex: '0' });
+    table.replaceWith(scroll);
+    scroll.append(table);
+  });
+
   panel.append(prose);
   grid.append(panel);
-
-  const infobox = root.querySelector('.infobox, table.infobox');
-  const factbox = infobox ? infoboxToFactbox(infobox, data.title) : null;
-  if (infobox) prose.querySelector('.infobox')?.remove();
 
   const toc = buildToc(data.sections);
   if (toc || factbox) {
@@ -101,106 +273,30 @@ function render(ctx, mount, { data, root, lang }) {
     if (factbox) rail.append(factbox);
     grid.append(rail);
   }
-  panelRead.append(grid);
 
-  // Gallery
+  const wrap = el('div');
+  wrap.append(grid);
+
   const gallery = buildGallery(root);
-  if (gallery) panelRead.append(gallery);
+  if (gallery) wrap.append(gallery);
 
-  // Sources
-  panelRead.append(sourcesBlock(data, lang, wikiUrl));
-
-  mount.append(panelRead);
-  mount.append(panelMd);
-
-  // Related
-  loadRelated(ctx, mount, { title: data.title, lang });
-
-  // TOC active-section highlight
   if (toc) observeToc(panel);
+  return wrap;
 }
 
-function actions(ctx, { title, lang, wikiUrl, root, data }) {
-  const row = el('div', { class: 'article-actions' });
-  const id = `article:${lang}:${title}`;
-
-  const save = el('button', { type: 'button', class: `btn btn-ghost${ctx.isBookmarked(id) ? ' is-on' : ''}`, html: `${icon('bookmark')}${esc(ctx.isBookmarked(id) ? t('saved') : t('bookmarks'))}` });
-  save.addEventListener('click', () => {
-    const saved = ctx.toggleBookmark({
-      id, title, lang, url: articleHref(title, lang),
-      extract: clamp(root.querySelector('p')?.textContent || '', 160),
-    });
-    save.innerHTML = `${icon('bookmark')}${esc(saved ? t('saved') : t('bookmarks'))}`;
-    save.classList.toggle('is-on', saved);
-    toast(saved ? t('saved') : t('remove'));
-  });
-  row.append(save);
-
-  const copy = el('button', { type: 'button', class: 'btn btn-ghost', html: `${icon('copy')}${esc(t('copyMarkdown'))}` });
-  copy.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(articleToMarkdown(root, { title, url: wikiUrl }));
-      toast(t('copied'));
-    } catch { toast(t('errorBody')); }
-  });
-  row.append(copy);
-
-  const dl = el('button', { type: 'button', class: 'btn btn-ghost', html: `${icon('download')}${esc(t('downloadMarkdown'))}` });
-  dl.addEventListener('click', () => download(`${title.replace(/[^\w\s-]/g, '')}.md`, articleToMarkdown(root, { title, url: wikiUrl })));
-  row.append(dl);
-
-  const share = el('button', { type: 'button', class: 'btn btn-ghost', html: `${icon('share')}${esc(t('share'))}` });
-  share.addEventListener('click', async () => {
-    const url = `${location.origin}${location.pathname}${articleHref(title, lang)}`;
-    if (navigator.share) { try { await navigator.share({ title, url }); } catch { /* cancelled */ } }
-    else { try { await navigator.clipboard.writeText(url); toast(t('linkCopied')); } catch { /* ignore */ } }
-  });
-  row.append(share);
-
-  row.append(el('a', { class: 'btn btn-ghost', href: wikiUrl, target: '_blank', rel: 'noopener noreferrer', html: `${esc(t('readOnWikipedia'))} ↗` }));
-
-  // Offer another language when the article exists in one.
-  const alt = (data.langlinks || []).find((l) => l.lang === 'hi') || (data.langlinks || [])[0];
-  if (alt && alt.lang !== lang) {
-    row.append(el('a', {
-      class: 'btn btn-ghost', href: articleHref(alt.title, alt.lang),
-      html: `${icon('globe')}${esc(alt.lang.toUpperCase())}`,
-    }));
+function factsFrom(infobox) {
+  const facts = [];
+  for (const tr of infobox.querySelectorAll('tr')) {
+    const th = tr.querySelector('th');
+    const td = tr.querySelector('td');
+    if (!th || !td) continue;
+    const label = th.textContent.replace(/\s+/g, ' ').trim();
+    const value = td.textContent.replace(/\s+/g, ' ').trim();
+    if (!label || !value || label.length > 60 || value.length > 260) continue;
+    facts.push({ label, value });
+    if (facts.length >= 14) break;
   }
-  return row;
-}
-
-function buildTabs(ctx, { data, root, lang, wikiUrl }) {
-  const tabs = el('div', { class: 'tabs', role: 'tablist' });
-  const panelRead = el('div', { class: 'tabpanel', role: 'tabpanel', id: 'tab-read' });
-  const panelMd = el('div', { class: 'tabpanel', role: 'tabpanel', id: 'tab-md', hidden: true });
-
-  const mk = (label, target) => {
-    const btn = el('button', { type: 'button', class: 'tab', role: 'tab', text: label, 'aria-selected': target === 'read' ? 'true' : 'false' });
-    btn.addEventListener('click', () => {
-      const readOn = target === 'read';
-      panelRead.hidden = !readOn;
-      panelMd.hidden = readOn;
-      tabs.querySelectorAll('.tab').forEach((b) => b.setAttribute('aria-selected', String(b === btn)));
-    });
-    return btn;
-  };
-  tabs.append(mk(t('readArticle'), 'read'));
-  tabs.append(mk(t('copyMarkdown'), 'md'));
-
-  const md = el('div', { class: 'md' });
-  const pre = el('pre', { class: 'md-raw' });
-  pre.textContent = articleToMarkdown(root, { title: data.title, url: wikiUrl });
-  const mdActions = el('div', { class: 'md-actions' });
-  const dl = el('button', { type: 'button', class: 'btn btn-primary', html: `${icon('download')}${esc(t('downloadMarkdown'))}` });
-  dl.addEventListener('click', () => download(`${data.title.replace(/[^\w\s-]/g, '')}.md`, pre.textContent));
-  const cp = el('button', { type: 'button', class: 'btn btn-ghost', html: `${icon('copy')}${esc(t('copyMarkdown'))}` });
-  cp.addEventListener('click', async () => { try { await navigator.clipboard.writeText(pre.textContent); toast(t('copied')); } catch { /* ignore */ } });
-  mdActions.append(dl, cp);
-  md.append(mdActions, pre);
-  panelMd.append(md);
-
-  return { tabs, panelRead, panelMd };
+  return facts;
 }
 
 function buildToc(sections) {
@@ -210,15 +306,10 @@ function buildToc(sections) {
   toc.append(el('h3', { text: t('sections') }));
   for (const s of sections) {
     if (s.level > 3) continue;
-    const a = el('a', {
-      href: `#${s.id}`,
-      text: s.line,
-      class: s.level === 3 ? 'lvl3' : '',
-    });
+    const a = el('a', { href: `#${s.id}`, text: s.line, class: s.level === 3 ? 'lvl3' : '' });
     a.addEventListener('click', (event) => {
       event.preventDefault();
       document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      history.replaceState(null, '', `${location.pathname}${location.hash.split('?')[0]}`);
     });
     toc.append(a);
   }
@@ -230,8 +321,7 @@ function observeToc(panel) {
   if (!links.length || !('IntersectionObserver' in window)) return;
   const map = new Map();
   links.forEach((a) => {
-    const id = a.getAttribute('href').slice(1);
-    const target = document.getElementById(id);
+    const target = document.getElementById(a.getAttribute('href').slice(1));
     if (target) map.set(target, a);
   });
   const observer = new IntersectionObserver((entries) => {
@@ -242,33 +332,6 @@ function observeToc(panel) {
     }
   }, { rootMargin: '-80px 0px -70% 0px', threshold: 0 });
   map.forEach((_, target) => observer.observe(target));
-}
-
-function infoboxToFactbox(infobox, title) {
-  const rows = [...infobox.querySelectorAll('tr')];
-  const facts = [];
-  for (const tr of rows) {
-    const th = tr.querySelector('th');
-    const td = tr.querySelector('td');
-    if (!th || !td) continue;
-    const label = th.textContent.replace(/\s+/g, ' ').trim();
-    const value = td.textContent.replace(/\s+/g, ' ').trim();
-    if (!label || !value || label.length > 60 || value.length > 260) continue;
-    facts.push({ label, value });
-    if (facts.length >= 14) break;
-  }
-  if (!facts.length) return null;
-  const box = el('div', { class: 'factbox' });
-  box.append(el('h3', { html: `${esc(t('facts'))}<span class="factbox-src">${esc(title)}</span>` }));
-  const dl = el('dl');
-  for (const f of facts) {
-    const row = el('div', { class: 'row' });
-    row.append(el('dt', { text: f.label }));
-    row.append(el('dd', { text: f.value }));
-    dl.append(row);
-  }
-  box.append(dl);
-  return box;
 }
 
 function buildGallery(root) {
@@ -296,16 +359,76 @@ function buildGallery(root) {
   return section;
 }
 
-function sourcesBlock(data, lang, wikiUrl) {
-  const group = el('div', { class: 'src-group', style: 'margin-top:26px' });
-  group.append(el('h3', { text: t('sourcesHeading') }));
-  const list = el('ul', { class: 'line-list' });
-  const li = el('li');
-  li.append(el('a', { href: wikiUrl, target: '_blank', rel: 'noopener noreferrer', text: `Wikipedia (${lang}) — ${data.title}` }));
-  list.append(li);
-  group.append(list);
-  group.append(el('p', { class: 'src-credit', text: t('attribution') }));
-  return group;
+/* --------------------------------------------------------- language bar */
+
+// Languages a reader is most likely to want, in order. Anything not listed
+// follows, alphabetically, so the bar shows हिन्दी rather than Aymara.
+const LANG_ORDER = ['hi', 'bn', 'ta', 'te', 'mr', 'gu', 'kn', 'ml', 'pa', 'ur', 'sa', 'as', 'or', 'ne', 'si',
+  'ar', 'zh', 'ja', 'ru', 'fr', 'de', 'es', 'pt', 'it', 'id', 'fa', 'tr', 'ko', 'nl', 'pl', 'vi', 'th'];
+
+function languageBar(state) {
+  const rank = (code) => {
+    const i = LANG_ORDER.indexOf(code);
+    return i === -1 ? LANG_ORDER.length + code.charCodeAt(0) : i;
+  };
+  const links = (state.data.langlinks || [])
+    .filter((l) => l.lang !== state.lang)
+    .sort((a, b) => rank(a.lang) - rank(b.lang))
+    .slice(0, 8);
+  if (!links.length) return el('div');
+  const bar = el('div', { class: 'langbar' });
+  const inner = el('div', { class: 'langbar-inner' });
+  inner.append(el('span', { text: `${t('alsoAvailableIn')}:` }));
+  const row = el('div', { class: 'pill-row' });
+  for (const link of links) {
+    const label = CONTENT_LANGS.find((l) => l.code === link.lang)?.native || link.lang.toUpperCase();
+    row.append(el('a', { class: 'pill', href: articleHref(link.title, link.lang), text: label }));
+  }
+  inner.append(row);
+  bar.append(inner);
+  return bar;
+}
+
+/* --------------------------------------------------------------- actions */
+
+function actions(ctx, state) {
+  const { data, lang, wikiUrl, root } = state;
+  const row = el('div', { class: 'article-actions' });
+  const id = `article:${lang}:${data.title}`;
+
+  const save = el('button', { type: 'button', class: `btn btn-ghost${ctx.isBookmarked(id) ? ' is-on' : ''}`, html: `${icon('bookmark')}<span>${esc(ctx.isBookmarked(id) ? t('saved') : t('bookmarks'))}</span>` });
+  save.addEventListener('click', () => {
+    const saved = ctx.toggleBookmark({
+      id, title: data.title, lang, url: articleHref(data.title, lang),
+      extract: clamp(root.querySelector('p')?.textContent || '', 160),
+    });
+    save.innerHTML = `${icon('bookmark')}<span>${esc(saved ? t('saved') : t('bookmarks'))}</span>`;
+    save.classList.toggle('is-on', saved);
+    toast(saved ? t('saved') : t('remove'));
+  });
+  row.append(save);
+
+  const copy = el('button', { type: 'button', class: 'btn btn-ghost', html: `${icon('copy')}<span>${esc(t('copyMarkdown'))}</span>` });
+  copy.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(articleToMarkdown(root, { title: data.title, url: wikiUrl })); toast(t('copied')); }
+    catch { toast(t('errorBody')); }
+  });
+  row.append(copy);
+
+  const dl = el('button', { type: 'button', class: 'btn btn-ghost', html: `${icon('download')}<span>${esc(t('downloadMarkdown'))}</span>` });
+  dl.addEventListener('click', () => download(`${data.title.replace(/[^\w\s-]/g, '')}.md`, articleToMarkdown(root, { title: data.title, url: wikiUrl })));
+  row.append(dl);
+
+  const share = el('button', { type: 'button', class: 'btn btn-ghost', html: `${icon('share')}<span>${esc(t('share'))}</span>` });
+  share.addEventListener('click', async () => {
+    const url = `${location.origin}${location.pathname}${articleHref(data.title, lang)}`;
+    if (navigator.share) { try { await navigator.share({ title: data.title, url }); } catch { /* cancelled */ } }
+    else { try { await navigator.clipboard.writeText(url); toast(t('linkCopied')); } catch { /* ignore */ } }
+  });
+  row.append(share);
+
+  row.append(el('a', { class: 'btn btn-ghost', href: wikiUrl, target: '_blank', rel: 'noopener noreferrer', html: `${esc(t('readOnWikipedia'))} ↗` }));
+  return row;
 }
 
 async function loadRelated(ctx, mount, { title, lang }) {
