@@ -285,6 +285,34 @@ export async function extract(lang, title, { signal } = {}) {
  * headers, so a browser cannot read it. The Action API's `morelike:` search
  * keyword gives the same thing and is CORS-enabled, so that is what we use.
  */
+/**
+ * When a specific revision was saved, and the permalink that pins it (F-18).
+ * The parse response gives the revision id; this turns it into a date and a
+ * URL a reader can check later, and a link that still works after the article
+ * has moved on.
+ */
+export async function revisionInfo(lang, revid, { signal, project = 'wikipedia' } = {}) {
+  if (!revid) return null;
+  try {
+    const url = actionUrl(lang, {
+      action: 'query', prop: 'revisions', revids: String(revid),
+      rvprop: 'timestamp|ids|user|comment', format: 'json', formatversion: '2',
+    }, project);
+    const data = await get(url, { ttl: TTL.article, signal });
+    const rev = data.query?.pages?.[0]?.revisions?.[0];
+    if (!rev) return null;
+    return {
+      revid: rev.revid,
+      timestamp: rev.timestamp,
+      user: rev.user,
+      comment: rev.comment,
+      url: `https://${lang}.${project}.org/w/index.php?oldid=${rev.revid}`,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function related(lang, title, { signal, limit = 8 } = {}) {
   try {
     const url = actionUrl(lang, {
@@ -400,18 +428,24 @@ export async function imageInfo(fileTitle, { signal } = {}) {
   url.searchParams.set('formatversion', '2');
   url.searchParams.set('origin', '*');
   const data = await get(url.toString(), { ttl: TTL.wikidata, signal });
-  const info = data.query?.pages?.[0]?.imageinfo?.[0];
-  if (!info) return null;
+  const page = data.query?.pages?.[0];
+  const info = page?.imageinfo?.[0];
+  if (!info || page.missing) return null;
   const meta = info.extmetadata || {};
   const pick = (k) => (meta[k]?.value ? String(meta[k].value).replace(/<[^>]*>/g, '').trim() : '');
   return {
+    // The resolved title matters: what we asked for may have been a guess.
+    title: page.title,
+    filePage: `https://commons.wikimedia.org/wiki/${encodeURIComponent(page.title.replace(/ /g, '_'))}`,
     url: info.url,
     width: info.width,
     height: info.height,
     artist: pick('Artist'),
     credit: pick('Credit'),
     licence: pick('LicenseShortName') || pick('License'),
-    licenceUrl: pick('LicenseUrl'),
+    licenceUrl: pick('LicenseUrl') || pick('LicenseUrlShort'),
+    usageTerms: pick('UsageTerms'),
+    attributionRequired: pick('AttributionRequired'),
     description: pick('ImageDescription'),
   };
 }

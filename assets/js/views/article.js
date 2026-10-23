@@ -13,10 +13,10 @@
  * in, so the answer is one tap away in the reader's own language.
  */
 
-import { el, clamp, cleanUrl } from '../ui.js';
+import { el, clamp, cleanUrl, esc, prefersReducedMotion } from '../ui.js';
 import { icon } from '../icons.js';
 import { t } from '../i18n.js';
-import { clean, wordCount, collectImages } from '../parse.js';
+import { clean, wordCount, collectImages, proseText } from '../parse.js';
 import { composeAnswer } from '../answer.js';
 import { articleToMarkdown, download } from '../markdown.js';
 import {
@@ -26,7 +26,7 @@ import { sectionHead, card, errorBox, emptyState, toast, breadcrumbs } from '../
 import { mountOpenSources } from './library.js';
 import { articleHref, searchHref } from '../router.js';
 import { SITE } from '../config.js';
-import { describeArticle } from '../meta.js';
+import { updateRouteMetadata, setArticleStructuredData, markContentLang, pathFor } from '../meta.js';
 import * as api from '../api.js';
 import { CONTENT_LANGS } from '../config.js';
 
@@ -70,11 +70,26 @@ export async function renderArticle(ctx, route) {
 async function build(ctx, mount, state, title, retry = 0) {
   try {
     state.data = await ctx.api.article(state.lang, title, { project: state.project });
+    ctx.api.revisionInfo(state.lang, state.data.revid, { project: state.project })
+      .then((rev) => {
+        state.revision = rev;
+        renderRevisionLine(state);
+        // The sources block shows the revision too, so replace it in place.
+        const old = document.getElementById('sourcesBlock');
+        if (old && rev) {
+          const fresh = sourcesGroup({
+            lang: state.lang, title: state.data.title, wikiUrl: state.wikiUrl,
+            citations: state.answer?.citations || [], project: state.project, revision: rev,
+          });
+          fresh.id = 'sourcesBlock';
+          old.replaceWith(fresh);
+        }
+      })
+      .catch(() => {});
     state.root = clean(state.data.html);
     state.wikiUrl = `https://${state.lang}.${state.project}.org/wiki/${encodeURIComponent(state.data.title.replace(/ /g, '_'))}`;
     render(ctx, mount, state);
-    // The page description comes from the article, not the site default.
-    describeArticle(state.root.querySelector('p')?.textContent || state.data.title);
+    publishMetadata(ctx, state);
     ctx.pushHistory({
       id: `article:${state.lang}:${state.data.title}`, kind: 'article',
       title: state.data.title, lang: state.lang, url: articleHref(state.data.title, state.lang),
@@ -120,9 +135,9 @@ function render(ctx, mount, state) {
   mount.append(tabs.bar);
   state.tabs = tabs;
 
-  const panelBreakdown = el('div', { class: 'tabpanel', role: 'tabpanel' });
-  const panelFull = el('div', { class: 'tabpanel', role: 'tabpanel', hidden: true });
-  const panelMd = el('div', { class: 'tabpanel', role: 'tabpanel', hidden: true });
+  const panelBreakdown = el('div', { class: 'tabpanel', role: 'tabpanel', id: 'tab-panel-breakdown', 'aria-labelledby': 'tab-breakdown', tabindex: '0' });
+  const panelFull = el('div', { class: 'tabpanel', role: 'tabpanel', id: 'tab-panel-full', 'aria-labelledby': 'tab-full', hidden: true });
+  const panelMd = el('div', { class: 'tabpanel', role: 'tabpanel', id: 'tab-panel-md', 'aria-labelledby': 'tab-md', hidden: true });
 
   // Breakdown — filled by repaintBreakdown, so depth changes redraw only this.
   const breakdownMount = el('div');
@@ -151,7 +166,6 @@ function render(ctx, mount, state) {
 
   repaintBreakdown(ctx, state);
   loadRelated(ctx, mount, { title: data.title, lang });
-  structuredData(ctx, state);
   openDeepLinkedSection(state, routeOf(ctx));
 }
 
@@ -185,6 +199,7 @@ async function repaintBreakdown(ctx, state) {
   answer.revid = state.data.revid;
   state.breakdown = answer;
 
+  state.answer = answer;
   mount.innerHTML = '';
   mount.append(jumper(state, answer));
   if (answer.leadImage) {
@@ -202,7 +217,7 @@ async function repaintBreakdown(ctx, state) {
   }));
 
   const qa = el('div', { class: 'qa-answer' });
-  qa.append(el('h2', { text: t('answer') }));
+  qa.append(el('h2', { text: t('coreAnswer') }));
   const list = el('ul', { class: 'line-list' });
   (answer.core.length ? answer.core : [clamp(answer.leadText, 320)]).forEach((s) => list.append(el('li', { text: s })));
   qa.append(list);
@@ -233,37 +248,58 @@ async function repaintBreakdown(ctx, state) {
   const facts = factsBox(answer.facts, answer.title);
   if (facts) mount.append(facts);
 
-  mount.append(sourcesGroup({ lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl, citations: answer.citations, project: state.project }));
+  const sources = sourcesGroup({
+    lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl,
+    citations: answer.citations, project: state.project, revision: state.revision,
+  });
+  sources.id = 'sourcesBlock';
+  mount.append(sources);
   mount.append(methodNote(answer.method, { revid: answer.revid, lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl }));
   mount.append(scopeNote(t('scopeAnswer')));
   mount.append(feedback(ctx, `article:${state.lang}:${answer.title}`));
 }
 
 /**
- * The section jumper.
+ * The section jumper, as a reading-progress contents list.
  *
- * Every section of the article, numbered, in a panel that stays collapsed
- * until it is asked for — the header's jump button, or the summary line here.
- * Choosing a section scrolls to its block and opens it.
+ * The current practice for long articles is a contents panel that shows how
+ * far through the reader is, marks which sections are done, and stays out of
+ * the way until it is asked for. So: collapsed by default, opened from the
+ * header button or the button above the tabs, and closed again by choosing a
+ * section or pressing Close.
+ *
+ * Every item is a real link with a stable id, `aria-current` marks the section
+ * being read, and the progress is given as text as well as a bar, so it is not
+ * colour alone.
  */
 function jumper(state, answer) {
+  const topics = answer.topics || [];
   const wrap = el('div', { class: 'toc-jump', id: 'sectionJump', hidden: true });
+
+  const minutes = Math.max(1, Math.round(wordCount(state.data.html) / 220));
   const head = el('div', { class: 'toc-jump-head' });
-  head.append(el('h2', { text: `${t('jumpToSection')} (${answer.topics.length})` }));
+  const title = el('div');
+  title.append(el('h2', { text: t('jumpToSection') }));
+  const meta = el('p', { class: 'toc-jump-meta' });
+  meta.append(el('span', { id: 'tocRead', text: `0 ${t('ofWord')} ${topics.length} ${t('sectionsWord')}` }));
+  meta.append(el('span', { text: ` · ${t('aboutWord')} ${minutes} ${t('minLeft')}` }));
+  title.append(meta);
+  head.append(title);
   const close = el('button', { type: 'button', class: 'btn btn-ghost btn-sm', text: t('close') });
-  close.addEventListener('click', () => {
-    wrap.setAttribute('hidden', '');
-    document.getElementById('tocBtn')?.setAttribute('aria-expanded', 'false');
-  });
   head.append(close);
   wrap.append(head);
 
+  const bar = el('div', { class: 'toc-jump-bar', 'aria-hidden': 'true', html: '<span></span>' });
+  wrap.append(bar);
+
   const list = el('ol', { class: 'toc-jump-list' });
-  answer.topics.forEach((topic) => {
-    const li = el('li');
+  const links = new Map();
+  topics.forEach((topic) => {
+    const li = el('li', { class: 'is-unread' });
     const a = el('a', { href: `#${topic.id}` });
+    a.append(el('span', { class: 'toc-mark', 'aria-hidden': 'true' }));
     a.append(el('span', { class: 'topic-num', text: String(topic.number) }));
-    a.append(el('span', { text: topic.title }));
+    a.append(el('span', { class: 'toc-label', text: topic.title }));
     a.addEventListener('click', (event) => {
       event.preventDefault();
       const target = document.getElementById(`topic-${topic.id}`);
@@ -271,50 +307,151 @@ function jumper(state, answer) {
       // Keep the section in the address bar, so the link can be shared.
       const base = location.hash.split('?')[0];
       history.replaceState(null, '', `${base}?s=${encodeURIComponent(topic.id)}`);
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      // Opening a section you asked for is the least surprising behaviour.
+      target.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
       if (!target.classList.contains('is-open')) target.querySelector('.topic-more')?.click();
-      wrap.setAttribute('hidden', '');
-      document.getElementById('tocBtn')?.setAttribute('aria-expanded', 'false');
+      hide();
     });
     li.append(a);
-    list.append(list.children.length ? li : li);
+    links.set(topic.id, li);
+    list.append(li);
   });
   wrap.append(list);
 
-  // A quiet line under the tabs that opens the same panel.
-  const opener = el('button', { type: 'button', class: 'toc-open btn btn-ghost btn-sm', html: `${icon('toc')}<span>${esc(t('jumpToSection'))}</span>` });
-  opener.addEventListener('click', () => {
+  function hide() {
+    wrap.setAttribute('hidden', '');
+    document.getElementById('tocBtn')?.setAttribute('aria-expanded', 'false');
+  }
+  function show() {
     wrap.removeAttribute('hidden');
     document.getElementById('tocBtn')?.setAttribute('aria-expanded', 'true');
-    wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    wrap.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
+  }
+  close.addEventListener('click', hide);
+
+  // Track the reader's position and mark sections read / being read.
+  const observer = observeSections(topics, links, bar);
+  if (observer) state.tocObserver = observer;
+
+  const opener = el('button', {
+    type: 'button', class: 'toc-open btn btn-ghost btn-sm',
+    html: `${icon('toc')}<span>${esc(t('jumpToSection'))} · ${topics.length}</span>`,
   });
+  opener.addEventListener('click', show);
+
   const holder = el('div');
   holder.append(opener, wrap);
   return holder;
 }
 
+/**
+ * Mark a section read once its heading has passed, and the current one as it
+ * arrives. The counts are text, so the state is not carried by colour alone.
+ */
+function observeSections(topics, links, bar) {
+  if (!('IntersectionObserver' in window) || !topics.length) return null;
+  const seen = new Set();
+  let current = '';
+  const readNode = () => document.getElementById('tocRead');
+
+  const paint = () => {
+    const total = topics.length || 1;
+    const pct = Math.round((seen.size / total) * 100);
+    const fill = bar.querySelector('span');
+    if (fill) fill.style.width = `${pct}%`;
+    const node = readNode();
+    if (node) node.textContent = `${seen.size} ${t('ofWord')} ${topics.length} ${t('sectionsWord')} · ${pct}% ${t('readWord')}`;
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      const id = entry.target.id.replace(/^topic-/, '');
+      const li = links.get(id);
+      if (!li) continue;
+      if (entry.isIntersecting && id !== current) {
+        current = id;
+        for (const [, other] of links) {
+          other.classList.remove('is-current');
+          other.querySelector('a')?.removeAttribute('aria-current');
+        }
+        li.classList.add('is-current');
+        li.querySelector('a')?.setAttribute('aria-current', 'true');
+      }
+      // A section above the reading line counts as read.
+      if (entry.boundingClientRect.top < 0) {
+        seen.add(id);
+        li.classList.remove('is-unread');
+        li.classList.add('is-read');
+      }
+    }
+    paint();
+  }, { rootMargin: '-90px 0px -60% 0px', threshold: 0 });
+
+  for (const topic of topics) {
+    const target = document.getElementById(`topic-${topic.id}`);
+    if (target) observer.observe(target);
+  }
+  paint();
+  return observer;
+}
+
 /* ------------------------------------------------------------------ tabs */
 
+/**
+ * The article tabs, following the WAI-ARIA tabs pattern (F-07).
+ *
+ * Every tab and panel has an id, `aria-controls` and `aria-labelledby`; the
+ * tablist has one roving tab stop; Arrow keys move between tabs (wrapping),
+ * Home/End jump to the ends, and focus follows selection.
+ */
 function buildTabs() {
-  const bar = el('div', { class: 'tabs', role: 'tablist' });
+  const TABS = [
+    { name: 'breakdown', label: t('breakdown') },
+    { name: 'full', label: t('fullArticle') },
+    { name: 'md', label: t('markdown') },
+  ];
+  const uid = 'tab';
+  const bar = el('div', { class: 'tabs', role: 'tablist', 'aria-label': t('breakdown') });
   const buttons = {};
   const api = {
     bar,
     panels: null,
-    show(name) {
-      for (const [key, panel] of Object.entries(api.panels || {})) panel.hidden = key !== name;
-      for (const [key, btn] of Object.entries(buttons)) btn.setAttribute('aria-selected', String(key === name));
+    current: TABS[0].name,
+    show(name, { focus = false } = {}) {
+      for (const [key, panel] of Object.entries(api.panels || {})) {
+        const active = key === name;
+        panel.hidden = !active;
+        if (active) panel.setAttribute('tabindex', '0'); else panel.removeAttribute('tabindex');
+      }
+      for (const [key, btn] of Object.entries(buttons)) {
+        const active = key === name;
+        btn.setAttribute('aria-selected', String(active));
+        btn.tabIndex = active ? 0 : -1;
+        if (active && focus) btn.focus();
+      }
       api.current = name;
     },
-    current: 'breakdown',
   };
-  for (const [name, label] of [['breakdown', t('breakdown')], ['full', t('fullArticle')], ['md', t('markdown')]]) {
-    const btn = el('button', { type: 'button', class: 'tab', role: 'tab', text: label, 'aria-selected': 'false' });
+
+  TABS.forEach(({ name, label }, index) => {
+    const btn = el('button', {
+      type: 'button', class: 'tab', role: 'tab', id: `${uid}-${name}`,
+      'aria-selected': String(index === 0), 'aria-controls': `${uid}-panel-${name}`,
+      tabIndex: index === 0 ? 0 : -1, text: label,
+    });
     btn.addEventListener('click', () => api.show(name));
+    btn.addEventListener('keydown', (event) => {
+      const keys = { ArrowRight: 1, ArrowLeft: -1 };
+      let next = null;
+      if (event.key in keys) next = (index + keys[event.key] + TABS.length) % TABS.length;
+      else if (event.key === 'Home') next = 0;
+      else if (event.key === 'End') next = TABS.length - 1;
+      if (next == null) return;
+      event.preventDefault();
+      api.show(TABS[next].name, { focus: true });
+    });
     buttons[name] = btn;
     bar.append(btn);
-  }
+  });
   return api;
 }
 
@@ -366,10 +503,19 @@ function fullArticle(root, data, lang, state) {
   const gallery = buildGallery(root, data.title);
   if (gallery) wrap.append(gallery);
 
-  const references = referencesBlock(root.references || []);
+  // An article whose source carries no reference list is labelled as such,
+  // not presented as verified (F-04).
+  const references = (root.references || []).length
+    ? referencesBlock(root.references)
+    : emptyReferences();
   if (references) wrap.append(references);
 
-  if (toc) observeToc(panel);
+  if (toc) {
+    const observer = observeToc(panel);
+    // The audit's lifecycle point (F-17): an observer left running after the
+    // reader navigates away is a leak. Hand it to the route cleanup.
+    if (observer) ctx.onCleanup(() => observer.disconnect());
+  }
   return wrap;
 }
 
@@ -406,8 +552,9 @@ function buildToc(sections) {
 }
 
 function observeToc(panel) {
-  const links = [...document.querySelectorAll('.toc a')];
-  if (!links.length || !('IntersectionObserver' in window)) return;
+  // Scoped to this article's own contents list, not every .toc on the page.
+  const links = [...(panel.querySelectorAll('.toc a') || [])];
+  if (!links.length || !('IntersectionObserver' in window)) return null;
   const map = new Map();
   links.forEach((a) => {
     const target = document.getElementById(a.getAttribute('href').slice(1));
@@ -421,6 +568,7 @@ function observeToc(panel) {
     }
   }, { rootMargin: '-80px 0px -70% 0px', threshold: 0 });
   map.forEach((_, target) => observer.observe(target));
+  return observer;
 }
 
 function buildGallery(root, title) {
@@ -433,53 +581,91 @@ function buildGallery(root, title) {
     const figure = el('figure');
     figure.append(el('img', { src: img.src, alt: img.alt, loading: 'lazy', decoding: 'async' }));
     const caption = el('figcaption');
-    if (img.caption) caption.append(el('span', { text: clamp(img.caption, 160) }));
-    // The licence is filled in from Commons below; text licences do not cover
-    // the pictures, so each one is checked on its own.
-    const credit = el('span', { class: 'imgcredit', text: img.file ? `${img.file} · ${t('loading')}` : '' });
+    if (img.caption) caption.append(el('span', { class: 'img-caption', text: clamp(img.caption, 160) }));
+    // Each picture is checked on its own: a text licence does not cover the
+    // media, and Commons files differ (F-06).
+    const credit = el('span', { class: 'imgcredit' });
+    if (img.file) {
+      credit.append(document.createTextNode(`${t('loading')}…`));
+      loadImageCredit(img.file, credit, figure);
+    } else {
+      credit.append(document.createTextNode(t('rightsUnknown')));
+    }
     caption.append(credit);
     figure.append(caption);
     gallery.append(figure);
-    if (img.file) loadImageCredit(img.file, credit);
   }
   section.append(gallery);
   return section;
 }
 
-/** Ask Commons for one picture's licence and author, and show them. */
-async function loadImageCredit(file, node) {
+/**
+ * Ask Commons for one picture's author and licence, then show them with a link
+ * to the file's own description page and to the licence itself. Where the
+ * source states nothing, say so rather than implying it is free.
+ */
+async function loadImageCredit(file, node, figure) {
+  const fallback = () => { node.textContent = `${file} · ${t('rightsUnknown')}`; };
   try {
     const info = await api.imageInfo(file);
-    if (!info) { node.textContent = file; return; }
-    const bits = [file];
-    if (info.artist) bits.push(`${t('imageCredit')}: ${clamp(info.artist, 60)}`);
-    if (info.licence) bits.push(`${t('imageLicence')}: ${info.licence}`);
-    node.textContent = bits.join(' · ');
-    node.title = info.description || file;
+    if (!info) { fallback(); return; }
+    node.textContent = '';
+
+    const name = info.title || file;
+    if (info.filePage) {
+      node.append(el('a', { href: info.filePage, target: '_blank', rel: 'noopener noreferrer', text: name }));
+      const image = figure.querySelector('img');
+      if (image) {
+        const link = el('a', { href: info.filePage, target: '_blank', rel: 'noopener noreferrer', 'aria-label': name });
+        image.replaceWith(link);
+        link.append(image);
+      }
+    } else {
+      node.append(document.createTextNode(name));
+    }
+
+    const who = info.artist || info.credit;
+    if (who) node.append(document.createTextNode(` · ${t('imageCredit')}: ${clamp(who, 70)}`));
+
+    node.append(document.createTextNode(` · ${t('imageLicence')}: `));
+    if (info.licence && info.licenceUrl) {
+      node.append(el('a', { href: info.licenceUrl, target: '_blank', rel: 'noopener noreferrer', text: info.licence }));
+    } else if (info.licence) {
+      node.append(document.createTextNode(info.licence));
+    } else {
+      node.append(document.createTextNode(t('rightsUnknown')));
+    }
+    if (info.description) node.title = clamp(info.description, 200);
   } catch {
-    node.textContent = file;
+    fallback();
   }
 }
 
-/** Article structured data, using only facts that are actually on the page. */
-function structuredData(ctx, state) {
-  const id = 'indusmova-article-ld';
-  document.getElementById(id)?.remove();
-  const script = document.createElement('script');
-  script.type = 'application/ld+json';
-  script.id = id;
-  script.textContent = JSON.stringify({
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: state.data.title,
-    url: `${SITE.origin}${articleHref(state.data.title, state.lang, state.project).slice(1)}`,
-    inLanguage: state.lang,
-    isBasedOn: state.wikiUrl,
-    license: 'https://creativecommons.org/licenses/by-sa/4.0/',
-    publisher: { '@type': 'Organization', name: SITE.name, url: SITE.origin },
-    isAccessibleForFree: true,
+/**
+ * Everything a crawler or a link preview needs, from the article that loaded:
+ * a unique title and description, a clean canonical, matching Open Graph and
+ * Twitter values, and Article structured data with only real facts (F-05).
+ */
+function publishMetadata(ctx, state) {
+  const lead = proseText(state.root.querySelector('p') || state.root).slice(0, 300);
+  const title = `${state.data.title} — indusmova`;
+  updateRouteMetadata(ctx.route, {
+    title,
+    description: lead || state.data.title,
+    image: state.data.thumb || undefined,
+    type: 'article',
   });
-  document.head.append(script);
+  setArticleStructuredData({
+    headline: state.data.title,
+    description: lead.slice(0, 200),
+    url: pathFor(ctx.route),
+    lang: state.lang,
+    isBasedOn: state.wikiUrl,
+    // Only when the source actually reported one.
+    dateModified: state.revision?.timestamp || undefined,
+  });
+  // The chrome may be English while the article is Hindi or Urdu.
+  markContentLang(document.getElementById('main'), state.lang);
 }
 
 /** Honour a ?s=section deep link once the blocks exist. */
@@ -495,6 +681,38 @@ function openDeepLinkedSection(state, route) {
 }
 
 function routeOf(ctx) { return ctx.route || {}; }
+
+/** What to show when the source article has no references at all. */
+function emptyReferences() {
+  const box = el('section', { class: 'sec' });
+  box.append(el('div', { class: 'sec-head', html: `<h2>${esc(t('references'))}</h2><span class="more">0</span>` }));
+  box.append(el('p', { class: 'src-credit', text: t('noReferences') }));
+  return box;
+}
+
+/**
+ * "Source revision as of 14 October 2026", linked to that exact revision, so a
+ * reader can see what the article said when they read it (F-18). The ordinary
+ * "Read on Wikipedia" link still goes to the current article.
+ */
+function renderRevisionLine(state) {
+  const node = document.getElementById('revLine');
+  if (!node || !state.revision) return;
+  const when = new Date(state.revision.timestamp);
+  const stamp = Number.isNaN(when.getTime())
+    ? state.revision.timestamp
+    : new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(when);
+  node.textContent = '';
+  node.append(document.createTextNode(`${t('sourceRevision')} `));
+  node.append(el('a', {
+    href: state.revision.url,
+    target: '_blank',
+    rel: 'noopener noreferrer',
+    text: stamp,
+  }));
+  if (state.revision.user) node.append(document.createTextNode(` · ${state.revision.user}`));
+  node.append(document.createTextNode(` · ${t('revisionId')} ${state.revision.revid}`));
+}
 
 /* --------------------------------------------------------- language bar */
 
@@ -582,6 +800,3 @@ async function loadRelated(ctx, mount, { title, lang }) {
   mountOpenSources(ctx, mount, title);
 }
 
-function esc(value) {
-  return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}

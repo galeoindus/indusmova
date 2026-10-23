@@ -420,9 +420,14 @@ export function renderFeedback(ctx) {
     // No backend: open the reader's own mail client, pre-filled. Nothing is
     // transmitted by the site itself.
     const subject = encodeURIComponent(`[indusmova] ${kind.value}`);
-    const body = encodeURIComponent(`${message.value}\n\n— sent from indusmova`);
+    // If the reader gave an address, it belongs in the draft — asking for it
+    // and then dropping it would be worse than not asking (F-12).
+    const contact = email.value.trim();
+    const body = encodeURIComponent(
+      [message.value, contact ? `\n\nReply to: ${contact}` : '', '\n\n— sent from indusmova'].join(''),
+    );
     window.location.href = `mailto:bholasee8816@gmail.com?subject=${subject}&body=${body}`;
-    toast('Opening your email app…');
+    toast('Opening your email app — nothing is sent until you send it there.');
   });
 
   wrap.append(form);

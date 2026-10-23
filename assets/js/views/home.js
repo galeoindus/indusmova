@@ -66,6 +66,8 @@ function hero(ctx) {
   // The clock is rendered client-side now, in the reader's own timezone,
   // instead of being frozen at whatever the page was captured.
   ask.append(clockLine());
+  // Stop the timer as soon as the reader leaves home (F-17).
+  ctx.onCleanup(() => clearInterval(clockLine._timer));
   ask.append(depthControl(ctx));
   ask.append(chipRow(QUICK_CHIPS, { onPick: (value) => ctx.onSubmit(value) }));
   ask.append(el('ul', {

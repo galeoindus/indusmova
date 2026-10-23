@@ -132,35 +132,37 @@ export function factsBox(facts, title = '') {
 }
 
 /** Sources, as cards with the licence and a link. */
-export function sourcesGroup({ lang = 'en', title = '', wikiUrl = '', citations = [], project = 'wikipedia' } = {}) {
+export function sourcesGroup({ lang = 'en', title = '', wikiUrl = '', citations = [], project = 'wikipedia', revision = null } = {}) {
   const group = el('div', { class: 'src-group' });
-  group.append(el('h3', { text: t('sourcesHeading') }));
 
-  const wrap = el('div', { class: 'source-answer' });
-  const cards = [
-    { name: 'Wikipedia', kind: t('encyclopaedia'), url: wikiUrl, note: `${lang}.wikipedia.org`, licence: 'CC BY-SA 4.0' },
-    { name: 'Wikidata', kind: t('structuredData'), url: 'https://www.wikidata.org/', note: 'wikidata.org', licence: 'CC0 1.0' },
-    { name: 'Wikimedia Commons', kind: t('media'), url: 'https://commons.wikimedia.org/', note: 'commons.wikimedia.org', licence: t('perFile') },
-  ];
-  for (const card of cards) {
-    const box = el('div', { class: 'source-card' });
-    const head = el('div', { class: 'sc-title' });
-    head.append(el('a', { href: card.url, target: '_blank', rel: 'noopener noreferrer', text: card.name }));
-    head.append(el('span', { class: 'sc-kind', text: card.kind }));
-    box.append(head);
-    const meta = el('dl', { class: 'sc-meta' });
-    const row = (label, value) => {
-      const r = el('div', { class: 'row' });
-      r.append(el('dt', { text: label }));
-      r.append(el('dd', { text: value }));
-      meta.append(r);
-    };
-    row(t('licence'), card.licence);
-    row(t('fromSource'), card.note);
-    box.append(meta);
-    wrap.append(box);
+  // The audit's point (F-14): a source we actually read is not the same thing
+  // as a source we merely link to. They are listed separately, and the second
+  // list says plainly that it was not used to choose the sentences.
+  group.append(el('h3', { text: t('evidenceUsed') }));
+  const used = el('div', { class: 'source-answer' });
+  const box = el('div', { class: 'source-card' });
+  const head = el('div', { class: 'sc-title' });
+  head.append(el('a', { href: wikiUrl, target: '_blank', rel: 'noopener noreferrer', text: title || `${lang}.${project}.org` }));
+  head.append(el('span', { class: 'sc-kind', text: t('encyclopaedia') }));
+  box.append(head);
+  const meta = el('dl', { class: 'sc-meta' });
+  const row = (label, value) => {
+    const r = el('div', { class: 'row' });
+    r.append(el('dt', { text: label }));
+    r.append(el('dd', { text: value }));
+    meta.append(r);
+  };
+  row(t('licence'), 'CC BY-SA 4.0');
+  row(t('fromSource'), `${lang}.${project}.org`);
+  if (revision?.revid) row(t('revisionId'), String(revision.revid));
+  box.append(meta);
+  if (revision?.url) {
+    const link = el('p', { class: 'src-credit' });
+    link.append(el('a', { href: revision.url, target: '_blank', rel: 'noopener noreferrer', text: t('viewSourceRevision') }));
+    box.append(link);
   }
-  group.append(wrap);
+  used.append(box);
+  group.append(used);
 
   if (citations.length) {
     const details = el('details', { class: 'src-records' });
@@ -170,9 +172,16 @@ export function sourcesGroup({ lang = 'en', title = '', wikiUrl = '', citations 
     details.append(ol);
     group.append(details);
   }
+
+  group.append(el('h3', { text: t('furtherReading') }));
+  const further = el('ul', { class: 'line-list' });
+  further.append(el('li', { html: `<a href="https://www.wikidata.org/" target="_blank" rel="noopener noreferrer">Wikidata</a> — ${esc(t('structuredData'))}, CC0 1.0` }));
+  further.append(el('li', { html: `<a href="https://commons.wikimedia.org/" target="_blank" rel="noopener noreferrer">Wikimedia Commons</a> — ${esc(t('media'))}, ${esc(t('perFile'))}` }));
+  group.append(further);
+  group.append(el('p', { class: 'src-credit', text: t('notConsulted') }));
+
   group.append(el('p', { class: 'src-credit', text: t('attribution') }));
-  // The audit's requirement: say plainly that the text was changed, and where
-  // the untouched original lives.
+  // Say plainly that the text was changed, and where the untouched original lives.
   const notice = el('p', { class: 'src-credit modification-notice' });
   notice.append(document.createTextNode(`${t('modificationNotice')} `));
   notice.append(el('a', { href: wikiUrl, target: '_blank', rel: 'noopener noreferrer', text: `${lang}.${project}.org` }));

@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "private": true,
   "type": "module",
-  "description": "indusmova — a Wikimedia knowledge research and discovery platform. Ask a question or open a topic and get a direct answer, key points, a topic-wise breakdown, real facts and the sources behind them.",
+  "description": "indusmova \u2014 a Wikimedia knowledge research and discovery platform. Ask a question or open a topic and get a direct answer, key points, a topic-wise breakdown, real facts and the sources behind them.",
   "homepage": "https://indusmova.pages.dev/",
   "repository": {
     "type": "git",
@@ -23,11 +23,12 @@
     "node": ">=18"
   },
   "scripts": {
-    "dev": "npx --yes serve . -l 4173",
-    "start": "npx --yes serve . -l 4173",
-    "preview": "npx --yes wrangler pages dev . --port 8788",
-    "deploy": "npx --yes wrangler pages deploy . --project-name=indusmova",
-    "check": "node --check assets/js/app.js"
+    "start": "python3 -m http.server 4173",
+    "serve": "python3 -m http.server 4173",
+    "check": "node scripts/check.mjs",
+    "test": "node --test test/",
+    "verify": "npm run check && npm run test",
+    "articles": "python3 scripts/gen_articles.py"
   },
   "devDependencies": {}
 }

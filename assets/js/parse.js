@@ -55,14 +55,26 @@ export function absoluteUrl(url, base = 'https://en.wikipedia.org') {
 }
 
 /** Rewrite an in-article link so it stays inside indusmova where it can. */
-function routeHref(href) {
+export function routeHref(href) {
   if (!href) return null;
   const wiki = href.match(/^(?:https?:)?\/\/([a-z-]+)\.wikipedia\.org\/wiki\/(.+)$/i) || href.match(/^\/wiki\/(.+)$/);
   if (wiki) {
     const lang = wiki[2] ? wiki[1] : '';
-    const title = decodeURIComponent(wiki[2] || wiki[1]);
+    // A cross-reference can point at a section: /wiki/Chandrayaan-3#Design.
+    // The fragment is a section anchor, not part of the title (F-10).
+    const [pagePart, ...rest] = (wiki[2] || wiki[1]).split('#');
+    const fragment = rest.join('#');
+    let title;
+    try { title = decodeURIComponent(pagePart); } catch { return null; }
     if (/^(File|Special|Help|Category|Portal|Wikipedia|Template|Talk):/i.test(title)) return null;
-    return { internal: true, href: `#/article/${encodeURIComponent(title.replace(/ /g, '_'))}${lang ? `?lang=${lang}` : ''}` };
+    const params = new URLSearchParams();
+    if (lang) params.set('lang', lang);
+    if (fragment) params.set('s', fragment);
+    const query = params.toString();
+    return {
+      internal: true,
+      href: `#/article/${encodeURIComponent(title.replace(/ /g, '_'))}${query ? `?${query}` : ''}`,
+    };
   }
   if (/^(?:https?:)?\/\//i.test(href)) return { internal: false, href: absoluteUrl(href) };
   if (href.startsWith('#')) return { internal: true, href };
@@ -83,7 +95,11 @@ function collectReferenceTexts(root) {
   const texts = new Map();
   root.querySelectorAll('li[id^="cite_note"], ol.references > li, .references > li').forEach((li) => {
     if (!li.id || texts.has(li.id)) return;
-    const text = textOf(li);
+    // A reference item carries an inline <style> block for its own citation
+    // template; that is not part of the citation.
+    const clone = li.cloneNode(true);
+    clone.querySelectorAll('style, script, .mw-cite-backlink, .cite-bracket').forEach((n) => n.remove());
+    const text = textOf(clone);
     if (text) texts.set(li.id, text);
   });
   return texts;
@@ -101,20 +117,28 @@ function numberCitations(root, texts) {
   };
 
   // Number by first appearance in the text, the way a reader meets them.
-  const sups = [...root.querySelectorAll('sup.reference')];
+  // Markers inside the infobox are not part of the reading text — the view
+  // moves that box into the fact panel — so they must not take the first
+  // numbers and leave the article starting at [11].
+  const sups = [...root.querySelectorAll('sup.reference')]
+    .filter((sup) => !sup.closest('table.infobox, .infobox'));
   const sequence = [];
   for (const sup of sups) {
     const t = targetOf(sup);
     if (t && !sequence.includes(t)) sequence.push(t);
   }
 
+  // Number every marker that appears in the text, in the order it appears, so
+  // the first citation a reader meets is [1] even if a reference item was not
+  // found for it.
   const references = [];
   const number = new Map();
   for (const target of sequence) {
-    if (texts.has(target)) { references.push(texts.get(target)); number.set(target, references.length); }
+    number.set(target, references.length + 1);
+    references.push(texts.get(target) || '');
   }
   for (const [id, text] of texts) {
-    if (!number.has(id)) { references.push(text); number.set(id, references.length); }
+    if (!number.has(id)) { number.set(id, references.length + 1); references.push(text); }
   }
 
   let fallback = references.length;
@@ -146,8 +170,14 @@ function cleanSubtree(root) {
 
   for (const sel of DROP_SELECTORS) root.querySelectorAll(sel).forEach((n) => n.remove());
 
-  // Footnotes left behind as bare "[1]" text nodes inside superscripts.
+  // Footnotes left behind as bare "[1]" superscripts. Our own numbered
+  // markers look the same, so they are skipped — otherwise this pass would
+  // delete the citations it was written to tidy up around (F-04).
   root.querySelectorAll('sup').forEach((sup) => {
+    if (sup.classList.contains('cite')) return;
+    // A real citation marker also reads "[1]", so it must be told apart from a
+    // leftover bare footnote by the link it carries (F-04).
+    if (sup.querySelector('a[href^="#cite"]')) return;
     if (/^\[\d+\]$/.test(sup.textContent.trim())) sup.remove();
   });
 
@@ -311,6 +341,12 @@ export function textOf(node) {
 }
 
 /** Split prose into sentences, keeping the text readable. */
+/**
+ * Shorter than this and a fragment is a caption, a label or a table cell
+ * rather than a sentence worth showing. Named, because the tests pin it down.
+ */
+export const MIN_SENTENCE = 25;
+
 export function sentences(text) {
   const clean = stripNoise(String(text || ''))
     .replace(/\{\\displaystyle[^}]*\}/g, ' ')
@@ -328,7 +364,7 @@ export function sentences(text) {
   return guarded
     .split(/(?<=[.!?])\s+(?=[A-Z0-9"'“(\u0900-\u097F])/)
     .map((s) => s.replace(/\u0001/g, '.').replace(/\s+/g, ' ').trim())
-    .filter((s) => s.length > 30)
+    .filter((s) => s.length >= MIN_SENTENCE)
     // Drop anything that is mostly symbols — infobox fragments, formula
     // leftovers, table captions — rather than readable prose.
     .filter((s) => {
@@ -407,7 +443,8 @@ export function splitArticle(root, sectionMeta = []) {
     if (textOf(body).length > 40) {
       sections.push({
         id,
-        line: meta.line || h.textContent.trim(),
+        // The API's section label can carry markup ("<i>Vikram</i> lander").
+        line: stripTags(meta.line || h.textContent || '').trim(),
         level: meta.level || level,
         index: meta.index || String(sections.length + 1),
         number: meta.number || '',
@@ -459,8 +496,14 @@ export function collectImages(root) {
     seen.add(src);
     // The File: page the image came from, so its own licence can be read.
     const link = img.closest('a[href*="/wiki/File:"], a[href*="/wiki/Special:Redirect/file/"]');
-    const file = link ? decodeURIComponent(link.getAttribute('href').split('/wiki/').pop()).replace(/_/g, ' ')
-      : (src.match(/\/commons\/(?:thumb\/)?[0-9a-f]\/[0-9a-f]{2}\/([^/]+?)(?:\.(?:jpg|jpeg|png|gif|webp|tif|tiff|svg)|\/)/i)?.[1] || '').replace(/_/g, ' ');
+    let file = '';
+    if (link) {
+      try { file = decodeURIComponent(link.getAttribute('href').split('/wiki/').pop()); } catch { file = ''; }
+    } else {
+      const guess = src.match(/\/commons\/(?:thumb\/)?[0-9a-f]\/[0-9a-f]{2}\/([^/]+?)(?:\.(?:jpg|jpeg|png|gif|webp|tif|tiff|svg)|\/)/i)?.[1] || '';
+      try { file = decodeURIComponent(guess); } catch { file = guess; }
+    }
+    file = file.replace(/_/g, ' ').trim();
     out.push({
       src,
       alt,

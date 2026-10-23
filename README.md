@@ -59,6 +59,29 @@ shows which level is active.
 
 The default ranker is keyword overlap with a rough IDF weighting. The optional **Understand meaning** switch loads a small open sentence-embedding model (`Xenova/all-MiniLM-L6-v2`, about 23 MB, once) via transformers.js and re-orders the same sentences by cosine similarity. **Nothing is ever generated** — every sentence is quoted from the article, and the ranking only chooses the order.
 
+### Reading progress in the contents
+
+The contents panel follows the current practice for long articles: it stays
+collapsed until asked for (the header button, or the button above the tabs),
+shows how much is left — *"12 of 34 sections · about 25 min left"* — marks each
+section unread, being read or read, and marks the current item with
+`aria-current`. Choosing a section scrolls to it, opens it, records it in the
+address bar as `?s=…`, and closes the panel.
+
+### Tests and checks
+
+```bash
+npm run check     # parse every module, verify every import, catch debug leftovers
+npm test          # 20 unit tests: routing, query keys, parsing, slugs, links
+npm run verify    # both
+```
+
+`npm run check` exists because the audit found the previous check script ran
+`node --check` on the entry module alone. It now covers every file, and — more
+usefully — verifies that each named import is really exported by the module it
+comes from, which is the mistake that reaches a browser as "does not provide an
+export named…" and leaves a blank page.
+
 ### Open sources
 
 Everything indusmova reads is free, public and needs **no API key**. They are

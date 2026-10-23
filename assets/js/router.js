@@ -72,6 +72,21 @@ export function parse(hash = window.location.hash) {
   return { name: 'notfound', path, query, params: {} };
 }
 
+/**
+ * The identity of a route, for deciding whether anything changed.
+ *
+ * The query is part of it, sorted so {a,b} and {b,a} are the same route.
+ * Without the query, moving from #/search?q=Ashoka to #/search?q=photosynthesis
+ * looks like the same route and nothing re-renders — the bug the audit found
+ * (F-01), and the first thing its tests should pin down.
+ */
+export function routeKey(route) {
+  const queryKey = JSON.stringify(
+    Object.entries(route?.query || {}).sort(([a], [b]) => a.localeCompare(b)),
+  );
+  return `${route?.name || ''}:${route?.path || ''}:${queryKey}`;
+}
+
 export function current() {
   // A fragment, once there is one, is the route — that is how in-app
   // navigation works. The path is used only on a cold load of a shared
@@ -144,7 +159,7 @@ function dispatch() {
     history.replaceState(null, '', `/${window.location.hash}`);
   }
   const route = current();
-  const key = `${route.name}:${route.path}`;
+  const key = routeKey(route);
   if (key === lastPath) return;
   lastPath = key;
   for (const fn of handlers) {

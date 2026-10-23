@@ -7,7 +7,7 @@
 
 import { SITE, CONTENT_LANGS, UI_LANGS } from './config.js';
 import { SOURCE_LIST } from './sources.js';
-import { pathFor, describeSite } from './meta.js';
+import { updateRouteMetadata, setDocumentLang } from './meta.js';
 import { t, setUiLang, applyI18n } from './i18n.js';
 import * as api from './api.js';
 import * as store from './store.js';
@@ -68,6 +68,7 @@ const ctx = {
     render(ctx.route);
   },
   setUiLang(code) {
+    setDocumentLang(code);
     ctx.state.uiLang = code;
     store.setPref('uiLang', code);
     setUiLang(code);
@@ -141,7 +142,7 @@ async function render(route) {
   document.documentElement.setAttribute('data-view', route.name);
   main.innerHTML = '';
   markNav(route);
-  updateTitle(route);
+  updateRouteMetadata(route);
   const view = VIEWS[route.name] || VIEWS.notfound;
   try {
     const node = await view(route);
@@ -154,19 +155,6 @@ async function render(route) {
   window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
-function updateTitle(route) {
-  const base = SITE.title;
-  let title = base;
-  if (route.name === 'article' && route.params.title) title = `${route.params.title.replace(/_/g, ' ')} — ${SITE.name}`;
-  else if (route.name === 'ask' && route.query.q) title = `${route.query.q} — ${SITE.name}`;
-  else if (route.name === 'search' && route.query.q) title = `${route.query.q} — ${SITE.name}`;
-  else if (!['home'].includes(route.name)) title = `${route.name[0].toUpperCase()}${route.name.slice(1)} — ${SITE.name}`;
-  document.title = title;
-  const canonical = document.querySelector('link[rel="canonical"]');
-  if (canonical) canonical.setAttribute('href', pathFor(route));
-  // A stale article description would describe the wrong page.
-  if (route.name !== 'article') describeSite();
-}
 
 function markNav(route) {
   const map = {
