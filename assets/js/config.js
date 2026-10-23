@@ -23,16 +23,6 @@ export const SITE = {
   localeAlt: 'hi_IN',
 };
 
-/* The Wikimedia projects indusmova reads from. `id` is the API host key,
- * `mark` is the letter shown in the source chips. */
-export const SOURCES = [
-  { id: 'wikipedia', name: 'Wikipedia', kind: 'Encyclopaedia', mark: 'W', host: 'wikipedia.org', licence: 'CC BY-SA 4.0', home: 'https://www.wikipedia.org/' },
-  { id: 'wikidata', name: 'Wikidata', kind: 'Structured data', mark: 'W', host: 'wikidata.org', licence: 'CC0 1.0', home: 'https://www.wikidata.org/' },
-  { id: 'commons', name: 'Wikimedia Commons', kind: 'Media', mark: 'W', host: 'commons.wikimedia.org', licence: 'Per file', home: 'https://commons.wikimedia.org/' },
-  { id: 'wikisource', name: 'Wikisource', kind: 'Books', mark: 'W', host: 'wikisource.org', licence: 'CC BY-SA 4.0', home: 'https://wikisource.org/' },
-  { id: 'wikibooks', name: 'Wikibooks', kind: 'Books', mark: 'W', host: 'wikibooks.org', licence: 'CC BY-SA 4.0', home: 'https://wikibooks.org/' },
-];
-
 /* Content languages offered in the header. The first is the default. */
 export const CONTENT_LANGS = [
   { code: 'en', label: 'English', native: 'English' },

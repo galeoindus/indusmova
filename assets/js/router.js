@@ -10,6 +10,8 @@
  * address a reader can bookmark or share.
  */
 
+import { slugify, unslug } from './meta.js';
+
 const ROUTES = [
   { name: 'home', pattern: /^\/?$/ },
   { name: 'ask', pattern: /^\/ask\/?$/ },
@@ -34,6 +36,23 @@ const ROUTES = [
 let handlers = [];
 let lastPath = null;
 
+/**
+ * A real article path, as served after the /articles/* rewrite.
+ * Returns null when the address bar holds an ordinary page.
+ */
+export function parsePath(pathname = window.location.pathname) {
+  const m = String(pathname).match(/^\/articles\/(.+?)\/?$/);
+  if (!m) return null;
+  const title = unslug(decodeURIComponent(m[1]));
+  const query = Object.fromEntries(new URLSearchParams(window.location.search || ''));
+  return {
+    name: 'article',
+    path: `/article/${encodeURIComponent(slugify(title))}`,
+    query,
+    params: { title },
+  };
+}
+
 export function parse(hash = window.location.hash) {
   const raw = (hash || '').replace(/^#/, '') || '/';
   const [pathPart, queryPart] = raw.split('?');
@@ -54,7 +73,12 @@ export function parse(hash = window.location.hash) {
 }
 
 export function current() {
-  return parse();
+  // A fragment, once there is one, is the route — that is how in-app
+  // navigation works. The path is used only on a cold load of a shared
+  // /articles/<slug> link, so the address bar is not rewritten under the reader.
+  const hash = window.location.hash;
+  if (hash && hash.length > 1) return parse(hash);
+  return parsePath() || parse(hash);
 }
 
 export function href(path) {
@@ -76,6 +100,18 @@ export function libraryHref(q, { src } = {}) {
   if (src) params.set('src', src);
   const qs = params.toString();
   return `#/library${qs ? `?${qs}` : ''}`;
+}
+
+/**
+ * The address to put in the bar for an article: a real path where the page can
+ * serve one, the in-app route otherwise.
+ */
+export function articlePath(title, lang, project) {
+  const params = new URLSearchParams();
+  if (lang) params.set('lang', lang);
+  if (project && project !== 'wikipedia') params.set('project', project);
+  const q = params.toString();
+  return `/articles/${slugify(title)}${q ? `?${q}` : ''}`;
 }
 
 export function workHref(source, id) {
@@ -102,6 +138,11 @@ export function onChange(fn) {
 }
 
 function dispatch() {
+  // Landing on /articles/<slug> and then navigating in-app leaves the old path
+  // in front of the new fragment; drop it so the URL stays tidy.
+  if (window.location.hash && window.location.hash.length > 1 && parsePath()) {
+    history.replaceState(null, '', `/${window.location.hash}`);
+  }
   const route = current();
   const key = `${route.name}:${route.path}`;
   if (key === lastPath) return;
@@ -114,8 +155,8 @@ function dispatch() {
 
 export function start() {
   window.addEventListener('hashchange', dispatch);
-  // Normalise a bare "#/x" and an empty hash to the same route.
-  if (!window.location.hash) history.replaceState(null, '', '#/');
+  // A bare /articles/<slug> has no fragment to normalise.
+  if (!parsePath() && !window.location.hash) history.replaceState(null, '', '#/');
   dispatch();
 }
 

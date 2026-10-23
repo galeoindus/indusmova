@@ -33,19 +33,6 @@ export function el(tag, attrs = {}, children = []) {
   return node;
 }
 
-/** Escape-then-build an HTML string from a tagged template. */
-export function html(strings, ...values) {
-  let out = '';
-  strings.forEach((chunk, i) => {
-    out += chunk;
-    if (i < values.length) {
-      const v = values[i];
-      out += Array.isArray(v) ? v.map((x) => (x == null ? '' : String(x))).join('') : v == null ? '' : String(v);
-    }
-  });
-  return out;
-}
-
 /** Strip any HTML tags from a string and collapse whitespace. */
 export function stripTags(value) {
   return String(value ?? '')
@@ -75,13 +62,6 @@ export function compactNumber(n) {
   const value = Number(n);
   if (!Number.isFinite(value)) return '—';
   return COMPACT.format(value).toLowerCase();
-}
-
-/** A stable, human date in the user's own locale and timezone. */
-export function formatDate(date = new Date()) {
-  return new Intl.DateTimeFormat(undefined, {
-    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
-  }).format(date);
 }
 
 /** "Fri 23 Oct · New Delhi" — the hero clock line. */
@@ -121,20 +101,6 @@ export function cleanUrl(url) {
   }
 }
 
-/** A short, stable hash used for cache keys and skeleton variety. */
-export function hashCode(value) {
-  let h = 0;
-  const str = String(value ?? '');
-  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
-  return Math.abs(h);
-}
-
 export function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
-/** Focus the main region after a route change, without scrolling the page. */
-export function focusMain() {
-  const main = document.getElementById('main');
-  if (main) main.focus({ preventScroll: true });
 }

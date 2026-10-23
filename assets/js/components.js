@@ -10,6 +10,26 @@ import { icon, PLACEHOLDER_MARK } from './icons.js';
 import { t } from './i18n.js';
 import { articleHref, searchHref } from './router.js';
 
+/**
+ * Breadcrumbs: Home > Category > Article. Every crumb but the last is a real
+ * link, so keyboard users and crawlers can walk back up.
+ */
+export function breadcrumbs(trail = []) {
+  const nav = el('nav', { class: 'crumbs', 'aria-label': 'Breadcrumb' });
+  const ol = el('ol');
+  trail.forEach((crumb, i) => {
+    const li = el('li');
+    if (i < trail.length - 1 && crumb.href) {
+      li.append(el('a', { href: crumb.href, text: crumb.label }));
+    } else {
+      li.append(el('span', { 'aria-current': 'page', text: crumb.label }));
+    }
+    ol.append(li);
+  });
+  nav.append(ol);
+  return nav;
+}
+
 /** <section class="sec"> with a heading and an optional "view all" link. */
 export function sectionHead({ title, iconName = '', more, moreLabel = t('viewAll'), className = 'sec-head' } = {}) {
   const left = el('div', {
@@ -138,10 +158,6 @@ export function skeletonGrid(count = 6, variant = 'card') {
     }));
   }
   return wrap;
-}
-
-export function spinner(label = t('loading')) {
-  return el('div', { class: 'state', html: `<span class="spinner" aria-hidden="true"></span><p>${esc(label)}</p>` });
 }
 
 export function errorBox(message, { onRetry } = {}) {

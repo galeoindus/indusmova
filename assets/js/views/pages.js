@@ -291,7 +291,14 @@ export function renderTopics(ctx) {
     grid.append(a);
   });
   wrap.append(grid);
-  wrap.append(el('p', { class: 'ask-note', style: 'margin-top:20px', text: t('topicsBlurb') }));
+
+  const articles = el('section', { class: 'sec' });
+  articles.append(sectionHead({ title: t('fullArticles'), more: '/articles/', moreLabel: t('browseArticles') }));
+  articles.append(el('p', { text: t('fullArticlesBlurb') }));
+  const cta = el('div', { class: 'article-actions' });
+  cta.append(el('a', { class: 'btn btn-primary', href: '/articles/', text: t('browseArticles') }));
+  articles.append(cta);
+  wrap.append(articles);
   return wrap;
 }
 

@@ -52,9 +52,6 @@ export const ICONS = {
   quote: F('<path d="M7 7h4v4c0 3-1.8 5-4.5 5.6l-.5-1.6C7.6 14.5 8 13.6 8 12H7V7zm8 0h4v4c0 3-1.8 5-4.5 5.6L14 15c1.6-.5 2-1.4 2-3h-1V7z"/>'),
 };
 
-/** Brand mark — the two-wave "river" glyph used in the topbar and footer. */
-export const BRAND_MARK = `<svg viewBox="0 0 40 40"><defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#173b32"/><stop offset="1" stop-color="#b46a45"/></linearGradient></defs><rect width="40" height="40" rx="12" fill="url(#bm)"/><rect x="6.6" y="6.6" width="26.8" height="26.8" rx="6.2" fill="none" stroke="#f5f0e6" stroke-opacity=".32" stroke-width="1.3"/><g fill="none" stroke="#f5f0e6" stroke-width="2.7" stroke-linecap="round"><path d="M10.2 16.5c2.85-3.5 5.7-3.5 8.55 0s5.7 3.5 8.55 0"/><path d="M12.4 23.5c2.85-3.5 5.7-3.5 8.55 0s5.7 3.5 8.55 0"/></g></svg>`;
-
 /** Placeholder mark for a card with no picture. */
 export const PLACEHOLDER_MARK = `<svg viewBox="0 0 40 40"><rect width="40" height="40" rx="11" fill="#173b32"/><rect x="6.6" y="6.6" width="26.8" height="26.8" rx="6.2" fill="none" stroke="#f5f0e6" stroke-opacity=".32" stroke-width="1.3"/><g fill="none" stroke="#f5f0e6" stroke-width="2.7" stroke-linecap="round"><path d="M10.2 16.5c2.85-3.5 5.7-3.5 8.55 0s5.7 3.5 8.55 0"/><path d="M12.4 23.5c2.85-3.5 5.7-3.5 8.55 0s5.7 3.5 8.55 0"/></g></svg>`;
 

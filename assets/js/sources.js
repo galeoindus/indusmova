@@ -399,9 +399,6 @@ export const SOURCE_LIST = [
 
 export const SOURCE_BY_ID = Object.fromEntries(SOURCE_LIST.map((s) => [s.id, s]));
 
-/** The Wikimedia family, for the language-aware search. */
-export const WIKI_PROJECT_IDS = WIKI_PROJECTS.map((p) => p.id);
-
 /**
  * Search every source at once. A source that is unreachable or rate-limited is
  * reported as failed rather than breaking the whole page.
@@ -435,4 +432,3 @@ export async function getRecord(sourceId, id, { lang = 'en', signal } = {}) {
   }
 }
 
-export { WIKI_PROJECTS };

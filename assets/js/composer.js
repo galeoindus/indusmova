@@ -166,7 +166,6 @@ export function depthControl(ctx) {
     });
     btn.addEventListener('click', () => {
       ctx.setDepth(preset.id);
-      depth.dataset.level = preset.id;
       depth.querySelectorAll('.depth-btn').forEach((b) => {
         const active = b.dataset.depth === preset.id;
         b.classList.toggle('is-active', active);
@@ -178,7 +177,6 @@ export function depthControl(ctx) {
     depth.append(btn);
   }
   wrap.append(depth);
-  wrap.append(el('div', { class: 'depth-bar', 'aria-hidden': 'true', html: '<span></span>' }));
 
   const deep = el('button', {
     type: 'button',

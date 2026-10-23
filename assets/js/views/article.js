@@ -20,11 +20,14 @@ import { clean, wordCount, collectImages } from '../parse.js';
 import { composeAnswer } from '../answer.js';
 import { articleToMarkdown, download } from '../markdown.js';
 import {
-  evidenceStrip, topicBlocks, methodNote, factsBox, sourcesGroup, scopeNote, feedback,
+  evidenceStrip, topicBlocks, methodNote, factsBox, sourcesGroup, scopeNote, feedback, referencesBlock,
 } from '../answerui.js';
-import { sectionHead, card, errorBox, emptyState, toast } from '../components.js';
+import { sectionHead, card, errorBox, emptyState, toast, breadcrumbs } from '../components.js';
 import { mountOpenSources } from './library.js';
 import { articleHref, searchHref } from '../router.js';
+import { SITE } from '../config.js';
+import { describeArticle } from '../meta.js';
+import * as api from '../api.js';
 import { CONTENT_LANGS } from '../config.js';
 
 const PROJECT_NAMES = {
@@ -70,6 +73,8 @@ async function build(ctx, mount, state, title, retry = 0) {
     state.root = clean(state.data.html);
     state.wikiUrl = `https://${state.lang}.${state.project}.org/wiki/${encodeURIComponent(state.data.title.replace(/ /g, '_'))}`;
     render(ctx, mount, state);
+    // The page description comes from the article, not the site default.
+    describeArticle(state.root.querySelector('p')?.textContent || state.data.title);
     ctx.pushHistory({
       id: `article:${state.lang}:${state.data.title}`, kind: 'article',
       title: state.data.title, lang: state.lang, url: articleHref(state.data.title, state.lang),
@@ -89,6 +94,12 @@ async function build(ctx, mount, state, title, retry = 0) {
 function render(ctx, mount, state) {
   const { data, root, lang, wikiUrl } = state;
   mount.innerHTML = '';
+
+  mount.append(breadcrumbs([
+    { label: t('home'), href: '#/' },
+    { label: PROJECT_NAMES[state.project] || 'Wikipedia', href: '#/library' },
+    { label: data.title },
+  ]));
 
   const head = el('div', { class: 'article-head' });
   const projectName = PROJECT_NAMES[state.project] || 'Wikipedia';
@@ -140,6 +151,8 @@ function render(ctx, mount, state) {
 
   repaintBreakdown(ctx, state);
   loadRelated(ctx, mount, { title: data.title, lang });
+  structuredData(ctx, state);
+  openDeepLinkedSection(state, routeOf(ctx));
 }
 
 /** Redraw only the breakdown — used on first paint and on a depth change. */
@@ -220,7 +233,7 @@ async function repaintBreakdown(ctx, state) {
   const facts = factsBox(answer.facts, answer.title);
   if (facts) mount.append(facts);
 
-  mount.append(sourcesGroup({ lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl, citations: answer.citations }));
+  mount.append(sourcesGroup({ lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl, citations: answer.citations, project: state.project }));
   mount.append(methodNote(answer.method, { revid: answer.revid, lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl }));
   mount.append(scopeNote(t('scopeAnswer')));
   mount.append(feedback(ctx, `article:${state.lang}:${answer.title}`));
@@ -255,6 +268,9 @@ function jumper(state, answer) {
       event.preventDefault();
       const target = document.getElementById(`topic-${topic.id}`);
       if (!target) return;
+      // Keep the section in the address bar, so the link can be shared.
+      const base = location.hash.split('?')[0];
+      history.replaceState(null, '', `${base}?s=${encodeURIComponent(topic.id)}`);
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       // Opening a section you asked for is the least surprising behaviour.
       if (!target.classList.contains('is-open')) target.querySelector('.topic-more')?.click();
@@ -347,8 +363,11 @@ function fullArticle(root, data, lang, state) {
   const wrap = el('div');
   wrap.append(grid);
 
-  const gallery = buildGallery(root);
+  const gallery = buildGallery(root, data.title);
   if (gallery) wrap.append(gallery);
+
+  const references = referencesBlock(root.references || []);
+  if (references) wrap.append(references);
 
   if (toc) observeToc(panel);
   return wrap;
@@ -404,7 +423,7 @@ function observeToc(panel) {
   map.forEach((_, target) => observer.observe(target));
 }
 
-function buildGallery(root) {
+function buildGallery(root, title) {
   const imgs = collectImages(root).slice(0, 24);
   if (!imgs.length) return null;
   const section = el('section', { class: 'sec' });
@@ -413,12 +432,69 @@ function buildGallery(root) {
   for (const img of imgs) {
     const figure = el('figure');
     figure.append(el('img', { src: img.src, alt: img.alt, loading: 'lazy', decoding: 'async' }));
-    if (img.caption) figure.append(el('figcaption', { text: clamp(img.caption, 160) }));
+    const caption = el('figcaption');
+    if (img.caption) caption.append(el('span', { text: clamp(img.caption, 160) }));
+    // The licence is filled in from Commons below; text licences do not cover
+    // the pictures, so each one is checked on its own.
+    const credit = el('span', { class: 'imgcredit', text: img.file ? `${img.file} · ${t('loading')}` : '' });
+    caption.append(credit);
+    figure.append(caption);
     gallery.append(figure);
+    if (img.file) loadImageCredit(img.file, credit);
   }
   section.append(gallery);
   return section;
 }
+
+/** Ask Commons for one picture's licence and author, and show them. */
+async function loadImageCredit(file, node) {
+  try {
+    const info = await api.imageInfo(file);
+    if (!info) { node.textContent = file; return; }
+    const bits = [file];
+    if (info.artist) bits.push(`${t('imageCredit')}: ${clamp(info.artist, 60)}`);
+    if (info.licence) bits.push(`${t('imageLicence')}: ${info.licence}`);
+    node.textContent = bits.join(' · ');
+    node.title = info.description || file;
+  } catch {
+    node.textContent = file;
+  }
+}
+
+/** Article structured data, using only facts that are actually on the page. */
+function structuredData(ctx, state) {
+  const id = 'indusmova-article-ld';
+  document.getElementById(id)?.remove();
+  const script = document.createElement('script');
+  script.type = 'application/ld+json';
+  script.id = id;
+  script.textContent = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: state.data.title,
+    url: `${SITE.origin}${articleHref(state.data.title, state.lang, state.project).slice(1)}`,
+    inLanguage: state.lang,
+    isBasedOn: state.wikiUrl,
+    license: 'https://creativecommons.org/licenses/by-sa/4.0/',
+    publisher: { '@type': 'Organization', name: SITE.name, url: SITE.origin },
+    isAccessibleForFree: true,
+  });
+  document.head.append(script);
+}
+
+/** Honour a ?s=section deep link once the blocks exist. */
+function openDeepLinkedSection(state, route) {
+  const wanted = route?.query?.s;
+  if (!wanted) return;
+  requestAnimationFrame(() => {
+    const target = document.getElementById(`topic-${wanted}`);
+    if (!target) return;
+    target.scrollIntoView({ block: 'start' });
+    if (!target.classList.contains('is-open')) target.querySelector('.topic-more')?.click();
+  });
+}
+
+function routeOf(ctx) { return ctx.route || {}; }
 
 /* --------------------------------------------------------- language bar */
 

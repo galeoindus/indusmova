@@ -15,9 +15,8 @@ const DROP_SELECTORS = [
   '.metadata', '.ambox', '.mbox', '.sistersitebox', '.side-box',
   '.hatnote', '.rellink', '.dablink', '.seealso',
   '#toc', '.toc', '.mw-jump-link', '.noprint',
-  '.mw-references-wrap .references', '.reflist',
+  '.mw-references-wrap', '.reflist', '.references',
   '.shortdescription', '.mw-indicators',
-  'sup.reference', '.reference',
   '.navigation-not-searchable', '.catlinks', '#catlinks',
   '.mw-authority-control', '.authority-control',
   '.mbox-image', '.ombox', '.tmbox', '.cmbox', '.fmbox',
@@ -68,6 +67,71 @@ function routeHref(href) {
   if (/^(?:https?:)?\/\//i.test(href)) return { internal: false, href: absoluteUrl(href) };
   if (href.startsWith('#')) return { internal: true, href };
   return null;
+}
+
+/**
+ * Turn Wikipedia's footnote markers into our own numbered citations.
+ *
+ * Wikipedia writes `<sup class="reference"><a href="#cite_note-x">[1]</a></sup>`
+ * and keeps the matching entry in a list at the end. We read that list once,
+ * renumber the markers 1..n in reading order, and point them at the reference
+ * list we render ourselves — so the article carries inline citations near the
+ * claims, as the audit asks.
+ */
+/** The text of every reference, keyed by the id its marker points at. */
+function collectReferenceTexts(root) {
+  const texts = new Map();
+  root.querySelectorAll('li[id^="cite_note"], ol.references > li, .references > li').forEach((li) => {
+    if (!li.id || texts.has(li.id)) return;
+    const text = textOf(li);
+    if (text) texts.set(li.id, text);
+  });
+  return texts;
+}
+
+/**
+ * Number the markers 1..n in the order a reader meets them, and return the
+ * reference list in that same order. Runs *after* the junk is removed, so a
+ * marker inside a navbox cannot steal a number.
+ */
+function numberCitations(root, texts) {
+  const targetOf = (sup) => {
+    const link = sup.querySelector('a[href^="#cite_note"], a[href^="#cite_ref"]');
+    return link ? decodeURIComponent(link.getAttribute('href').slice(1)) : '';
+  };
+
+  // Number by first appearance in the text, the way a reader meets them.
+  const sups = [...root.querySelectorAll('sup.reference')];
+  const sequence = [];
+  for (const sup of sups) {
+    const t = targetOf(sup);
+    if (t && !sequence.includes(t)) sequence.push(t);
+  }
+
+  const references = [];
+  const number = new Map();
+  for (const target of sequence) {
+    if (texts.has(target)) { references.push(texts.get(target)); number.set(target, references.length); }
+  }
+  for (const [id, text] of texts) {
+    if (!number.has(id)) { references.push(text); number.set(id, references.length); }
+  }
+
+  let fallback = references.length;
+  for (const sup of sups) {
+    const target = targetOf(sup);
+    let n = number.get(target);
+    if (!n) { fallback += 1; n = fallback; }
+    const marker = root.ownerDocument.createElement('sup');
+    marker.className = 'cite';
+    const a = root.ownerDocument.createElement('a');
+    a.setAttribute('href', `#ref-${n}`);
+    a.textContent = `[${n}]`;
+    marker.append(a);
+    sup.replaceWith(marker);
+  }
+
+  return references;
 }
 
 /** Clean a subtree in place: drop junk, keep a safe tag/attribute set. */
@@ -170,7 +234,11 @@ function joinTextRuns(root) {
 export function clean(html) {
   const doc = toDoc(html);
   const root = doc.getElementById('__root');
+  // Read the reference texts while the list is still there, clean the rest,
+  // then number the surviving markers in reading order.
+  const texts = collectReferenceTexts(root);
   cleanSubtree(root);
+  root.references = numberCitations(root, texts);
   return root;
 }
 
@@ -342,6 +410,7 @@ export function splitArticle(root, sectionMeta = []) {
         line: meta.line || h.textContent.trim(),
         level: meta.level || level,
         index: meta.index || String(sections.length + 1),
+        number: meta.number || '',
         html: body.innerHTML,
         text: proseText(body),
         images: collectImages(body).slice(0, 4),
@@ -362,6 +431,7 @@ export function splitArticle(root, sectionMeta = []) {
     tables: tables.slice(0, 6).map((t) => t.outerHTML),
     images,
     citations,
+    references: root.references || [],
   };
 }
 
@@ -387,9 +457,14 @@ export function collectImages(root) {
     if (w && h && w < 80 && h < 80) continue;                     // tiny chrome
     if (/\/20px-|\/25px-|Symbol_/.test(src)) continue;
     seen.add(src);
+    // The File: page the image came from, so its own licence can be read.
+    const link = img.closest('a[href*="/wiki/File:"], a[href*="/wiki/Special:Redirect/file/"]');
+    const file = link ? decodeURIComponent(link.getAttribute('href').split('/wiki/').pop()).replace(/_/g, ' ')
+      : (src.match(/\/commons\/(?:thumb\/)?[0-9a-f]\/[0-9a-f]{2}\/([^/]+?)(?:\.(?:jpg|jpeg|png|gif|webp|tif|tiff|svg)|\/)/i)?.[1] || '').replace(/_/g, ' ');
     out.push({
       src,
       alt,
+      file: file ? `File:${file}` : '',
       width: w,
       height: h,
       caption: textOf(img.closest('figure, .thumb, .thumbinner')?.querySelector('figcaption, .thumbcaption') || null),

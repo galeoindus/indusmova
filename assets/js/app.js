@@ -5,7 +5,9 @@
  * router. It is the only module index.html loads directly.
  */
 
-import { SITE, CONTENT_LANGS, UI_LANGS, SOURCES } from './config.js';
+import { SITE, CONTENT_LANGS, UI_LANGS } from './config.js';
+import { SOURCE_LIST } from './sources.js';
+import { pathFor, describeSite } from './meta.js';
 import { t, setUiLang, applyI18n } from './i18n.js';
 import * as api from './api.js';
 import * as store from './store.js';
@@ -161,7 +163,9 @@ function updateTitle(route) {
   else if (!['home'].includes(route.name)) title = `${route.name[0].toUpperCase()}${route.name.slice(1)} — ${SITE.name}`;
   document.title = title;
   const canonical = document.querySelector('link[rel="canonical"]');
-  if (canonical) canonical.setAttribute('href', `${SITE.origin}/${route.name === 'home' ? '' : `#/${route.path.replace(/^\//, '')}`}`);
+  if (canonical) canonical.setAttribute('href', pathFor(route));
+  // A stale article description would describe the wrong page.
+  if (route.name !== 'article') describeSite();
 }
 
 function markNav(route) {
@@ -308,7 +312,7 @@ async function fillRail() {
     head.append(el('h3', { text: t('latestFromSources') }));
     head.append(el('a', { class: 'rail-more', href: '#/sources', html: `${esc(t('viewAll'))} →` }));
     sources.append(head);
-    SOURCES.slice(0, 5).forEach((s) => sources.append(srcRow(s)));
+    SOURCE_LIST.slice(0, 5).forEach((s) => sources.append(srcRow(s)));
     rail.append(sources);
   } catch {
     rail.innerHTML = '';
@@ -370,4 +374,3 @@ function esc(value) {
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
 else boot();
 
-export { ctx };
