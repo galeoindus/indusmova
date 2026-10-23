@@ -1,0 +1,9 @@
+# indusmova — https://indusmova.pages.dev/
+User-agent: *
+Allow: /
+
+# The app is a single document; every fragment resolves to the same URL.
+# Let the crawler reach the crawlable index pages and the API hosts it needs.
+Disallow: /sw.js
+
+Sitemap: https://indusmova.pages.dev/sitemap.xml

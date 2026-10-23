@@ -1,0 +1,11 @@
+# indusmova — Cloudflare Pages configuration.
+#
+# indusmova is a static site with no build step, so Pages only needs to know
+# where the files are. Deploy with:
+#   npx wrangler pages deploy . --project-name=indusmova
+#
+# Headers and redirects live in _headers and _redirects at the repository root.
+
+name = "indusmova"
+compatibility_date = "2026-01-01"
+pages_build_output_dir = "."

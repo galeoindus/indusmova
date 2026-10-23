@@ -1,0 +1,33 @@
+{
+  "name": "indusmova",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "description": "indusmova — a Wikimedia knowledge research and discovery platform. Ask a question or open a topic and get a direct answer, key points, a topic-wise breakdown, real facts and the sources behind them.",
+  "homepage": "https://indusmova.pages.dev/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/galeoindus/indusmova.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "wikipedia",
+    "wikidata",
+    "knowledge",
+    "search",
+    "reader",
+    "cloudflare-pages",
+    "pwa"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "npx --yes serve . -l 4173",
+    "start": "npx --yes serve . -l 4173",
+    "preview": "npx --yes wrangler pages dev . --port 8788",
+    "deploy": "npx --yes wrangler pages deploy . --project-name=indusmova",
+    "check": "node --check assets/js/app.js"
+  },
+  "devDependencies": {}
+}
