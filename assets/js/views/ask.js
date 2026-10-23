@@ -82,7 +82,7 @@ function askHead(ctx, question) {
 
 function composerBlock(ctx, question) {
   const composer = el('div', { class: 'composer', style: 'margin:0 0 22px' });
-  const form = composerForm(ctx, { placeholderKey: 'askPlaceholder', autofocus: !question, initialMode: 'ask' });
+  const form = composerForm(ctx, { placeholderKey: 'askPlaceholder', autofocus: !question, initialMode: 'ask', labelled: true });
   composer.append(form);
   composer.append(el('p', { class: 'voice-status', id: 'voiceStatus', role: 'status', 'aria-live': 'polite' }));
   attachSuggest(form.querySelector('textarea'), ctx);
@@ -117,7 +117,7 @@ async function load(ctx, mount, state, retry = 0) {
   } catch (err) {
     mount.innerHTML = '';
     const message = err?.status === 404 ? t('notFoundBody') : err?.message;
-    mount.append(errorBox(message, { onRetry: () => load(ctx, mount, state, retry + 1) }));
+    mount.append(errorBox(message, { onRetry: () => load(ctx, mount, state, retry + 1), query: state.question, searchHref: searchHref(state.question) }));
     if (err?.name === 'ApiError' && err.status !== 404 && retry === 0) {
       setTimeout(() => load(ctx, mount, state, 1), 600);
     }
@@ -144,7 +144,7 @@ async function paint(ctx, mount, state) {
     });
   } catch (err) {
     mount.innerHTML = '';
-    mount.append(errorBox(err?.message));
+    mount.append(errorBox(err, { query: state.question, searchHref: searchHref(state.question) }));
     return;
   }
   answer.wikiUrl = state.wikiUrl;
@@ -162,7 +162,7 @@ async function paint(ctx, mount, state) {
 
   // The direct answer.
   const qaAnswer = el('div', { class: 'qa-answer' });
-  qaAnswer.append(el('h2', { text: t('answer') }));
+  qaAnswer.append(el('h2', { text: t('coreAnswer') }));
   if (answer.core.length) {
     const list = el('ul', { class: 'line-list' });
     answer.core.forEach((sentence) => list.append(el('li', { text: sentence })));
@@ -225,7 +225,7 @@ function articleActions(ctx, answer) {
 
   const saveBtn = el('button', {
     type: 'button', class: `btn btn-ghost${ctx.isBookmarked(id) ? ' is-on' : ''}`,
-    html: `${icon('bookmark')}<span>${esc(ctx.isBookmarked(id) ? t('saved') : t('bookmarks'))}</span>`,
+    html: `${icon('bookmark')}<span>${esc(ctx.isBookmarked(id) ? t('savedOnDevice') : t('bookmarks'))}</span>`,
   });
   saveBtn.addEventListener('click', () => {
     const saved = ctx.toggleBookmark({
@@ -234,7 +234,7 @@ function articleActions(ctx, answer) {
     });
     saveBtn.innerHTML = `${icon('bookmark')}<span>${esc(saved ? t('saved') : t('bookmarks'))}</span>`;
     saveBtn.classList.toggle('is-on', saved);
-    toast(saved ? t('saved') : t('remove'));
+    toast(saved ? t('savedOnDevice') : t('removedFromSaved'));
   });
   actions.append(saveBtn);
 

@@ -452,3 +452,63 @@ button, .btn, [role="button"], .tab, .chip, .depth-btn, .chip-btn {
 
 /* Tap highlight follows the design rather than the platform default. */
 * { -webkit-tap-highlight-color: rgba(180, 106, 69, 0.18); }
+
+/* ======================================================================
+   Evidence Desk: the composer, the shell, and calmer surfaces
+   ====================================================================== */
+
+.composer-label {
+  display: block; font-size: 12.5px; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--muted); margin: 0 0 6px 2px;
+}
+.mode-help { margin: 8px 2px 0; font-size: 13px; color: var(--muted); }
+.composer-prompt { margin: 8px 2px 0; font-size: 13px; color: var(--danger); }
+.searchbar { flex-wrap: wrap; }
+.searchbar .composer-label { flex: 1 1 100%; }
+.searchbar .mode-help, .searchbar .composer-prompt { flex: 1 1 100%; }
+
+/* The mode control is a segmented choice, labelled in plain language. */
+.mode { background: var(--surface-2); border-radius: 999px; padding: 3px; display: inline-flex; gap: 2px; }
+.mode-btn { min-height: 34px; padding: 0 14px; border-radius: 999px; font-size: 13.5px; }
+
+/* Grouped sidebar: a heading per group, not one long list. */
+.side-heading {
+  margin: 16px 0 6px; padding: 0 12px; font-family: var(--font-body);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase;
+  color: var(--copper-ink);
+}
+.side-heading:first-child { margin-top: 4px; }
+.side-note { margin: 8px 12px 4px; font-size: 12px; line-height: 1.5; color: var(--faint); }
+
+/* Four destinations on a phone, not five. */
+.bottom-nav { grid-template-columns: repeat(4, 1fr); }
+
+/* Ordinary reading sections use borders and contrast, not heavy shadows.
+   Shadows are reserved for menus and dialogs, which float above the page. */
+.sec:has(> .sec-head), .panel, .toc-jump { box-shadow: none; border: 1px solid var(--border-2); }
+.lang-menu, .suggest { box-shadow: var(--float-1); }
+
+/* Muted text and borders need to survive the contrast check. */
+:root { --muted: #4f554d; --faint: #545b52; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --muted: #a8b0a6; --faint: #9aa29a; }
+}
+[data-theme="dark"] { --muted: #a8b0a6; --faint: #9aa29a; }
+
+/* A calm reading measure for the answer, matching the article. */
+.qa-answer .line-list > li, .points-list .point-text { max-width: 72ch; }
+
+/* Small pieces the Evidence Desk additions need. */
+.lang-menu-title {
+  margin: 0 0 6px; padding: 4px 12px 0; font-size: 11px; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--copper-ink);
+}
+.selected-note {
+  margin: 0 0 12px; font-size: 13px; color: var(--muted);
+  padding-left: 12px; border-left: 2px solid var(--copper);
+}
+.selected-note a { color: var(--copper-ink); font-weight: 600; }
+.method-summary { margin-left: auto; font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.method-note > summary { display: flex; align-items: baseline; gap: 10px; }
+.error-query { font-size: 14px; color: var(--text); font-weight: 600; }
+.error-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }

@@ -42,7 +42,7 @@ function hero(ctx) {
 
   section.append(el('span', {
     class: 'dash-hero-badge',
-    html: `${icon('plus')}${esc(t('heroBadge'))}`,
+    html: `${icon('check')}${esc(t('heroBadge'))}`,
   }));
   section.append(el('h1', {
     html: `<span>${esc(t('heroFrom'))}</span> <span class="dash-grad">${esc(t('heroTo'))}</span>`,
@@ -51,7 +51,7 @@ function hero(ctx) {
 
   const ask = el('div', { class: 'dash-hero-ask' });
   const composer = el('div', { class: 'composer' });
-  composer.append(composerForm(ctx, { autofocus: false }));
+  composer.append(composerForm(ctx, { autofocus: false, labelled: true }));
   composer.append(el('p', { class: 'voice-status', id: 'voiceStatus', role: 'status', 'aria-live': 'polite' }));
   ask.append(composer);
 
@@ -59,8 +59,16 @@ function hero(ctx) {
     class: 'example-prompts',
     html: EXAMPLE_PROMPTS.map((p) => `<li><button type="button" data-example="${esc(p)}">${esc(p)}</button></li>`).join(''),
   }));
+  // An example fills the field rather than firing a navigation the reader did
+  // not ask for; pressing Ask or Enter is the reader's decision.
   ask.querySelectorAll('[data-example]').forEach((btn) => {
-    btn.addEventListener('click', () => ctx.onSubmit(btn.getAttribute('data-example')));
+    btn.addEventListener('click', () => {
+      const field = document.getElementById('searchInput');
+      if (!field) return;
+      field.value = btn.getAttribute('data-example');
+      field.dispatchEvent(new Event('input'));
+      field.focus();
+    });
   });
 
   // The clock is rendered client-side now, in the reader's own timezone,

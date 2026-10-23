@@ -160,14 +160,46 @@ export function skeletonGrid(count = 6, variant = 'card') {
   return wrap;
 }
 
-export function errorBox(message, { onRetry } = {}) {
-  const box = el('div', { class: 'error-box' });
-  box.innerHTML = `<p><strong>${esc(t('errorTitle'))}</strong> ${esc(message || t('errorBody'))}</p>`;
-  if (onRetry) {
+/**
+ * Turn a failure into something a reader can act on.
+ *
+ * The audit's P0 on recovery: a failed lookup must never erase the question or
+ * leave a blank panel, so every state says what happened, keeps the query
+ * visible, and offers one clear next step.
+ */
+export function describeError(err) {
+  const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+  const message = String(err?.message || err || '');
+  if (offline) return { title: t('offlineTitle'), body: t('offlineBody'), retry: true };
+  if (/rate-limited|429/i.test(message)) return { title: t('rateLimitedTitle'), body: t('rateLimitedBody'), retry: true };
+  if (/not-found|404/i.test(message)) return { title: t('notFoundTitle'), body: t('notFoundBody'), retry: false };
+  if (/abort|timeout|Failed to fetch|NetworkError|network/i.test(message)) {
+    return { title: t('offlineTitle'), body: t('offlineBody'), retry: true };
+  }
+  return { title: t('errorTitle'), body: t('errorBody'), retry: true, detail: message };
+}
+
+export function errorBox(err, { onRetry, query = '', searchHref: href = '' } = {}) {
+  const info = typeof err === 'object' && err && err.__described ? err : describeError(err);
+  const box = el('div', { class: 'error-box', role: 'alert' });
+  const p = el('p');
+  p.append(el('strong', { text: info.title }));
+  p.append(document.createTextNode(` ${info.body}`));
+  box.append(p);
+
+  // The reader's own words stay on screen, whatever went wrong.
+  if (query) box.append(el('p', { class: 'error-query', text: `“${query}”` }));
+
+  const actions = el('div', { class: 'error-actions' });
+  if (onRetry && info.retry !== false) {
     const btn = el('button', { type: 'button', class: 'btn btn-primary', text: t('retry') });
     btn.addEventListener('click', onRetry);
-    box.append(btn);
+    actions.append(btn);
   }
+  if (href && query) actions.append(el('a', { class: 'btn btn-ghost', href, text: t('findArticleLabel') }));
+  if (actions.children.length) box.append(actions);
+
+  if (info.detail && info.detail !== info.body) box.append(el('p', { class: 'src-credit', text: info.detail }));
   return box;
 }
 

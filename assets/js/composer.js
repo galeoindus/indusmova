@@ -13,13 +13,16 @@ import { t } from './i18n.js';
 import { DEPTHS } from './config.js';
 
 /** The text field + tools. `ctx.onSubmit(text)` fires on submit. */
-export function composerForm(ctx, { placeholderKey = 'askPlaceholder', autofocus = false, initialMode = null } = {}) {
+export function composerForm(ctx, { placeholderKey = 'askPlaceholder', autofocus = false, initialMode = null, labelled = false } = {}) {
   const form = el('form', { class: 'searchbar glass', id: 'searchForm', role: 'search', autocomplete: 'off' });
+
+  // A visible label, not a placeholder doing the work of one.
+  if (labelled) form.append(el('span', { class: 'composer-label', text: t('fieldLabel') }));
 
   const textarea = el('textarea', {
     id: 'searchInput', name: 'q', rows: '1', maxlength: '600',
-    placeholder: t(placeholderKey), 'aria-label': t('askPlaceholder'),
-    'data-i18n-ph': placeholderKey,
+    placeholder: t(placeholderKey), 'aria-label': t('fieldLabel'),
+    'aria-describedby': 'composerHelp', 'data-i18n-ph': placeholderKey,
   });
   form.append(textarea);
 
@@ -34,41 +37,68 @@ export function composerForm(ctx, { placeholderKey = 'askPlaceholder', autofocus
   tools.append(micBtn);
   wireVoice(micBtn, textarea, ctx);
 
-  // Mode toggle
-  const mode = el('div', { class: 'mode', role: 'group', 'aria-label': 'Search or ask' });
+  // Clear, only while there is something to clear.
+  const clearBtn = el('button', {
+    type: 'button', class: 'btn btn-ghost btn-icon', id: 'clearBtn', hidden: true,
+    'aria-label': t('clearLabel'), title: t('clearLabel'), html: icon('close'),
+  });
+  clearBtn.addEventListener('click', () => {
+    textarea.value = '';
+    textarea.dispatchEvent(new Event('input'));
+    textarea.focus();
+  });
+  tools.append(clearBtn);
+
+  // The two intentions, named the way a person would name them.
+  const mode = el('div', { class: 'mode', role: 'group', 'aria-label': t('modeGroup') });
   const active = initialMode || ctx.state.mode;
-  for (const value of ['search', 'ask']) {
+  const submitBtn = el('button', { type: 'submit', class: 'btn btn-primary' });
+  const help = el('p', { class: 'mode-help', id: 'composerHelp', role: 'status' });
+
+  const paintMode = (value) => {
+    mode.querySelectorAll('.mode-btn').forEach((b) => {
+      const on = b.dataset.mode === value;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    submitBtn.textContent = value === 'search' ? t('submitSearch') : t('submitAsk');
+    help.textContent = value === 'search' ? t('modeHelpSearch') : t('modeHelpAsk');
+  };
+
+  for (const value of ['ask', 'search']) {
     const btn = el('button', {
       type: 'button',
       class: `mode-btn${active === value ? ' is-active' : ''}`,
       dataset: { mode: value },
       'aria-pressed': String(active === value),
-      text: value === 'search' ? t('searchMode') : t('askMode'),
+      text: value === 'search' ? t('findArticleLabel') : t('askModeLabel'),
     });
     btn.addEventListener('click', () => {
       ctx.setMode(value);
-      mode.querySelectorAll('.mode-btn').forEach((b) => {
-        const active = b.dataset.mode === value;
-        b.classList.toggle('is-active', active);
-        b.setAttribute('aria-pressed', String(active));
-      });
-      submitBtn.textContent = value === 'search' ? t('send') : t('askMode');
+      paintMode(value);
     });
     mode.append(btn);
   }
   tools.append(mode);
-
-  const submitBtn = el('button', {
-    type: 'submit', class: 'btn btn-primary',
-    text: active === 'search' ? t('send') : t('askMode'),
-  });
   tools.append(submitBtn);
   form.append(tools);
+  paintMode(active);
+  form.append(help);
+
+  // An empty submit explains itself instead of doing nothing.
+  const prompt = el('p', { class: 'composer-prompt', hidden: true, role: 'alert' });
+  form.append(prompt);
 
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     const value = textarea.value.trim();
-    if (!value) return;
+    if (!value) {
+      prompt.textContent = t('emptyPrompt');
+      prompt.removeAttribute('hidden');
+      textarea.focus();
+      return;
+    }
+    prompt.setAttribute('hidden', '');
     ctx.onSubmit(value);
   });
 
@@ -76,12 +106,14 @@ export function composerForm(ctx, { placeholderKey = 'askPlaceholder', autofocus
   const grow = () => {
     textarea.style.height = 'auto';
     textarea.style.height = `${Math.min(120, textarea.scrollHeight)}px`;
+    clearBtn.hidden = !textarea.value;
+    if (textarea.value) prompt.setAttribute('hidden', '');
   };
   textarea.addEventListener('input', grow);
   requestAnimationFrame(grow);
   if (autofocus) setTimeout(() => textarea.focus(), 60);
 
-  // Keyboard: Enter submits, Shift+Enter is a newline.
+  // Enter submits, Shift+Enter is a newline, Escape clears the suggestions.
   textarea.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
@@ -89,7 +121,7 @@ export function composerForm(ctx, { placeholderKey = 'askPlaceholder', autofocus
     }
   });
 
-  ctx._composer = { form, textarea };
+  ctx._composer = { form, textarea, mode: () => active };
   return form;
 }
 
@@ -181,6 +213,8 @@ export function depthControl(ctx) {
   const deep = el('button', {
     type: 'button',
     class: `chip-btn deep-btn${ctx.state.deepRank ? ' is-on' : ''}`,
+    title: t('meaningOption'),
+    'aria-label': t('meaningOption'),
     dataset: { deep: ctx.state.deepRank ? 'on' : 'off' },
     'aria-pressed': String(ctx.state.deepRank),
     title: t('understandMeaningTitle'),

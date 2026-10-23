@@ -22,7 +22,7 @@ export async function renderSearch(ctx, route) {
   wrap.append(head);
 
   const composer = el('div', { class: 'composer' });
-  const form = composerForm(ctx, { placeholderKey: 'askPlaceholder', autofocus: !query });
+  const form = composerForm(ctx, { placeholderKey: 'askPlaceholder', autofocus: !query, labelled: true });
   composer.append(form);
   composer.append(el('p', { class: 'voice-status', id: 'voiceStatus', role: 'status', 'aria-live': 'polite' }));
   attachSuggest(form.querySelector('textarea'), ctx);
@@ -78,6 +78,6 @@ async function runSearch(ctx, mount, query, wrap) {
     mount.append(ask);
   } catch (err) {
     mount.innerHTML = '';
-    mount.append(errorBox(err?.message, { onRetry: () => runSearch(ctx, mount, query, wrap) }));
+    mount.append(errorBox(err, { onRetry: () => runSearch(ctx, mount, query, wrap), query }));
   }
 }

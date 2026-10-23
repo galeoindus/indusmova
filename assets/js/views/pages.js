@@ -108,7 +108,7 @@ async function loadToday(ctx, mount, month, day) {
     if ((data.holidays || []).length) mount.append(listSection(t('holidaysHeading'), data.holidays, lang));
   } catch (err) {
     mount.innerHTML = '';
-    mount.append(errorBox(err?.message, { onRetry: () => loadToday(ctx, mount, month, day) }));
+    mount.append(errorBox(err, { onRetry: () => loadToday(ctx, mount, month, day) }));
   }
 }
 
@@ -153,6 +153,7 @@ function listSection(title, items, lang) {
 /* --------------------------------------------------------------- bookmarks */
 
 export function renderBookmarks(ctx) {
+  // The report's P2: local storage is easy to mistake for account sync.
   const wrap = el('div', { class: 'wrap-narrow' });
   wrap.append(head(t('bookmarks'), t('savedBlurb')));
   const mount = el('div');

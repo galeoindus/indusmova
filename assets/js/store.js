@@ -7,12 +7,17 @@
 
 import { STORAGE_KEYS } from './config.js';
 
+/** Whether this browser is letting us keep anything at all. */
+let storageWorks = true;
+export function storageAvailable() { return storageWorks; }
+
 function read(key, fallback) {
   try {
     const raw = localStorage.getItem(key);
     if (raw == null) return fallback;
     return JSON.parse(raw);
   } catch {
+    storageWorks = false;
     return fallback;
   }
 }
@@ -22,6 +27,8 @@ function write(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
     return true;
   } catch {
+    // Private browsing or a full disk; the page still works, it just forgets.
+    storageWorks = false;
     return false;
   }
 }

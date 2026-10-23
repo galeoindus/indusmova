@@ -177,7 +177,11 @@ function updateLangButton() {
   const content = document.getElementById('langBtn');
   if (content) {
     content.textContent = ctx.state.contentLang.toUpperCase();
-    content.title = `${t('langTitle')} — ${labelFor(ctx.state.contentLang)}`;
+    // Name the setting, not just the value: the interface language and the
+    // Wikipedia edition are two different things (report P1).
+    const label = `${t('wikiEdition')}: ${labelFor(ctx.state.contentLang)}`;
+    content.title = label;
+    content.setAttribute('aria-label', label);
   }
   const ui = document.getElementById('uiLangBtn');
   if (ui) {
@@ -212,8 +216,8 @@ function wireHeader() {
     if (open) jumper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
 
-  document.getElementById('langBtn')?.addEventListener('click', (event) => openMenu(event.currentTarget, CONTENT_LANGS, ctx.state.contentLang, (code) => ctx.setContentLang(code)));
-  document.getElementById('uiLangBtn')?.addEventListener('click', (event) => openMenu(event.currentTarget, UI_LANGS.map((l) => ({ code: l.code, label: l.label })), ctx.state.uiLang, (code) => ctx.setUiLang(code)));
+  document.getElementById('langBtn')?.addEventListener('click', (event) => openMenu(event.currentTarget, CONTENT_LANGS, ctx.state.contentLang, (code) => ctx.setContentLang(code), t('wikiEdition')));
+  document.getElementById('uiLangBtn')?.addEventListener('click', (event) => openMenu(event.currentTarget, UI_LANGS.map((l) => ({ code: l.code, label: l.label })), ctx.state.uiLang, (code) => ctx.setUiLang(code), t('uiLangTitle')));
 
   // Keyboard shortcuts, as advertised in the tooltips.
   document.addEventListener('keydown', (event) => {
@@ -224,9 +228,10 @@ function wireHeader() {
 }
 
 let openMenuEl = null;
-function openMenu(anchor, items, active, onPick) {
+function openMenu(anchor, items, active, onPick, title = '') {
   closeMenu();
   const menu = el('div', { class: 'lang-menu', role: 'menu' });
+  if (title) menu.append(el('p', { class: 'lang-menu-title', text: title }));
   for (const item of items) {
     const btn = el('button', {
       type: 'button', role: 'menuitemradio', class: `lang-menu-item${item.code === active ? ' is-active' : ''}`,
@@ -319,6 +324,11 @@ function railSkeleton() {
 
 function boot() {
   setUiLang(ctx.state.uiLang);
+  // If the browser is blocking storage, say so rather than letting a reader
+  // believe their saved answers will be there tomorrow (report P2).
+  setTimeout(() => {
+    if (!store.storageAvailable()) toast(`${t('storageTitle')} — ${t('storageBody')}`, { duration: 9000 });
+  }, 1200);
   applyI18n();
   initTheme();
   updateLangButton();

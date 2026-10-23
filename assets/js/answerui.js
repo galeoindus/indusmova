@@ -96,7 +96,14 @@ export function topicBlocks(topics, { open = false, onGoto = null } = {}) {
 /** The transparency note: exactly how this answer was produced. */
 export function methodNote(method = {}, { revid = '', lang = 'en', title = '', wikiUrl = '' } = {}) {
   const details = el('details', { class: 'method-note' });
-  details.append(el('summary', { text: t('howThisWasMade') }));
+  const summary = el('summary');
+  summary.append(el('span', { text: t('howThisWasMade') }));
+  // The headline fact stays visible even when the panel is closed.
+  summary.append(el('span', {
+    class: 'method-summary',
+    text: `${method.sentencesMatched ?? 0} ${t('ofWord')} ${method.sentencesConsidered ?? 0} · ${method.sectionsRead ?? 0} ${t('sectionsWord')}`,
+  }));
+  details.append(summary);
   const ul = el('ul', { class: 'line-list' });
   const rows = [
     `${t('depthLabel')}: ${t(method.depth === 'quick' ? 'quickAnswer' : method.depth === 'deep' ? 'deepDive' : 'detailed')}`,
@@ -128,6 +135,7 @@ export function factsBox(facts, title = '') {
     dl.append(row);
   }
   box.append(dl);
+  box.append(el('p', { class: 'src-credit', text: t('factsNote') }));
   return box;
 }
 
@@ -205,6 +213,17 @@ export function referencesBlock(references = []) {
   });
   section.append(ol);
   return section;
+}
+
+/**
+ * The one-line trust statement, kept near the answer rather than in the footer:
+ * these passages were selected from a named article, not written.
+ */
+export function selectedNote(articleTitle, lang, wikiUrl) {
+  const note = el('p', { class: 'selected-note' });
+  note.append(document.createTextNode(`${t('selectedNotGenerated')} `));
+  if (wikiUrl) note.append(el('a', { href: wikiUrl, target: '_blank', rel: 'noopener noreferrer', text: articleTitle }));
+  return note;
 }
 
 /** A short note on what the answer does and does not cover. */

@@ -20,7 +20,7 @@ import { clean, wordCount, collectImages, proseText } from '../parse.js';
 import { composeAnswer } from '../answer.js';
 import { articleToMarkdown, download } from '../markdown.js';
 import {
-  evidenceStrip, topicBlocks, methodNote, factsBox, sourcesGroup, scopeNote, feedback, referencesBlock,
+  evidenceStrip, topicBlocks, methodNote, factsBox, sourcesGroup, scopeNote, feedback, referencesBlock, selectedNote,
 } from '../answerui.js';
 import { sectionHead, card, errorBox, emptyState, toast, breadcrumbs } from '../components.js';
 import { mountOpenSources } from './library.js';
@@ -97,7 +97,7 @@ async function build(ctx, mount, state, title, retry = 0) {
   } catch (err) {
     mount.innerHTML = '';
     const message = err?.status === 404 ? t('notFoundBody') : err?.message;
-    mount.append(errorBox(message, { onRetry: () => build(ctx, mount, state, title, retry + 1) }));
+    mount.append(errorBox(message, { onRetry: () => build(ctx, mount, state, title, retry + 1), query: title }));
     if (err?.name === 'ApiError' && err.status !== 404 && retry === 0) {
       setTimeout(() => build(ctx, mount, state, title, 1), 600);
     }
@@ -192,7 +192,7 @@ async function repaintBreakdown(ctx, state) {
     });
   } catch (err) {
     mount.innerHTML = '';
-    mount.append(errorBox(err?.message));
+    mount.append(errorBox(err, { query: state.data?.title || '' }));
     return;
   }
   answer.wikiUrl = state.wikiUrl;
@@ -218,6 +218,7 @@ async function repaintBreakdown(ctx, state) {
 
   const qa = el('div', { class: 'qa-answer' });
   qa.append(el('h2', { text: t('coreAnswer') }));
+  qa.append(selectedNote(answer.title, state.lang, state.wikiUrl));
   const list = el('ul', { class: 'line-list' });
   (answer.core.length ? answer.core : [clamp(answer.leadText, 320)]).forEach((s) => list.append(el('li', { text: s })));
   qa.append(list);
@@ -473,6 +474,8 @@ function fullArticle(root, data, lang, state) {
   const panel = el('div', { class: 'panel' });
   const prose = el('div', { class: 'prose' });
   prose.innerHTML = root.innerHTML;
+  // Give each citation marker a name a screen reader can use.
+  labelCitations(prose);
 
   const infobox = prose.querySelector('.infobox, table.infobox');
   const factbox = infobox ? factsBox(factsFrom(infobox), data.title) : null;
@@ -682,6 +685,28 @@ function openDeepLinkedSection(state, route) {
 
 function routeOf(ctx) { return ctx.route || {}; }
 
+/**
+ * Give every citation marker a name a screen reader can use.
+ *
+ * "[2]" alone tells a reader nothing. Each marker becomes "Open source 2,
+ * section 'Causes'" using the heading it sits under.
+ */
+function labelCitations(prose) {
+  const heads = [...prose.querySelectorAll('h2, h3, h4')];
+  for (const link of prose.querySelectorAll('sup.cite a')) {
+    const number = (link.textContent || '').replace(/[^\d]/g, '');
+    let section = '';
+    for (const head of heads) {
+      if (head.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING) section = head.textContent.trim();
+      else break;
+    }
+    link.setAttribute('aria-label', section
+      ? `${t('openSource')} ${number}, ${t('sectionLabel')} “${section}”`
+      : `${t('openSource')} ${number}`);
+    link.setAttribute('title', link.getAttribute('aria-label'));
+  }
+}
+
 /** What to show when the source article has no references at all. */
 function emptyReferences() {
   const box = el('section', { class: 'sec' });
@@ -751,15 +776,15 @@ function actions(ctx, state) {
   const row = el('div', { class: 'article-actions' });
   const id = `article:${lang}:${data.title}`;
 
-  const save = el('button', { type: 'button', class: `btn btn-ghost${ctx.isBookmarked(id) ? ' is-on' : ''}`, html: `${icon('bookmark')}<span>${esc(ctx.isBookmarked(id) ? t('saved') : t('bookmarks'))}</span>` });
+  const save = el('button', { type: 'button', class: `btn btn-ghost${ctx.isBookmarked(id) ? ' is-on' : ''}`, html: `${icon('bookmark')}<span>${esc(ctx.isBookmarked(id) ? t('savedOnDevice') : t('bookmarks'))}</span>` });
   save.addEventListener('click', () => {
     const saved = ctx.toggleBookmark({
       id, title: data.title, lang, url: articleHref(data.title, lang),
       extract: clamp(root.querySelector('p')?.textContent || '', 160),
     });
-    save.innerHTML = `${icon('bookmark')}<span>${esc(saved ? t('saved') : t('bookmarks'))}</span>`;
+    save.innerHTML = `${icon('bookmark')}<span>${esc(saved ? t('savedOnDevice') : t('bookmarks'))}</span>`;
     save.classList.toggle('is-on', saved);
-    toast(saved ? t('saved') : t('remove'));
+    toast(saved ? t('savedOnDevice') : t('removedFromSaved'));
   });
   row.append(save);
 

@@ -101,6 +101,37 @@ still render. Wikipedia's sister projects use the same API shape, so they get
 the same full breakdown as an article; the others render as a *work* — title,
 summary, metadata as facts, and a link to the source.
 
+### The Evidence Desk redesign
+
+The interface follows the redesign proposal's "Evidence Desk" direction — a
+calm, source-forward research surface.
+
+**One clear starting point.** The home page leads with one labelled field and a
+two-option mode control, *Ask a question* / *Find an article*, each with a
+one-line explanation of what it will do. The submit button and the helper line
+change with the mode; the text you have typed is kept when you switch. An
+example prompt fills the field rather than firing a navigation you did not ask
+for, and submitting an empty field says so instead of doing nothing.
+
+**Evidence before decoration.** An answer reads: the query, the article it came
+from, *Passages selected from this Wikipedia article — not newly written*, the
+core answer, key points, numbered topic blocks, facts, sources, then the method.
+Citation markers carry a name a screen reader can use ("Open source 2, section
+'Causes'"), the facts panel says the facts come from the infobox and may be
+incomplete, and the method note keeps its headline counts visible while the
+detail stays disclosed. Ranking is described as relevance, never as truth.
+
+**Navigation around the task, not the feature list.** The sidebar is grouped
+Discover / My library / About; the header keeps four destinations; the phone bar
+carries four. Saved content is labelled *On this device*, and the sidebar says
+plainly that it does not sync. Language controls name their setting — "Wikipedia
+edition" and "Interface language" — because they are two different things.
+
+**Recovery designed as part of the product.** Offline, rate-limited, not found,
+no results and storage-blocked states each say what happened in plain language,
+keep the query on screen, and offer one next step. A failed lookup never erases
+the question.
+
 ### The article template
 
 Every article — the static pages and the in-app view — follows one structure:

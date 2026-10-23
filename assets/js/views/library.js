@@ -45,7 +45,7 @@ export async function renderLibrary(ctx, route) {
   wrap.append(head);
 
   const composer = el('div', { class: 'composer', style: 'margin:0 0 18px;max-width:none' });
-  const form = composerForm(ctx, { placeholderKey: 'libraryPlaceholder', autofocus: !query, initialMode: 'search' });
+  const form = composerForm(ctx, { placeholderKey: 'libraryPlaceholder', autofocus: !query, initialMode: 'search', labelled: true });
   composer.append(form);
   composer.append(el('p', { class: 'voice-status', id: 'voiceStatus', role: 'status', 'aria-live': 'polite' }));
   attachSuggest(form.querySelector('textarea'), ctx);
@@ -123,7 +123,7 @@ async function runLibrary(ctx, mount, query, only) {
     }
   } catch (err) {
     mount.innerHTML = '';
-    mount.append(errorBox(err?.message, { onRetry: () => runLibrary(ctx, mount, query, only) }));
+    mount.append(errorBox(err, { onRetry: () => runLibrary(ctx, mount, query, only), query }));
   }
 }
 
@@ -279,9 +279,9 @@ function paintWork(ctx, mount, record) {
   const save = el('button', { type: 'button', class: `btn btn-ghost${ctx.isBookmarked(key) ? ' is-on' : ''}`, html: `${icon('bookmark')}<span>${esc(ctx.isBookmarked(key) ? t('saved') : t('bookmarks'))}</span>` });
   save.addEventListener('click', () => {
     const saved = ctx.toggleBookmark({ id: key, title: record.title, lang: ctx.state.contentLang, url: workHref(record.source, record.id), extract: clamp(record.extract, 160) });
-    save.innerHTML = `${icon('bookmark')}<span>${esc(saved ? t('saved') : t('bookmarks'))}</span>`;
+    save.innerHTML = `${icon('bookmark')}<span>${esc(saved ? t('savedOnDevice') : t('bookmarks'))}</span>`;
     save.classList.toggle('is-on', saved);
-    toast(saved ? t('saved') : t('remove'));
+    toast(saved ? t('savedOnDevice') : t('removedFromSaved'));
   });
   actions.append(save);
   if (record.readUrl) {
