@@ -238,16 +238,10 @@ function articleActions(ctx, answer) {
   });
   actions.append(saveBtn);
 
-  const copyBtn = el('button', { type: 'button', class: 'btn btn-ghost', html: `${icon('copy')}<span>${esc(t('copyMarkdown'))}</span>` });
-  copyBtn.addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(answerToMarkdown(answer, { url: answer.wikiUrl })); toast(t('copied')); }
-    catch { toast(t('errorBody')); }
-  });
-  actions.append(copyBtn);
-
-  const dlBtn = el('button', { type: 'button', class: 'btn btn-ghost', html: `${icon('download')}<span>${esc(t('downloadMarkdown'))}</span>` });
-  dlBtn.addEventListener('click', () => download(`${answer.title.replace(/[^\w\s-]/g, '')}.md`, answerToMarkdown(answer, { url: answer.wikiUrl })));
-  actions.append(dlBtn);
+  actions.append(markdownActions({
+    getText: () => answerToMarkdown(answer, { url: answer.wikiUrl }),
+    filename: answer.title,
+  }));
 
   const shareBtn = el('button', { type: 'button', class: 'btn btn-ghost', html: `${icon('share')}<span>${esc(t('share'))}</span>` });
   shareBtn.addEventListener('click', async () => {

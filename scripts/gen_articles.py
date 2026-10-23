@@ -21,6 +21,50 @@ from bs4 import BeautifulSoup, NavigableString
 
 # The repository root, so the script can be run from anywhere.
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# The article body reads the way the breakdown reads: one point per sentence.
+# Kept inline so each generated page stays standalone.
+POINTS_STYLE = '''
+    .points-prose { margin: 0 0 18px; padding-left: 22px; display: grid; gap: 8px; }
+    .points-prose > li { line-height: 1.62; max-width: 72ch; }
+    .points-prose > li::marker { color: var(--copper, #b46a45); }
+'''
+
+POINTS_SCRIPT = '''
+<script>
+(function () {
+  var END = /([.!?][\\"'\\u201d\\u2019)\\]]?)\\s+(?=[A-Z0-9\\"'\\u201c([\\u0900-\\u097F])/g;
+  var SKIP = 'figure, figcaption, table, .infobox, .thumb, .reflist, blockquote';
+  document.querySelectorAll('.prose p').forEach(function (p) {
+    if (p.closest(SKIP) || (p.textContent || '').trim().length < 25) return;
+    var points = [], current = [], flush = function () { if (current.length) { points.push(current); current = []; } };
+    Array.prototype.slice.call(p.childNodes).forEach(function (node) {
+      if (node.nodeType !== 3) { current.push(node.cloneNode(true)); return; }
+      var text = node.textContent, start = 0, m;
+      END.lastIndex = 0;
+      while ((m = END.exec(text))) {
+        var end = m.index + m[1].length;
+        current.push(document.createTextNode(text.slice(start, end)));
+        flush();
+        start = end + (m[0].length - m[1].length);
+      }
+      if (start < text.length) current.push(document.createTextNode(text.slice(start)));
+    });
+    flush();
+    if (points.length < 2) return;
+    var ul = document.createElement('ul');
+    ul.className = 'line-list points-prose';
+    points.forEach(function (nodes) {
+      var li = document.createElement('li');
+      nodes.forEach(function (n) { li.appendChild(n); });
+      ul.appendChild(li);
+    });
+    p.parentNode.replaceChild(ul, p);
+  });
+})();
+</script>
+'''
+
 ORIGIN = "https://indusmova.pages.dev"
 LANG = "en"
 UA = "indusmova/3.0 (static article generator; contact bholasee8816@gmail.com)"
@@ -398,7 +442,7 @@ FOOT = """  </main>
       <p class="foot-version">indusmova v3.0.0</p>
     </div>
   </footer>
-</body>
+{POINTS_SCRIPT}</body>
 </html>
 """
 

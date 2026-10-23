@@ -207,13 +207,15 @@ function wireHeader() {
     }
   });
 
+  // The contents live in a rail beside the answer; this button shows or hides
+  // that rail, which is also what its Close button does.
   document.getElementById('tocBtn')?.addEventListener('click', () => {
-    const jumper = document.getElementById('sectionJump');
-    if (!jumper) { toast(t('noSectionsHere')); return; }
-    const open = jumper.hasAttribute('hidden');
-    if (open) jumper.removeAttribute('hidden'); else jumper.setAttribute('hidden', '');
+    const grid = document.querySelector('.article-grid');
+    if (!grid || !document.getElementById('sectionJump')) { toast(t('noSectionsHere')); return; }
+    const open = !grid.classList.contains('rail-open');
+    grid.classList.toggle('rail-open', open);
     document.getElementById('tocBtn').setAttribute('aria-expanded', String(open));
-    if (open) jumper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (open) document.getElementById('sectionJump').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
 
   document.getElementById('langBtn')?.addEventListener('click', (event) => openMenu(event.currentTarget, CONTENT_LANGS, ctx.state.contentLang, (code) => ctx.setContentLang(code), t('wikiEdition')));
@@ -322,8 +324,52 @@ function railSkeleton() {
 
 /* --------------------------------------------------------------------- boot */
 
+/**
+ * Show which build this is, and get out of the way of a stale one.
+ *
+ * Two problems meet here. A reader had no way to tell an updated site from a
+ * cached old one, and a cached old shell could keep showing a design that had
+ * already been fixed. The build stamp is written on every commit, so if the
+ * stamp we are running does not match the one on the server, the caches are
+ * cleared and the page is reloaded once.
+ */
+async function checkBuild() {
+  const shown = document.getElementById('appVersion');
+  const buildNode = document.getElementById('appBuild');
+  try {
+    const res = await fetch(`/assets/version.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) return;
+    const info = await res.json();
+    const label = `v${info.version}${info.commit && info.commit !== 'dev' ? `+${info.commit}` : ''}`;
+    if (shown) shown.textContent = label;
+    if (buildNode && info.built) {
+      const when = new Date(info.built);
+      buildNode.textContent = Number.isNaN(when.getTime())
+        ? ''
+        : `· ${new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' }).format(when)}`;
+      buildNode.title = t('buildStampTitle');
+    }
+    document.querySelector('meta[name="indusmova-version"]')?.setAttribute('content', label);
+
+    const seen = localStorage.getItem('indusmova:build');
+    localStorage.setItem('indusmova:build', String(info.commit || ''));
+    // A newer build on the server while an older one is running: refresh once.
+    if (seen && info.commit && seen !== info.commit && !sessionStorage.getItem('indusmova:reloaded')) {
+      sessionStorage.setItem('indusmova:reloaded', '1');
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+      location.reload();
+    }
+  } catch {
+    /* offline, or the stamp is missing: the app still works */
+  }
+}
+
 function boot() {
   setUiLang(ctx.state.uiLang);
+  checkBuild();
   // If the browser is blocking storage, say so rather than letting a reader
   // believe their saved answers will be there tomorrow (report P2).
   setTimeout(() => {

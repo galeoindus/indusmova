@@ -16,11 +16,12 @@
 import { el, clamp, cleanUrl, esc, prefersReducedMotion } from '../ui.js';
 import { icon } from '../icons.js';
 import { t } from '../i18n.js';
-import { clean, wordCount, collectImages, proseText } from '../parse.js';
+import { clean, wordCount, collectImages, proseText, paragraphsToPoints } from '../parse.js';
 import { composeAnswer } from '../answer.js';
 import { articleToMarkdown, download } from '../markdown.js';
 import {
   evidenceStrip, topicBlocks, methodNote, factsBox, sourcesGroup, scopeNote, feedback, referencesBlock, selectedNote,
+  markdownActions,
 } from '../answerui.js';
 import { sectionHead, card, errorBox, emptyState, toast, breadcrumbs } from '../components.js';
 import { mountOpenSources } from './library.js';
@@ -151,13 +152,10 @@ function render(ctx, mount, state) {
   const md = el('div', { class: 'md' });
   const pre = el('pre', { class: 'md-raw' });
   pre.textContent = articleToMarkdown(root, { title: data.title, url: wikiUrl });
-  const mdActions = el('div', { class: 'md-actions' });
-  const dl = el('button', { type: 'button', class: 'btn btn-primary', html: `${icon('download')}<span>${esc(t('downloadMarkdown'))}</span>` });
-  dl.addEventListener('click', () => download(`${data.title.replace(/[^\w\s-]/g, '')}.md`, pre.textContent));
-  const cp = el('button', { type: 'button', class: 'btn btn-ghost', html: `${icon('copy')}<span>${esc(t('copyMarkdown'))}</span>` });
-  cp.addEventListener('click', async () => { try { await navigator.clipboard.writeText(pre.textContent); toast(t('copied')); } catch { /* ignore */ } });
-  mdActions.append(dl, cp);
-  md.append(mdActions, pre);
+  md.append(markdownActions({
+    getText: () => pre.textContent,
+    filename: data.title,
+  }), pre);
   panelMd.append(md);
 
   mount.append(panelBreakdown, panelFull, panelMd);
@@ -201,14 +199,26 @@ async function repaintBreakdown(ctx, state) {
 
   state.answer = answer;
   mount.innerHTML = '';
-  mount.append(jumper(state, answer));
+  // Contents in the side rail at the top, as the reader asked, rather than a
+  // panel wedged above the answer.
+  // Open beside the answer on a wide screen; closed above it on a phone, where
+  // it would otherwise push the answer off the first screen.
+  const wide = typeof window !== 'undefined' && window.matchMedia('(min-width: 1040px)').matches;
+  const grid = el('div', { class: `article-grid${wide ? ' rail-open' : ''}` });
+  const content = el('div', { class: 'panel' });
+  const rail = el('aside', { class: 'toc-rail', 'aria-label': t('jumpToSection') });
+  rail.append(jumper(state, answer));
+  grid.append(content, rail);
+  mount.append(grid);
+  // Everything below belongs in the content column, beside the contents rail.
+  const mountInto = content;
   if (answer.leadImage) {
     const figure = el('figure', { class: 'art-figure', style: 'justify-items:start;margin:0 0 20px' });
     figure.append(el('img', { src: answer.leadImage.src, alt: answer.leadImage.alt || '', loading: 'eager', decoding: 'async' }));
     if (answer.leadImage.caption) figure.append(el('figcaption', { text: answer.leadImage.caption }));
-    mount.append(figure);
+    mountInto.append(figure);
   }
-  mount.append(evidenceStrip({
+  mountInto.append(evidenceStrip({
     matched: answer.method.sentencesMatched,
     considered: answer.method.sentencesConsidered,
     sections: answer.method.sectionsRead,
@@ -222,7 +232,7 @@ async function repaintBreakdown(ctx, state) {
   const list = el('ul', { class: 'line-list' });
   (answer.core.length ? answer.core : [clamp(answer.leadText, 320)]).forEach((s) => list.append(el('li', { text: s })));
   qa.append(list);
-  mount.append(qa);
+  mountInto.append(qa);
 
   if (answer.keyPoints.length > 1) {
     const card = el('div', { class: 'answer-card' });
@@ -235,29 +245,29 @@ async function repaintBreakdown(ctx, state) {
       ol.append(li);
     });
     card.append(ol);
-    mount.append(card);
+    mountInto.append(card);
   }
 
   if (answer.topics.length) {
-    mount.append(sectionHead({ title: t('breakdown') }));
-    mount.append(topicBlocks(answer.topics, {
+    mountInto.append(sectionHead({ title: t('breakdown') }));
+    mountInto.append(topicBlocks(answer.topics, {
       open: ctx.state.depth === 'deep',
       onGoto: (topic) => gotoSection(state, topic),
     }));
   }
 
   const facts = factsBox(answer.facts, answer.title);
-  if (facts) mount.append(facts);
+  if (facts) mountInto.append(facts);
 
   const sources = sourcesGroup({
     lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl,
     citations: answer.citations, project: state.project, revision: state.revision,
   });
   sources.id = 'sourcesBlock';
-  mount.append(sources);
-  mount.append(methodNote(answer.method, { revid: answer.revid, lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl }));
-  mount.append(scopeNote(t('scopeAnswer')));
-  mount.append(feedback(ctx, `article:${state.lang}:${answer.title}`));
+  mountInto.append(sources);
+  mountInto.append(methodNote(answer.method, { revid: answer.revid, lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl }));
+  mountInto.append(scopeNote(t('scopeAnswer')));
+  mountInto.append(feedback(ctx, `article:${state.lang}:${answer.title}`));
 }
 
 /**
@@ -275,7 +285,7 @@ async function repaintBreakdown(ctx, state) {
  */
 function jumper(state, answer) {
   const topics = answer.topics || [];
-  const wrap = el('div', { class: 'toc-jump', id: 'sectionJump', hidden: true });
+  const wrap = el('div', { class: 'toc-jump', id: 'sectionJump' });
 
   const minutes = Math.max(1, Math.round(wordCount(state.data.html) / 220));
   const head = el('div', { class: 'toc-jump-head' });
@@ -318,30 +328,18 @@ function jumper(state, answer) {
   });
   wrap.append(list);
 
-  function hide() {
-    wrap.setAttribute('hidden', '');
-    document.getElementById('tocBtn')?.setAttribute('aria-expanded', 'false');
-  }
-  function show() {
-    wrap.removeAttribute('hidden');
-    document.getElementById('tocBtn')?.setAttribute('aria-expanded', 'true');
-    wrap.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
-  }
-  close.addEventListener('click', hide);
+  // Closing collapses the rail, the same thing the header button does.
+  const setRail = (open) => {
+    wrap.closest('.article-grid')?.classList.toggle('rail-open', open);
+    document.getElementById('tocBtn')?.setAttribute('aria-expanded', String(open));
+  };
+  close.addEventListener('click', () => setRail(false));
 
   // Track the reader's position and mark sections read / being read.
   const observer = observeSections(topics, links, bar);
   if (observer) state.tocObserver = observer;
 
-  const opener = el('button', {
-    type: 'button', class: 'toc-open btn btn-ghost btn-sm',
-    html: `${icon('toc')}<span>${esc(t('jumpToSection'))} · ${topics.length}</span>`,
-  });
-  opener.addEventListener('click', show);
-
-  const holder = el('div');
-  holder.append(opener, wrap);
-  return holder;
+  return wrap;
 }
 
 /**
@@ -473,7 +471,8 @@ function fullArticle(root, data, lang, state) {
   const grid = el('div', { class: 'article-grid' });
   const panel = el('div', { class: 'panel' });
   const prose = el('div', { class: 'prose' });
-  prose.innerHTML = root.innerHTML;
+  // The article reads the way the breakdown reads: one point per sentence.
+  prose.innerHTML = paragraphsToPoints(root.cloneNode(true)).innerHTML;
   // Give each citation marker a name a screen reader can use.
   labelCitations(prose);
 
@@ -788,16 +787,10 @@ function actions(ctx, state) {
   });
   row.append(save);
 
-  const copy = el('button', { type: 'button', class: 'btn btn-ghost', html: `${icon('copy')}<span>${esc(t('copyMarkdown'))}</span>` });
-  copy.addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(articleToMarkdown(root, { title: data.title, url: wikiUrl })); toast(t('copied')); }
-    catch { toast(t('errorBody')); }
-  });
-  row.append(copy);
-
-  const dl = el('button', { type: 'button', class: 'btn btn-ghost', html: `${icon('download')}<span>${esc(t('downloadMarkdown'))}</span>` });
-  dl.addEventListener('click', () => download(`${data.title.replace(/[^\w\s-]/g, '')}.md`, articleToMarkdown(root, { title: data.title, url: wikiUrl })));
-  row.append(dl);
+  row.append(markdownActions({
+    getText: () => articleToMarkdown(root, { title: data.title, url: wikiUrl }),
+    filename: data.title,
+  }));
 
   const share = el('button', { type: 'button', class: 'btn btn-ghost', html: `${icon('share')}<span>${esc(t('share'))}</span>` });
   share.addEventListener('click', async () => {

@@ -90,6 +90,58 @@ export function routeHref(href) {
  * list we render ourselves — so the article carries inline citations near the
  * claims, as the audit asks.
  */
+/**
+ * Re-present a paragraph as one point per sentence.
+ *
+ * The reader asked for the article to read the way the breakdown reads: a line
+ * starts, a full stop ends it, that is one point, then the next one below. The
+ * inline links and citation markers are carried across, so nothing is lost by
+ * the change — only the presentation.
+ */
+export function paragraphsToPoints(root) {
+  const SENTENCE_END = /([.!?][\"'”’)\]]?)\s+(?=[A-Z0-9\"'“([\u0900-\u097F])/g;
+  const skip = 'figure, figcaption, table, .infobox, .thumb, .reflist, .references, .navbox, blockquote';
+
+  for (const p of [...root.querySelectorAll('p')]) {
+    if (p.closest(skip)) continue;
+    if ((p.textContent || '').trim().length < MIN_SENTENCE) continue;
+
+    // Build the points from the paragraph's own nodes, so links, emphasis and
+    // citation markers survive intact.
+    const points = [];
+    let current = [];
+    const flush = () => { if (current.length) { points.push(current); current = []; } };
+
+    for (const node of [...p.childNodes]) {
+      if (node.nodeType !== 3) { current.push(node.cloneNode(true)); continue; }
+      const text = node.textContent;
+      let start = 0;
+      SENTENCE_END.lastIndex = 0;
+      let match;
+      while ((match = SENTENCE_END.exec(text))) {
+        const end = match.index + match[1].length;
+        current.push(document.createTextNode(text.slice(start, end)));
+        flush();
+        start = end + (match[0].length - match[1].length);
+      }
+      if (start < text.length) current.push(document.createTextNode(text.slice(start)));
+    }
+    flush();
+
+    if (points.length < 2) continue; // a single sentence reads better as prose
+
+    const ul = document.createElement('ul');
+    ul.className = 'line-list points-prose';
+    for (const nodes of points) {
+      const li = document.createElement('li');
+      nodes.forEach((n) => li.append(n));
+      ul.append(li);
+    }
+    p.replaceWith(ul);
+  }
+  return root;
+}
+
 /** The text of every reference, keyed by the id its marker points at. */
 function collectReferenceTexts(root) {
   const texts = new Map();

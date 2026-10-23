@@ -79,23 +79,29 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Same-origin static assets: cache first, refresh in the background.
+  // Same-origin static assets: network first, cache as the offline fallback.
+  //
+  // This was cache-first, which meant the first visit after a deploy still ran
+  // the previous CSS and JavaScript — a reader would see the old design and
+  // reasonably conclude nothing had been fixed. Freshness wins over a few
+  // milliseconds; the cache still covers going offline.
   if (url.origin === self.location.origin) {
     event.respondWith(
-      caches.match(request).then((cached) => {
-        const network = fetch(request).then((response) => {
-          if (response && response.ok) {
-            const copy = response.clone();
-            caches.open(RUNTIME).then((cache) => cache.put(request, copy));
-          }
-          return response;
-        }).catch(() => cached);
-        return cached || network;
-      }),
+      fetch(request).then((response) => {
+        if (response && response.ok) {
+          const copy = response.clone();
+          caches.open(RUNTIME).then((cache) => cache.put(request, copy));
+        }
+        return response;
+      }).catch(() => caches.match(request)),
     );
   }
 });
 
 self.addEventListener('message', (event) => {
   if (event.data === 'skip-waiting') self.skipWaiting();
+  // The page asks for this when it notices a newer build.
+  if (event.data === 'clear-caches') {
+    event.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))));
+  }
 });
