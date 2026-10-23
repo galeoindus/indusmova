@@ -92,7 +92,7 @@ export async function composeAnswer({ question, root, sections = [], depth = 'de
 
   const leadSentences = sentences(parts.leadText);
   const sectionTexts = parts.sections.map((s) => ({
-    id: s.id, line: s.line, sentences: sentences(s.text), images: s.images || [],
+    id: s.id, line: s.line, number: s.number || '', sentences: sentences(s.text), images: s.images || [],
   }));
 
   // Everything the question could be answered from, tagged with its section.
@@ -152,7 +152,8 @@ export async function composeAnswer({ question, root, sections = [], depth = 'de
       return {
         id: s.id,
         title: s.line,
-        number: i + 1,
+        // Wikipedia's own numbering, so a subsection reads "2.1" and not "7".
+        number: s.number || String(i + 1),
         short: points.slice(0, 2),
         full: points,
         points,
@@ -178,6 +179,7 @@ export async function composeAnswer({ question, root, sections = [], depth = 'de
     leadImage: parts.images[0] || null,
     tables: parts.tables,
     citations: parts.citations.slice(0, 20),
+    references: parts.references || [],
     sections: parts.sections.map((s) => ({ id: s.id, line: s.line, level: s.level })),
     rankedCount: ordered.length,
     // Transparency: what the answer was actually built from.

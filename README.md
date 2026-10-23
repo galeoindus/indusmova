@@ -19,6 +19,7 @@ It is a **static, single-page application**: plain HTML, CSS and ES modules, no 
 | **Explore** — categories and the most-read articles right now | `#/explore` |
 | **Saved / Bookmarks** — kept on the device | `#/bookmarks` |
 | **Reading history** | `#/history` |
+| **Articles** — thirteen topics published as complete, indexable article pages: lead, quick facts, numbered table of contents, sections with inline citations, references, related topics | `/articles/<slug>/` |
 | **Library** — one search across every free, keyless source indusmova knows, grouped by source and named | `#/library?q=…` |
 | **Work** — a book, paper or archive item, rendered in the same architecture as an article | `#/work?src=…&id=…` |
 | **Sources** — every source, what it is, and under which licence | `#/sources` |
@@ -76,6 +77,36 @@ A source that is unreachable or rate-limited is reported as such and the rest
 still render. Wikipedia's sister projects use the same API shape, so they get
 the same full breakdown as an article; the others render as a *work* — title,
 summary, metadata as facts, and a link to the source.
+
+### The article template
+
+Every article — the static pages and the in-app view — follows one structure:
+
+```
+breadcrumbs        Home > Topics > <Title>, every crumb a real link
+lead               one H1, a short sourced lead, source and revision metadata
+quick facts        the infobox, as label/value rows
+contents           a numbered, nested table of contents with stable anchors
+sections           Wikipedia's own numbering (2, 2.1), never a heading-only stub
+inline citations   [1] [2] [3] in reading order, each linking to its reference
+references         the numbered list the markers point at
+related topics     internal links, plus the other language editions
+footer             attribution, licence and the modification notice
+```
+
+**Attribution is explicit.** Reused text carries the source, the licence, a link
+to the original and a statement that indusmova reformats and condenses it —
+which the licence requires and which the audit asked for. Pictures are checked
+**one at a time**: each gallery image asks Wikimedia Commons for its own licence
+and author, because a text licence does not cover the media.
+
+### Stable article URLs
+
+`/articles/<slug>/` is a real path. Cloudflare Pages serves the thirteen
+generated pages from disk and rewrites everything else under `/articles/*` to
+the app shell, which reads the slug out of the address bar. So a link can be
+shared, pasted, refreshed and crawled, and the canonical URL always matches
+what the reader sees.
 
 ### The section jumper
 

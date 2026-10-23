@@ -83,6 +83,7 @@ async function get(url, { ttl = 0, signal, as = 'json', retries = 1 } = {}) {
         if (!res.ok) {
           // A 404 from a summary/parse endpoint is a real answer, not a fault.
           if (res.status === 404) throw new ApiError('not-found', { status: 404, url });
+          if (res.status === 429) throw new ApiError('rate-limited', { status: 429, url });
           throw new ApiError(`HTTP ${res.status}`, { status: res.status, url });
         }
         const value = as === 'json' ? await res.json() : await res.text();
@@ -415,4 +416,3 @@ export async function imageInfo(fileTitle, { signal } = {}) {
   };
 }
 
-export { DEFAULT_LANG };

@@ -132,7 +132,7 @@ export function factsBox(facts, title = '') {
 }
 
 /** Sources, as cards with the licence and a link. */
-export function sourcesGroup({ lang = 'en', title = '', wikiUrl = '', citations = [] } = {}) {
+export function sourcesGroup({ lang = 'en', title = '', wikiUrl = '', citations = [], project = 'wikipedia' } = {}) {
   const group = el('div', { class: 'src-group' });
   group.append(el('h3', { text: t('sourcesHeading') }));
 
@@ -171,7 +171,31 @@ export function sourcesGroup({ lang = 'en', title = '', wikiUrl = '', citations 
     group.append(details);
   }
   group.append(el('p', { class: 'src-credit', text: t('attribution') }));
+  // The audit's requirement: say plainly that the text was changed, and where
+  // the untouched original lives.
+  const notice = el('p', { class: 'src-credit modification-notice' });
+  notice.append(document.createTextNode(`${t('modificationNotice')} `));
+  notice.append(el('a', { href: wikiUrl, target: '_blank', rel: 'noopener noreferrer', text: `${lang}.${project}.org` }));
+  notice.append(document.createTextNode('.'));
+  group.append(notice);
   return group;
+}
+
+/**
+ * The reference list, numbered, with ids the inline markers point at.
+ * Wikipedia's own list is reused — nothing is invented.
+ */
+export function referencesBlock(references = []) {
+  if (!references.length) return null;
+  const section = el('section', { class: 'sec', id: 'references' });
+  section.append(el('div', { class: 'sec-head', html: `<h2>${esc(t('references'))}</h2><span class="more">${references.length}</span>` }));
+  const ol = el('ol', { class: 'reference-list' });
+  references.forEach((text, i) => {
+    const li = el('li', { id: `ref-${i + 1}`, text: clamp(text, 400) });
+    ol.append(li);
+  });
+  section.append(ol);
+  return section;
 }
 
 /** A short note on what the answer does and does not cover. */
