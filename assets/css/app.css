@@ -119,3 +119,41 @@ form.panel .select { cursor: pointer; }
 .article-grid.rail-open .toc-rail { order: 0; }
 .article-grid.rail-open .panel { order: -1; }
 .toc-rail .factbox { margin-top: 0; }
+
+/* ---------------------------------------------------------- icon sizing */
+
+/* Icons injected from JS carry a viewBox but no width/height, so anywhere the
+   design system does not already set a size they would stretch to fill. Pin
+   the few containers that rely on the markup's own width/height. */
+.dash-hero-badge svg { width: 14px; height: 14px; flex: 0 0 auto; }
+.hero-clock svg { width: 17px; height: 17px; }
+.state .ic svg { width: 34px; height: 34px; }
+.saved-ph svg { width: 20px; height: 20px; }
+.src-mark svg { width: 14px; height: 14px; }
+
+/* --------------------------------------------------- the hero gradient */
+
+/* In the captured stylesheet `.dash-grad` kept `background-clip: text` and
+   `color: transparent` but lost its gradient, which left the second half of
+   the headline invisible. Restore it. */
+.dash-hero h1 .dash-grad {
+  background-image: linear-gradient(100deg, var(--copper) 0%, #d08a62 45%, var(--accent-2) 100%);
+  background-size: 100% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+[data-theme="dark"] .dash-hero h1 .dash-grad {
+  background-image: linear-gradient(100deg, #d08a62 0%, #e0a271 45%, var(--accent-2) 100%);
+}
+
+/* ------------------------------------------------------- small screens */
+
+@media (max-width: 700px) {
+  /* The bottom bar is the mobile navigation; the header keeps only the
+     utility buttons so the topbar stays one line. */
+  .topnav a { display: none; }
+  .topnav .nav-sep { display: none; }
+  .dash-hero-badge { align-self: center; text-align: center; }
+}
