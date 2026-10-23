@@ -1,6 +1,6 @@
 # indusmova
 
-**सवाल से समझ तक — "From question to understanding."**
+** From question to understanding. **
 
 indusmova is a Wikimedia knowledge research and discovery platform. Ask a question, or open a topic, and get a direct answer, the key points, a topic-wise breakdown, the facts from the infobox, and every source with a link back to Wikipedia.
 
