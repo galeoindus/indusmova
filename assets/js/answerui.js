@@ -57,6 +57,15 @@ export function topicBlocks(topics, { open = false, onGoto = null } = {}) {
     }
     block.append(head);
 
+    // A picture from this section, when the article has one.
+    const picture = (topic.images || [])[0];
+    if (picture) {
+      const figure = el('figure', { class: 'topic-figure' });
+      figure.append(el('img', { src: picture.src, alt: picture.alt || '', loading: 'lazy', decoding: 'async' }));
+      if (picture.caption) figure.append(el('figcaption', { text: picture.caption }));
+      block.append(figure);
+    }
+
     const short = el('div', { class: 'topic-short' });
     (topic.short || topic.points).forEach((line) => short.append(el('p', { text: line })));
     block.append(short);

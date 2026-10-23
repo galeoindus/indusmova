@@ -15,8 +15,10 @@
 
 import { cleanUrl } from './ui.js';
 
-const WIKI_API = 'https://{lang}.wikipedia.org/w/api.php';
-const WIKI_REST = 'https://{lang}.wikipedia.org/api/rest_v1';
+// {project} lets the same client read Wikipedia's sister projects — Wikiquote,
+// Wikisource, Wikinews and the rest — which share the API shape exactly.
+const WIKI_API = 'https://{lang}.{project}.org/w/api.php';
+const WIKI_REST = 'https://{lang}.{project}.org/api/rest_v1';
 const WIKIDATA_API = 'https://www.wikidata.org/w/api.php';
 const COMMONS_API = 'https://commons.wikimedia.org/w/api.php';
 
@@ -106,8 +108,8 @@ async function get(url, { ttl = 0, signal, as = 'json', retries = 1 } = {}) {
   }
 }
 
-function actionUrl(lang, params) {
-  const url = new URL(WIKI_API.replace('{lang}', lang || DEFAULT_LANG));
+function actionUrl(lang, params, project = 'wikipedia') {
+  const url = new URL(WIKI_API.replace('{lang}', lang || DEFAULT_LANG).replace('{project}', project || 'wikipedia'));
   url.searchParams.set('format', 'json');
   url.searchParams.set('formatversion', '2');
   url.searchParams.set('origin', '*');
@@ -117,8 +119,8 @@ function actionUrl(lang, params) {
   return url.toString();
 }
 
-function restUrl(lang, path) {
-  return `${WIKI_REST.replace('{lang}', lang || DEFAULT_LANG)}${path}`;
+function restUrl(lang, path, project = 'wikipedia') {
+  return `${WIKI_REST.replace('{lang}', lang || DEFAULT_LANG).replace('{project}', project || 'wikipedia')}${path}`;
 }
 
 /** Normalise a REST summary/related payload into the shape views expect. */
@@ -193,9 +195,9 @@ export async function resolveTitle(lang, query, { signal } = {}) {
 
 /* --------------------------------------------------------------- summaries */
 
-export async function summary(lang, title, { signal } = {}) {
+export async function summary(lang, title, { signal, project = 'wikipedia' } = {}) {
   if (!title) return null;
-  const url = restUrl(lang, `/page/summary/${encodeURIComponent(title.replace(/ /g, '_'))}?redirect=true`);
+  const url = restUrl(lang, `/page/summary/${encodeURIComponent(title.replace(/ /g, '_'))}?redirect=true`, project);
   const data = await get(url, { ttl: TTL.summary, signal });
   return normalisePage(data);
 }
@@ -235,13 +237,13 @@ export async function summaries(lang, titles, { signal } = {}) {
  * The full article: parsed HTML, its section list and revision metadata.
  * One Action API call carries the table of contents and the body together.
  */
-export async function article(lang, title, { signal } = {}) {
+export async function article(lang, title, { signal, project = 'wikipedia' } = {}) {
   if (!title) return null;
   const url = actionUrl(lang, {
     action: 'parse', page: title, redirects: 1,
     prop: 'text|sections|displaytitle|revid|langlinks|images',
     disableeditsection: 1, disabletoc: 1, mobileformat: 0,
-  });
+  }, project);
   const data = await get(url, { ttl: TTL.article, signal });
   const parse = data.parse;
   if (!parse) throw new ApiError('not-found', { status: 404 });

@@ -18,6 +18,7 @@ import { renderHome } from './views/home.js';
 import { renderSearch } from './views/search.js';
 import { renderAsk } from './views/ask.js';
 import { renderArticle } from './views/article.js';
+import { renderLibrary, renderWork } from './views/library.js';
 import {
   renderExplore, renderToday, renderBookmarks, renderHistory,
   renderSources, renderTopics, renderStatic, renderSupport, renderFeedback, renderNotFound,
@@ -116,6 +117,8 @@ const VIEWS = {
   history: () => renderHistory(ctx),
   sources: () => renderSources(ctx),
   topics: () => renderTopics(ctx),
+  library: (route) => renderLibrary(ctx, route),
+  work: (route) => renderWork(ctx, route),
   about: () => renderStatic('about'),
   privacy: () => renderStatic('privacy'),
   terms: () => renderStatic('terms'),
@@ -133,6 +136,7 @@ async function render(route) {
   ctx.optionsChanged = () => {};
   const main = document.getElementById('main');
   if (!main) return;
+  document.documentElement.setAttribute('data-view', route.name);
   main.innerHTML = '';
   markNav(route);
   updateTitle(route);
@@ -164,6 +168,7 @@ function markNav(route) {
   const map = {
     home: '#/', explore: '#/explore', today: '#/today', bookmarks: '#/bookmarks',
     history: '#/history', sources: '#/sources', topics: '#/topics', ask: '#/ask',
+    library: '#/library',
   };
   document.querySelectorAll('.side-link, .topnav a, .bottom-nav a').forEach((a) => {
     const href = a.getAttribute('href') || '';
@@ -184,8 +189,11 @@ function updateLangButton() {
   }
   const ui = document.getElementById('uiLangBtn');
   if (ui) {
-    ui.textContent = UI_LANGS.find((l) => l.code === ctx.state.uiLang)?.short || 'EN';
-    ui.title = t('uiLangTitle');
+    // Show the language you would switch TO, not the one you are in.
+    const other = UI_LANGS.find((l) => l.code !== ctx.state.uiLang) || UI_LANGS[0];
+    ui.textContent = other.short;
+    ui.title = `${t('uiLangTitle')} — ${other.label}`;
+    ui.setAttribute('aria-label', `${t('uiLangTitle')} — ${other.label}`);
   }
 }
 
@@ -201,6 +209,15 @@ function wireHeader() {
     } finally {
       btn.disabled = false;
     }
+  });
+
+  document.getElementById('tocBtn')?.addEventListener('click', () => {
+    const jumper = document.getElementById('sectionJump');
+    if (!jumper) { toast(t('noSectionsHere')); return; }
+    const open = jumper.hasAttribute('hidden');
+    if (open) jumper.removeAttribute('hidden'); else jumper.setAttribute('hidden', '');
+    document.getElementById('tocBtn').setAttribute('aria-expanded', String(open));
+    if (open) jumper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
 
   document.getElementById('langBtn')?.addEventListener('click', (event) => openMenu(event.currentTarget, CONTENT_LANGS, ctx.state.contentLang, (code) => ctx.setContentLang(code)));

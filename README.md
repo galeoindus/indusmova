@@ -19,7 +19,9 @@ It is a **static, single-page application**: plain HTML, CSS and ES modules, no 
 | **Explore** — categories and the most-read articles right now | `#/explore` |
 | **Saved / Bookmarks** — kept on the device | `#/bookmarks` |
 | **Reading history** | `#/history` |
-| **Sources** — what is read from where, and under which licence | `#/sources` |
+| **Library** — one search across every free, keyless source indusmova knows, grouped by source and named | `#/library?q=…` |
+| **Work** — a book, paper or archive item, rendered in the same architecture as an article | `#/work?src=…&id=…` |
+| **Sources** — every source, what it is, and under which licence | `#/sources` |
 | **Markdown export** — copy or download any answer or article as Markdown | answer & article views |
 | **Two languages of chrome** — English and हिन्दी, plus 12 content languages | header buttons |
 | **Light / dark / system theme**, reading comfort, reading-progress bar | header buttons |
@@ -56,15 +58,31 @@ shows which level is active.
 
 The default ranker is keyword overlap with a rough IDF weighting. The optional **Understand meaning** switch loads a small open sentence-embedding model (`Xenova/all-MiniLM-L6-v2`, about 23 MB, once) via transformers.js and re-orders the same sentences by cosine similarity. **Nothing is ever generated** — every sentence is quoted from the article, and the ranking only chooses the order.
 
-### APIs used
+### Open sources
 
-- Wikipedia Action API — search, `action=parse`, sections, extracts, random, prefix search
-- Wikipedia REST API — summaries, on-this-day, featured
-- Wikimedia pageviews API — the "most read right now" list
-- Wikidata — structured entity data
-- Wikimedia Commons — image credits and licences
+Everything indusmova reads is free, public and needs **no API key**. They are
+called straight from the browser, so each one has to send CORS headers — arXiv
+and Google Books do not, and are deliberately absent.
 
-All are public and CORS-enabled; requests go straight from the browser.
+| Family | Sources |
+|---|---|
+| Wikimedia | Wikipedia, Wikiquote, Wikisource, Wikinews, Wikibooks, Wikiversity, Wikivoyage, Wiktionary, Wikidata, Wikimedia Commons |
+| Books | Project Gutenberg (Gutendex), Open Library, Internet Archive |
+| Research | Crossref, OpenAlex, Europe PMC, PubMed, DOAJ |
+| Metrics | Wikimedia pageviews (the "most read right now" list) |
+
+The Library searches all of them at once and names the source on every result.
+A source that is unreachable or rate-limited is reported as such and the rest
+still render. Wikipedia's sister projects use the same API shape, so they get
+the same full breakdown as an article; the others render as a *work* — title,
+summary, metadata as facts, and a link to the source.
+
+### The section jumper
+
+An article's whole structure is available from a **Jump to a section** panel
+that stays collapsed until it is asked for — the jump button in the header
+(next to the language buttons), or the button above the tabs. Choosing a
+section scrolls to it and opens it; the panel closes itself.
 
 ---
 

@@ -28,6 +28,7 @@ import {
   scopeNote, feedback, curatedNote,
 } from '../answerui.js';
 import { sectionHead, card, errorBox, emptyState, toast } from '../components.js';
+import { mountOpenSources } from './library.js';
 import { composerForm, depthControl, attachSuggest } from '../composer.js';
 import { articleHref, searchHref } from '../router.js';
 
@@ -274,6 +275,7 @@ async function loadRelated(ctx, mount, { title, lang }) {
     section.append(grid);
     mount.append(section);
   } catch { /* related is a bonus */ }
+  mountOpenSources(ctx, mount, title);
 }
 
 function esc(value) {

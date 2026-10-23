@@ -301,17 +301,7 @@ export function splitArticle(root, sectionMeta = []) {
   const factboxes = [...container.querySelectorAll('.factbox, table.factbox')];
   const tables = [...container.querySelectorAll('table')].filter((t) => !t.classList.contains('infobox'));
 
-  const images = [...container.querySelectorAll('figure, .thumb, img')]
-    .map((n) => (n.tagName === 'IMG' ? n : n.querySelector('img')))
-    .filter(Boolean)
-    .map((img) => ({
-      src: absoluteUrl(img.getAttribute('src')),
-      alt: img.getAttribute('alt') || '',
-      width: Number(img.getAttribute('width')) || 0,
-      height: Number(img.getAttribute('height')) || 0,
-      credit: img.closest('figcaption, .thumbcaption')?.textContent?.trim() || '',
-    }))
-    .filter((img, i, arr) => img.src && arr.findIndex((x) => x.src === img.src) === i);
+  const images = collectImages(container);
 
   // A flat list of the article's top-level blocks, each tagged with the heading
   // it starts, if it is one.
@@ -354,6 +344,7 @@ export function splitArticle(root, sectionMeta = []) {
         index: meta.index || String(sections.length + 1),
         html: body.innerHTML,
         text: proseText(body),
+        images: collectImages(body).slice(0, 4),
       });
     }
   });
@@ -372,6 +363,39 @@ export function splitArticle(root, sectionMeta = []) {
     images,
     citations,
   };
+}
+
+/**
+ * Every real picture in a document, in order, with its caption.
+ *
+ * Wikipedia's HTML also carries rendered formulas, 20px icons and category
+ * symbols. Those are not pictures a reader wants, so they are filtered out —
+ * but nothing else is, so no illustration is missed.
+ */
+export function collectImages(root) {
+  const out = [];
+  const seen = new Set();
+  for (const img of root.querySelectorAll('img')) {
+    const src = absoluteUrl(img.getAttribute('src'));
+    if (!src || seen.has(src)) continue;
+    if (/\/media\/math\/render\//.test(src)) continue;          // rendered formulas
+    if (/\.svg($|\?)/i.test(src) && !/\.svg\.png/i.test(src)) continue; // raw vector icons
+    const alt = (img.getAttribute('alt') || '').trim();
+    if (/^(icon|edit|symbol|logo|flag icon)$/i.test(alt)) continue;
+    const w = Number(img.getAttribute('width')) || 0;
+    const h = Number(img.getAttribute('height')) || 0;
+    if (w && h && w < 80 && h < 80) continue;                     // tiny chrome
+    if (/\/20px-|\/25px-|Symbol_/.test(src)) continue;
+    seen.add(src);
+    out.push({
+      src,
+      alt,
+      width: w,
+      height: h,
+      caption: textOf(img.closest('figure, .thumb, .thumbinner')?.querySelector('figcaption, .thumbcaption') || null),
+    });
+  }
+  return out;
 }
 
 /** A short, readable plain-text version of an article, for the answer model. */

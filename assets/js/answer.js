@@ -86,12 +86,14 @@ export function factsFromInfobox(infoboxHtml) {
  * @param {string} [args.depth]   quick | detailed | deep
  * @param {boolean} [args.deep]   use the on-device meaning model
  */
-export async function composeAnswer({ question, root, sections = [], depth = 'detailed', deep = false, lang = 'en', title = '', mode = 'ask' }) {
+export async function composeAnswer({ question, root, sections = [], depth = 'detailed', deep = false, lang = 'en', title = '', mode = 'ask', maxSections = null }) {
   const parts = splitArticle(root, sections);
   const preset = DEPTHS[depth] || DEPTHS.detailed;
 
   const leadSentences = sentences(parts.leadText);
-  const sectionTexts = parts.sections.map((s) => ({ id: s.id, line: s.line, sentences: sentences(s.text) }));
+  const sectionTexts = parts.sections.map((s) => ({
+    id: s.id, line: s.line, sentences: sentences(s.text), images: s.images || [],
+  }));
 
   // Everything the question could be answered from, tagged with its section.
   const pool = [
@@ -141,8 +143,10 @@ export async function composeAnswer({ question, root, sections = [], depth = 'de
   });
   const byRelevance = mode !== 'article' && topicScores.some((s) => s.score > 0);
   const orderedTopics = byRelevance ? [...topicScores].sort((a, b) => b.score - a.score) : topicScores;
+  // An article keeps its whole structure; an answer keeps the most relevant part.
+  const limit = maxSections ?? preset.sections;
   const topics = orderedTopics
-    .slice(0, preset.sections)
+    .slice(0, limit)
     .map((s, i) => {
       const points = dedupe(s.sentences, Math.max(4, preset.sentences));
       return {
@@ -152,6 +156,7 @@ export async function composeAnswer({ question, root, sections = [], depth = 'de
         short: points.slice(0, 2),
         full: points,
         points,
+        images: s.images || [],
         score: s.score,
       };
     })
@@ -169,7 +174,8 @@ export async function composeAnswer({ question, root, sections = [], depth = 'de
     topics,
     facts: factsFromInfobox(parts.infoboxHtml),
     infoboxHtml: parts.infoboxHtml,
-    images: parts.images.slice(0, 8),
+    images: parts.images,
+    leadImage: parts.images[0] || null,
     tables: parts.tables,
     citations: parts.citations.slice(0, 20),
     sections: parts.sections.map((s) => ({ id: s.id, line: s.line, level: s.level })),

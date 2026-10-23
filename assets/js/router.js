@@ -19,6 +19,8 @@ const ROUTES = [
   { name: 'history', pattern: /^\/history\/?$/ },
   { name: 'sources', pattern: /^\/sources\/?$/ },
   { name: 'topics', pattern: /^\/topics\/?$/ },
+  { name: 'library', pattern: /^\/library\/?$/ },
+  { name: 'work', pattern: /^\/work\/?$/ },
   { name: 'search', pattern: /^\/search\/?$/ },
   { name: 'article', pattern: /^\/article\/(.+)$/ },
   { name: 'about', pattern: /^\/about\/?$/ },
@@ -59,9 +61,25 @@ export function href(path) {
   return `#${path.startsWith('/') ? path : `/${path}`}`;
 }
 
-export function articleHref(title, lang) {
+export function articleHref(title, lang, project) {
   const base = `#/article/${encodeURIComponent(String(title).replace(/ /g, '_'))}`;
-  return lang ? `${base}?lang=${encodeURIComponent(lang)}` : base;
+  const params = new URLSearchParams();
+  if (lang) params.set('lang', lang);
+  if (project && project !== 'wikipedia') params.set('project', project);
+  const q = params.toString();
+  return q ? `${base}?${q}` : base;
+}
+
+export function libraryHref(q, { src } = {}) {
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (src) params.set('src', src);
+  const qs = params.toString();
+  return `#/library${qs ? `?${qs}` : ''}`;
+}
+
+export function workHref(source, id) {
+  return `#/work?src=${encodeURIComponent(source)}&id=${encodeURIComponent(String(id))}`;
 }
 
 export function searchHref(q, { mode = 'search', lang } = {}) {

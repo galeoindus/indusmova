@@ -8,7 +8,8 @@
 import { el, clamp, cleanUrl } from '../ui.js';
 import { icon } from '../icons.js';
 import { t } from '../i18n.js';
-import { SITE, SOURCES, CATEGORIES } from '../config.js';
+import { SITE, CATEGORIES } from '../config.js';
+import { SOURCE_LIST } from '../sources.js';
 import { sectionHead, bandHead, card, catCard, srcRow, skeletonGrid, errorBox, emptyState, toast } from '../components.js';
 import { articleHref, searchHref } from '../router.js';
 
@@ -236,23 +237,40 @@ export function renderHistory(ctx) {
 /* ------------------------------------------------------------------ sources */
 
 export function renderSources() {
-  const wrap = el('div', { class: 'wrap-narrow' });
-  wrap.append(head(t('sources'), t('sourcesBlurb')));
-  const grid = el('div', { class: 'src-grid' });
-  for (const source of SOURCES) {
-    const group = el('div', { class: 'src-group' });
-    group.append(el('h3', { html: `<a href="${source.home}" target="_blank" rel="noopener noreferrer">${esc(source.name)}</a>` }));
-    const ul = el('ul', { class: 'line-list' });
-    ul.append(el('li', { html: `<strong>${esc(t('whatItIs'))}:</strong> ${esc(source.kind)}` }));
-    ul.append(el('li', { html: `<strong>${esc(t('howToUse'))}:</strong> ${esc(source.host)}` }));
-    ul.append(el('li', { html: `<strong>${esc(t('licence'))}:</strong> ${esc(source.licence)}` }));
-    group.append(ul);
-    group.append(el('p', { class: 'src-credit', text: `${t('fromSource')}: ${source.home}` }));
-    grid.append(group);
+  const wrap = el('div', { class: 'wrap' });
+  const head = el('div', { class: 'article-head' });
+  head.append(el('span', { class: 'kicker', text: `${SOURCE_LIST.length} open sources · no API keys` }));
+  head.append(el('h1', { class: 'article-title', text: t('sources') }));
+  head.append(el('p', { class: 'article-sub', text: t('libraryBlurb') }));
+  wrap.append(head);
+  wrap.append(el('div', { class: 'article-actions', html: `<a class="btn btn-primary" href="#/library">${esc(t('library'))}</a>` }));
+
+  const families = [
+    ['Wikimedia', 'wikimedia'],
+    ['Books', 'books'],
+    ['Research', 'research'],
+    ['Archive', 'archive'],
+  ];
+  for (const [title, family] of families) {
+    const list = SOURCE_LIST.filter((s) => s.family === family);
+    if (!list.length) continue;
+    const section = el('section', { class: 'sec' });
+    section.append(sectionHead({ title }));
+    const grid = el('div', { class: 'src-grid' });
+    for (const source of list) {
+      const group = el('div', { class: 'src-group' });
+      group.append(el('h3', { html: `<a href="${source.home}" target="_blank" rel="noopener noreferrer">${esc(source.name)}</a>` }));
+      const ul = el('ul', { class: 'line-list' });
+      ul.append(el('li', { html: `<strong>${esc(t('whatItIs'))}:</strong> ${esc(source.kind)}` }));
+      ul.append(el('li', { html: `<strong>${esc(t('howToUse'))}:</strong> ${esc(new URL(source.home).host)}` }));
+      ul.append(el('li', { html: `<strong>${esc(t('licence'))}:</strong> ${esc(source.licence || '—')}` }));
+      group.append(ul);
+      grid.append(group);
+    }
+    section.append(grid);
+    wrap.append(section);
   }
-  wrap.append(grid);
-  const note = el('p', { class: 'ask-note', style: 'margin-top:20px', text: t('attribution') });
-  wrap.append(note);
+  wrap.append(el('p', { class: 'ask-note', style: 'margin-top:20px', text: t('attribution') }));
   return wrap;
 }
 

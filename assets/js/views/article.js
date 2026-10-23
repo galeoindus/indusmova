@@ -16,15 +16,22 @@
 import { el, clamp, cleanUrl } from '../ui.js';
 import { icon } from '../icons.js';
 import { t } from '../i18n.js';
-import { clean, wordCount } from '../parse.js';
+import { clean, wordCount, collectImages } from '../parse.js';
 import { composeAnswer } from '../answer.js';
 import { articleToMarkdown, download } from '../markdown.js';
 import {
   evidenceStrip, topicBlocks, methodNote, factsBox, sourcesGroup, scopeNote, feedback,
 } from '../answerui.js';
 import { sectionHead, card, errorBox, emptyState, toast } from '../components.js';
+import { mountOpenSources } from './library.js';
 import { articleHref, searchHref } from '../router.js';
 import { CONTENT_LANGS } from '../config.js';
+
+const PROJECT_NAMES = {
+  wikipedia: 'Wikipedia', wikiquote: 'Wikiquote', wikisource: 'Wikisource',
+  wikinews: 'Wikinews', wikibooks: 'Wikibooks', wikiversity: 'Wikiversity',
+  wikivoyage: 'Wikivoyage', wiktionary: 'Wiktionary',
+};
 
 export async function renderArticle(ctx, route) {
   const title = (route.params.title || '').replace(/_/g, ' ').trim();
@@ -44,6 +51,7 @@ export async function renderArticle(ctx, route) {
 
   const state = {
     lang: route.query?.lang || ctx.state.contentLang,
+    project: route.query?.project || 'wikipedia',
     data: null,
     root: null,
     breakdown: null,
@@ -58,9 +66,9 @@ export async function renderArticle(ctx, route) {
 
 async function build(ctx, mount, state, title, retry = 0) {
   try {
-    state.data = await ctx.api.article(state.lang, title);
+    state.data = await ctx.api.article(state.lang, title, { project: state.project });
     state.root = clean(state.data.html);
-    state.wikiUrl = `https://${state.lang}.wikipedia.org/wiki/${encodeURIComponent(state.data.title.replace(/ /g, '_'))}`;
+    state.wikiUrl = `https://${state.lang}.${state.project}.org/wiki/${encodeURIComponent(state.data.title.replace(/ /g, '_'))}`;
     render(ctx, mount, state);
     ctx.pushHistory({
       id: `article:${state.lang}:${state.data.title}`, kind: 'article',
@@ -83,7 +91,8 @@ function render(ctx, mount, state) {
   mount.innerHTML = '';
 
   const head = el('div', { class: 'article-head' });
-  head.append(el('span', { class: 'kicker', text: `${lang}.wikipedia.org` }));
+  const projectName = PROJECT_NAMES[state.project] || 'Wikipedia';
+  head.append(el('span', { class: 'kicker', text: `${projectName} · ${lang}.${state.project}.org` }));
   head.append(el('h1', { class: 'article-title', text: data.title }));
   const firstP = root.querySelector('p');
   if (firstP) head.append(el('p', { class: 'article-sub', text: clamp(firstP.textContent, 200) }));
@@ -151,6 +160,8 @@ async function repaintBreakdown(ctx, state) {
       lang: state.lang,
       title: state.data.title,
       mode: 'article',
+      // Opening an article shows the article: every section, in order.
+      maxSections: Infinity,
     });
   } catch (err) {
     mount.innerHTML = '';
@@ -162,6 +173,13 @@ async function repaintBreakdown(ctx, state) {
   state.breakdown = answer;
 
   mount.innerHTML = '';
+  mount.append(jumper(state, answer));
+  if (answer.leadImage) {
+    const figure = el('figure', { class: 'art-figure', style: 'justify-items:start;margin:0 0 20px' });
+    figure.append(el('img', { src: answer.leadImage.src, alt: answer.leadImage.alt || '', loading: 'eager', decoding: 'async' }));
+    if (answer.leadImage.caption) figure.append(el('figcaption', { text: answer.leadImage.caption }));
+    mount.append(figure);
+  }
   mount.append(evidenceStrip({
     matched: answer.method.sentencesMatched,
     considered: answer.method.sentencesConsidered,
@@ -206,6 +224,58 @@ async function repaintBreakdown(ctx, state) {
   mount.append(methodNote(answer.method, { revid: answer.revid, lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl }));
   mount.append(scopeNote(t('scopeAnswer')));
   mount.append(feedback(ctx, `article:${state.lang}:${answer.title}`));
+}
+
+/**
+ * The section jumper.
+ *
+ * Every section of the article, numbered, in a panel that stays collapsed
+ * until it is asked for — the header's jump button, or the summary line here.
+ * Choosing a section scrolls to its block and opens it.
+ */
+function jumper(state, answer) {
+  const wrap = el('div', { class: 'toc-jump', id: 'sectionJump', hidden: true });
+  const head = el('div', { class: 'toc-jump-head' });
+  head.append(el('h2', { text: `${t('jumpToSection')} (${answer.topics.length})` }));
+  const close = el('button', { type: 'button', class: 'btn btn-ghost btn-sm', text: t('close') });
+  close.addEventListener('click', () => {
+    wrap.setAttribute('hidden', '');
+    document.getElementById('tocBtn')?.setAttribute('aria-expanded', 'false');
+  });
+  head.append(close);
+  wrap.append(head);
+
+  const list = el('ol', { class: 'toc-jump-list' });
+  answer.topics.forEach((topic) => {
+    const li = el('li');
+    const a = el('a', { href: `#${topic.id}` });
+    a.append(el('span', { class: 'topic-num', text: String(topic.number) }));
+    a.append(el('span', { text: topic.title }));
+    a.addEventListener('click', (event) => {
+      event.preventDefault();
+      const target = document.getElementById(`topic-${topic.id}`);
+      if (!target) return;
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Opening a section you asked for is the least surprising behaviour.
+      if (!target.classList.contains('is-open')) target.querySelector('.topic-more')?.click();
+      wrap.setAttribute('hidden', '');
+      document.getElementById('tocBtn')?.setAttribute('aria-expanded', 'false');
+    });
+    li.append(a);
+    list.append(list.children.length ? li : li);
+  });
+  wrap.append(list);
+
+  // A quiet line under the tabs that opens the same panel.
+  const opener = el('button', { type: 'button', class: 'toc-open btn btn-ghost btn-sm', html: `${icon('toc')}<span>${esc(t('jumpToSection'))}</span>` });
+  opener.addEventListener('click', () => {
+    wrap.removeAttribute('hidden');
+    document.getElementById('tocBtn')?.setAttribute('aria-expanded', 'true');
+    wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+  const holder = el('div');
+  holder.append(opener, wrap);
+  return holder;
 }
 
 /* ------------------------------------------------------------------ tabs */
@@ -335,17 +405,8 @@ function observeToc(panel) {
 }
 
 function buildGallery(root) {
-  const imgs = [...root.querySelectorAll('img')]
-    .map((img) => ({
-      src: cleanUrl(img.getAttribute('src')),
-      alt: img.getAttribute('alt') || '',
-      caption: img.closest('figure')?.querySelector('figcaption')?.textContent?.trim()
-        || img.closest('.thumb')?.querySelector('.thumbcaption')?.textContent?.trim() || '',
-    }))
-    .filter((i) => i.src && !/\.svg$/i.test(i.src))
-    .filter((i, idx, arr) => arr.findIndex((x) => x.src === i.src) === idx)
-    .slice(0, 12);
-  if (imgs.length < 3) return null;
+  const imgs = collectImages(root).slice(0, 24);
+  if (!imgs.length) return null;
   const section = el('section', { class: 'sec' });
   section.append(sectionHead({ title: t('pictures') }));
   const gallery = el('div', { class: 'gallery' });
@@ -442,6 +503,7 @@ async function loadRelated(ctx, mount, { title, lang }) {
     section.append(grid);
     mount.append(section);
   } catch { /* bonus */ }
+  mountOpenSources(ctx, mount, title);
 }
 
 function esc(value) {
