@@ -9,10 +9,10 @@
 import { el, clamp, cleanUrl, clockParts } from '../ui.js';
 import { icon } from '../icons.js';
 import { t } from '../i18n.js';
-import { SITE, CATEGORIES, QUICK_CHIPS, EXAMPLE_PROMPTS, ASK_CHIPS } from '../config.js';
-import { sectionHead, bandHead, card, qCard, catCard, skeletonGrid, errorBox, rowCta } from '../components.js';
-import { composerForm, depthControl, chipRow } from '../composer.js';
-import { articleHref, searchHref } from '../router.js';
+import { CATEGORIES, QUICK_CHIPS, EXAMPLE_PROMPTS, ASK_CHIPS } from '../config.js';
+import { sectionHead, bandHead, card, qCard, catCard, skeletonGrid, rowCta } from '../components.js';
+import { composerForm, depthControl, chipRow, attachSuggest } from '../composer.js';
+import { articleHref } from '../router.js';
 
 const POPULAR = [
   { question: 'Who was Ashoka?', title: 'Ashoka', tag: 'History' },
@@ -51,8 +51,12 @@ function hero(ctx) {
 
   const ask = el('div', { class: 'dash-hero-ask' });
   const composer = el('div', { class: 'composer' });
-  composer.append(composerForm(ctx, { autofocus: false, labelled: true }));
+  const form = composerForm(ctx, { autofocus: false, labelled: true });
+  composer.append(form);
   composer.append(el('p', { class: 'voice-status', id: 'voiceStatus', role: 'status', 'aria-live': 'polite' }));
+  // The same suggest-as-you-type the other composers have, so the front door
+  // behaves like the rest of the site.
+  attachSuggest(form.querySelector('textarea'), ctx);
   ask.append(composer);
 
   ask.append(el('ul', {

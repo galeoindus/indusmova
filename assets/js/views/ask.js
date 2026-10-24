@@ -22,9 +22,9 @@ import { icon } from '../icons.js';
 import { t } from '../i18n.js';
 import { clean } from '../parse.js';
 import { composeAnswer } from '../answer.js';
-import { answerToMarkdown, download } from '../markdown.js';
+import { answerToMarkdown } from '../markdown.js';
 import {
-  evidenceStrip, topicBlocks, methodNote, factsBox, sourcesGroup,
+  evidenceStrip, topicBlocks, methodNote, factsBox,
   scopeNote, feedback, curatedNote, markdownActions, railActions, selectedNote,
 } from '../answerui.js';
 import { sectionHead, card, errorBox, emptyState, toast } from '../components.js';

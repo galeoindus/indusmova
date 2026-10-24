@@ -44,10 +44,10 @@ export function evidenceStrip({ matched = 0, considered = 0, sections = 0, title
  * reveals the rest of the section — short by default, extended on demand.
  * At "deep dive" depth they open extended straight away.
  */
-export function topicBlocks(topics, { open = false, onGoto = null } = {}) {
+export function topicBlocks(topics, { open = false, onGoto = null, idPrefix = 'topic' } = {}) {
   const frag = document.createDocumentFragment();
   for (const topic of topics) {
-    const block = el('div', { class: `topic-block${open ? ' is-open' : ''}`, id: `topic-${topic.id}` });
+    const block = el('div', { class: `topic-block${open ? ' is-open' : ''}`, id: `${idPrefix}-${topic.id}` });
 
     const head = el('h3');
     head.append(el('span', { class: 'topic-num', text: String(topic.number ?? '') }));

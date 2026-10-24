@@ -6,11 +6,11 @@
  * mode.
  */
 
-import { el, clamp } from '../ui.js';
+import { el } from '../ui.js';
 import { t } from '../i18n.js';
 import { card, skeletonGrid, errorBox, emptyState } from '../components.js';
 import { composerForm, depthControl, attachSuggest } from '../composer.js';
-import { searchHref, articleHref } from '../router.js';
+import { searchHref } from '../router.js';
 
 export async function renderSearch(ctx, route) {
   const wrap = el('div', { class: 'wrap' });

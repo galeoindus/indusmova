@@ -71,10 +71,7 @@
 
 /* --------------------------------------------------------- tiny helpers */
 
-/* Buttons that carry an icon and a label inside .article-actions. */
-.article-actions .btn svg,
-.md-actions .btn svg,
-.row-cta .btn svg {
+/* Buttons that carry an icon and a label inside .article-actions. */ .article-actions .btn svg, .row-cta .btn svg {
   width: 16px;
   height: 16px;
   fill: none;
@@ -305,13 +302,7 @@ form.panel .select { cursor: pointer; }
 }
 
 [data-view="article"] .wrap { max-width: var(--maxw); }
-[data-view="article"] .panel .prose { max-width: 78ch; }
-
-/* ------------------------------------------------------- section jumper */
-
-.toc-open { margin: 0 0 18px; }
-
-.toc-jump {
+[data-view="article"] .panel .prose { max-width: 78ch; }.toc-jump {
   border: 1px solid var(--border-2);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -445,7 +436,7 @@ form.panel .select { cursor: pointer; }
   outline-offset: 2px;
   border-radius: var(--radius-xs);
 }
-.sticky-header :focus-visible, .topbar :focus-visible { outline-offset: -2px; }
+.topbar :focus-visible { outline-offset: -2px; }
 
 /* Comfortable hit targets, and no double-tap zoom on controls. */
 button, .btn, [role="button"], .tab, .chip, .depth-btn, .chip-btn {
@@ -584,19 +575,7 @@ button, .btn, [role="button"], .tab, .chip, .depth-btn, .chip-btn {
 
 /* The rail itself, and the panel beside it. */
 .toc-rail { display: grid; gap: 16px; align-content: start; }
-.toc-rail > * { min-width: 0; }
-
-/* Actions are a set of same-height controls, not boxes of four different
-   heights. The Markdown disclosure expands below the row instead of
-   stretching its neighbours. */
-.art-actions, .ask-actions {
-  display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px;
-}
-.art-actions > .btn, .ask-actions > .btn,
-.art-actions > .md-disclosure > .btn, .ask-actions > .md-disclosure > .btn {
-  min-height: 40px; height: 40px; white-space: nowrap;
-}
-.md-disclosure { display: inline-flex; flex-direction: column; align-items: flex-start; }
+.toc-rail > * { min-width: 0; }.md-disclosure { display: inline-flex; flex-direction: column; align-items: flex-start; }
 .md-disclosure-panel { margin-top: 6px; }
 
 /* Actions live in the rail, collapsed until asked for. */
@@ -665,3 +644,23 @@ button, .btn, [role="button"], .tab, .chip, .depth-btn, .chip-btn {
 .toc-jump-list .topic-num { width: auto; min-width: 26px; padding: 0 5px; }
 .toc-jump-list a > .topic-num { flex: 0 0 auto; }
 .toc-jump-list .toc-label { flex: 1 1 auto; }
+
+/* ======================================================================
+   The composer: the suggestion list, and the field's height
+   ====================================================================== */
+
+/* The glass shell carries `contain: layout style paint`, and `paint` clips a
+   child to the shell's own box. The suggestion list is a child of the
+   composer that opens *below* it, so it was being clipped away — typing
+   looked like nothing was happening. Drop containment on the composer only. */
+.searchbar.glass { contain: none; }
+
+/* The suggestion list needs to sit above the answer beneath it. */
+.searchbar .suggest { z-index: 80; }
+
+/* An empty field must show its whole placeholder. It wraps to two lines on a
+   phone, and the textarea was staying one line tall, so the second line was
+   cut in half — the "squashed" search bar. */
+@media (max-width: 700px) {
+  .searchbar:has(> .composer-tools) > textarea { min-height: 54px; }
+}

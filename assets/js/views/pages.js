@@ -10,7 +10,7 @@ import { icon } from '../icons.js';
 import { t } from '../i18n.js';
 import { SITE, CATEGORIES } from '../config.js';
 import { SOURCE_LIST } from '../sources.js';
-import { sectionHead, bandHead, card, catCard, srcRow, skeletonGrid, errorBox, emptyState, toast } from '../components.js';
+import { sectionHead, bandHead, card, catCard, skeletonGrid, errorBox, emptyState, toast } from '../components.js';
 import { articleHref, searchHref } from '../router.js';
 
 /* ------------------------------------------------------------------ explore */

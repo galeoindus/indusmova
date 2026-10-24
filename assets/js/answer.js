@@ -123,10 +123,12 @@ export async function composeAnswer({ question, root, sections = [], depth = 'de
     ? dedupe(leadSentences, preset.sentences)
     : dedupe(byQuestion.map((p) => p.text), preset.sentences);
 
-  // Key points: the next most useful sentences, with the section they came from.
+  // Key points: the next most useful sentences, with the section they came
+  // from. The core answer is excluded, or "Key points" would just repeat it.
+  const coreSet = new Set(core);
   const keyPointTexts = mode === 'article'
     ? dedupe([...leadSentences.slice(core.length), ...sectionTexts.map((s) => s.sentences[0]).filter(Boolean)], 6)
-    : dedupe(byQuestion.map((p) => p.text), 6);
+    : dedupe(byQuestion.map((p) => p.text).filter((text) => !coreSet.has(text)), 6);
   const keyPoints = keyPointTexts.map((text) => {
     const hit = byQuestion.find((p) => p.text === text) || {};
     return { text, section: hit.section || '', sectionId: hit.sectionId || '' };

@@ -90,6 +90,9 @@ export function routeHref(href) {
  * list we render ourselves — so the article carries inline citations near the
  * claims, as the audit asks.
  */
+/** Abbreviations and initials whose full stop must not end a point. */
+const ABBREV = /\b(?:Mr|Mrs|Ms|Dr|Prof|St|vs|etc|e\.g|i\.e|No|Fig|approx|ca|cf|Sr|Jr|Ltd|Inc|Co|Gov|Gen|Col|Capt|Lt|Sgt|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|fl|trans|lit|viz|al|[A-Za-z])\./g;
+
 /**
  * Re-present a paragraph as one point per sentence.
  *
@@ -99,40 +102,23 @@ export function routeHref(href) {
  * the change — only the presentation.
  */
 export function paragraphsToPoints(root) {
-  const SENTENCE_END = /([.!?][\"'”’)\]]?)\s+(?=[A-Z0-9\"'“([\u0900-\u097F])/g;
   const skip = 'figure, figcaption, table, .infobox, .thumb, .reflist, .references, .navbox, blockquote';
 
   for (const p of [...root.querySelectorAll('p')]) {
     if (p.closest(skip)) continue;
     if ((p.textContent || '').trim().length < MIN_SENTENCE) continue;
 
-    // Build the points from the paragraph's own nodes, so links, emphasis and
-    // citation markers survive intact.
-    const points = [];
-    let current = [];
-    const flush = () => { if (current.length) { points.push(current); current = []; } };
-
-    for (const node of [...p.childNodes]) {
-      if (node.nodeType !== 3) { current.push(node.cloneNode(true)); continue; }
-      const text = node.textContent;
-      let start = 0;
-      SENTENCE_END.lastIndex = 0;
-      let match;
-      while ((match = SENTENCE_END.exec(text))) {
-        const end = match.index + match[1].length;
-        current.push(document.createTextNode(text.slice(start, end)));
-        flush();
-        start = end + (match[0].length - match[1].length);
-      }
-      if (start < text.length) current.push(document.createTextNode(text.slice(start)));
-    }
-    flush();
-
+    const points = splitPoints(p);
     if (points.length < 2) continue; // a single sentence reads better as prose
 
     const ul = document.createElement('ul');
     ul.className = 'line-list points-prose';
     for (const nodes of points) {
+      // Trim the whitespace that separated the point from the one before it.
+      const first = nodes[0];
+      if (first && first.nodeType === 3) first.nodeValue = first.nodeValue.replace(/^\s+/, '');
+      const last = nodes[nodes.length - 1];
+      if (last && last.nodeType === 3) last.nodeValue = last.nodeValue.replace(/\s+$/, '');
       const li = document.createElement('li');
       nodes.forEach((n) => li.append(n));
       ul.append(li);
@@ -140,6 +126,57 @@ export function paragraphsToPoints(root) {
     p.replaceWith(ul);
   }
   return root;
+}
+
+/* A point begins where a sentence does, and a citation marker belongs to the
+ * sentence it follows. A boundary often falls *between* two child nodes —
+ * "…Dynasty." then a <sup>[1]</sup> then " He ruled…" — so a per-text-node
+ * split misses it. Work across the paragraph's own nodes instead: keep the
+ * just-ended sentence open so a following citation marker stays with it, and
+ * start a new point only when the next node really begins a new sentence. */
+const POINT_START = /^[A-Z0-9"'“(\u0900-\u097F]/;
+const POINT_END = /[.!?]["'”’)\]]?\s*$/;
+
+function splitPoints(p) {
+  const SENTENCE_END = /([.!?]["'”’)\]]?)\s+(?=[A-Z0-9"'“([\u0900-\u097F])/g;
+  const points = [];
+  let current = [];
+  let atEnd = false;
+  const flush = () => { if (current.length) points.push(current); current = []; atEnd = false; };
+  const isCitation = (node) => node.nodeType === 1 && node.tagName === 'SUP';
+
+  for (const node of [...p.childNodes]) {
+    if (node.nodeType === 1) {
+      const lead = (node.textContent || '').replace(/^\s+/, '');
+      if (atEnd && !isCitation(node) && POINT_START.test(lead)) flush();
+      current.push(node.cloneNode(true));
+      if (POINT_END.test(node.textContent || '')) atEnd = true;
+      continue;
+    }
+    if (node.nodeType !== 3) { current.push(node.cloneNode(true)); continue; }
+    const text = node.nodeValue || '';
+    if (!text) continue;
+    if (atEnd && POINT_START.test(text.replace(/^\s+/, ''))) flush();
+    // Swap the full stop inside an abbreviation for a sentinel of the same
+    // length, so the match offsets still line up with the original text.
+    const guarded = text.replace(ABBREV, (m) => m.replace(/\./g, '\u0001'));
+    let start = 0;
+    SENTENCE_END.lastIndex = 0;
+    let match;
+    while ((match = SENTENCE_END.exec(guarded))) {
+      const end = match.index + match[1].length;
+      current.push(document.createTextNode(text.slice(start, end).replace(/\u0001/g, '.')));
+      flush();
+      start = end + (match[0].length - match[1].length);
+    }
+    const rest = text.slice(start).replace(/\u0001/g, '.');
+    if (rest) {
+      current.push(document.createTextNode(rest));
+      if (POINT_END.test(rest)) atEnd = true;
+    }
+  }
+  flush();
+  return points;
 }
 
 /** The text of every reference, keyed by the id its marker points at. */
@@ -507,9 +544,12 @@ export function splitArticle(root, sectionMeta = []) {
     }
   });
 
-  const citations = [...container.querySelectorAll('ol.references li, .references li, cite')]
-    .map((li) => textOf(li))
-    .filter(Boolean);
+  // The numbered reference texts are captured during clean(), before the
+  // reference list itself is removed. Read those; fall back to the container
+  // only if nothing was captured.
+  const citations = (root.references && root.references.length)
+    ? root.references.slice()
+    : [...container.querySelectorAll('ol.references li, .references li, cite')].map((li) => textOf(li)).filter(Boolean);
 
   return {
     leadHtml: lead.innerHTML,

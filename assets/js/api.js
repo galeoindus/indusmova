@@ -216,7 +216,6 @@ export async function summaries(lang, titles, { signal } = {}) {
       prop: 'extracts|pageimages|description|info', exintro: 1, explaintext: 1,
       exchars: 320, piprop: 'thumbnail', pithumbsize: 500, inprop: 'url',
     });
-    // eslint-disable-next-line no-await-in-loop
     const data = await get(url, { ttl: TTL.summary, signal });
     for (const p of data.query?.pages || []) {
       if (p.missing) continue;

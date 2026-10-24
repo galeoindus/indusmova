@@ -13,12 +13,12 @@
  * in, so the answer is one tap away in the reader's own language.
  */
 
-import { el, clamp, cleanUrl, esc, prefersReducedMotion } from '../ui.js';
+import { el, clamp, esc, prefersReducedMotion } from '../ui.js';
 import { icon } from '../icons.js';
 import { t } from '../i18n.js';
-import { clean, wordCount, collectImages, proseText, paragraphsToPoints } from '../parse.js';
+import { clean, wordCount, collectImages, proseText } from '../parse.js';
 import { composeAnswer } from '../answer.js';
-import { articleToMarkdown, download } from '../markdown.js';
+import { articleToMarkdown } from '../markdown.js';
 import {
   evidenceStrip, topicBlocks, methodNote, factsBox, sourcesGroup, scopeNote, feedback, referencesBlock, selectedNote,
   markdownActions, railActions,
@@ -26,7 +26,6 @@ import {
 import { sectionHead, card, errorBox, emptyState, toast, breadcrumbs } from '../components.js';
 import { mountOpenSources } from './library.js';
 import { articleHref, searchHref } from '../router.js';
-import { SITE } from '../config.js';
 import { updateRouteMetadata, setArticleStructuredData, markContentLang, pathFor } from '../meta.js';
 import * as api from '../api.js';
 import { CONTENT_LANGS } from '../config.js';
@@ -144,8 +143,10 @@ function render(ctx, mount, state) {
   panelBreakdown.append(breakdownMount);
   state.breakdownMount = breakdownMount;
 
-  // Full article
-  panelFull.append(fullArticle(root, data, lang, state));
+  // Full article — filled by repaintFull, in the site's own architecture.
+  const fullMount = el('div');
+  panelFull.append(fullMount);
+  state.fullMount = fullMount;
 
   // Markdown
   const md = el('div', { class: 'md' });
@@ -162,6 +163,7 @@ function render(ctx, mount, state) {
   tabs.show('breakdown');
 
   repaintBreakdown(ctx, state);
+  repaintFull(ctx, state);
   loadRelated(ctx, mount, { title: data.title, lang });
   openDeepLinkedSection(state, routeOf(ctx));
 }
@@ -470,110 +472,126 @@ function gotoSection(state, topic) {
 
 /* ------------------------------------------------------------ full article */
 
-function fullArticle(root, data, lang, state) {
-  const grid = el('div', { class: 'article-grid' });
-  const panel = el('div', { class: 'panel' });
-  const prose = el('div', { class: 'prose' });
-  // The article reads the way the breakdown reads: one point per sentence.
-  prose.innerHTML = paragraphsToPoints(root.cloneNode(true)).innerHTML;
-  // Give each citation marker a name a screen reader can use.
-  labelCitations(prose);
+/**
+ * The Full article tab, in the site's own architecture.
+ *
+ * The reader asked for the whole article to read the way an answer reads —
+ * not as a Wikipedia page. So every section is shown as a topic block, all
+ * extended so nothing is hidden, under the same evidence strip, key points,
+ * facts, sources and method note the breakdown uses. The numbered references
+ * and the picture gallery are kept, because they belong to the article.
+ */
+async function repaintFull(ctx, state) {
+  const mount = state.fullMount;
+  if (!mount) return;
+  mount.innerHTML = '';
+  mount.append(el('div', { class: 'state', html: `<span class="spinner" aria-hidden="true"></span><p>${esc(t('loading'))}</p>` }));
 
-  const infobox = prose.querySelector('.infobox, table.infobox');
-  const factbox = infobox ? factsBox(factsFrom(infobox), data.title) : null;
-  if (infobox) infobox.remove();
+  let answer;
+  try {
+    answer = await composeAnswer({
+      question: state.data.title,
+      root: state.root,
+      sections: state.data.sections,
+      depth: 'deep',
+      deep: ctx.state.deepRank,
+      lang: state.lang,
+      title: state.data.title,
+      mode: 'article',
+      // Every section, not the handful the breakdown shows.
+      maxSections: Number.MAX_SAFE_INTEGER,
+    });
+  } catch (err) {
+    mount.innerHTML = '';
+    mount.append(errorBox(err, { query: state.data?.title || '' }));
+    return;
+  }
+  answer.wikiUrl = state.wikiUrl;
+  answer.revid = state.data.revid;
+  state.fullAnswer = answer;
 
-  // Tables scroll on their own instead of breaking the column.
-  prose.querySelectorAll('table').forEach((table) => {
-    const scroll = el('div', { class: 'table-scroll', tabindex: '0' });
-    table.replaceWith(scroll);
-    scroll.append(table);
-  });
+  mount.innerHTML = '';
+  const wide = typeof window !== 'undefined' && window.matchMedia('(min-width: 1040px)').matches;
+  const grid = el('div', { class: `article-grid${wide ? ' rail-open' : ''}` });
+  const content = el('div', { class: 'panel' });
+  const rail = el('aside', { class: 'toc-rail', 'aria-label': t('jumpToSection') });
+  rail.append(fullToc(answer));
+  grid.append(content, rail);
+  mount.append(grid);
 
-  panel.append(prose);
-  grid.append(panel);
+  content.append(evidenceStrip({
+    matched: answer.method.sentencesMatched,
+    considered: answer.method.sentencesConsidered,
+    sections: answer.method.sectionsRead,
+    title: answer.title,
+    deep: ctx.state.deepRank,
+  }));
 
-  const toc = buildToc(data.sections);
-  if (toc || factbox) {
-    grid.classList.add('rail-open');
-    const rail = el('aside', { class: 'toc-rail' });
-    if (toc) rail.append(toc);
-    if (factbox) rail.append(factbox);
-    grid.append(rail);
+  const qa = el('div', { class: 'qa-answer' });
+  qa.append(el('h2', { text: t('coreAnswer') }));
+  qa.append(selectedNote(answer.title, state.lang, state.wikiUrl));
+  const leadList = el('ul', { class: 'line-list' });
+  (answer.core.length ? answer.core : [clamp(answer.leadText, 320)]).forEach((line) => leadList.append(el('li', { text: line })));
+  qa.append(leadList);
+  content.append(qa);
+
+  if (answer.keyPoints.length > 1) {
+    const card = el('div', { class: 'answer-card' });
+    card.append(el('h2', { text: t('keyPoints') }));
+    const ol = el('ol', { class: 'points-list' });
+    answer.keyPoints.forEach((p) => {
+      const li = el('li');
+      li.append(el('span', { class: 'point-text', text: p.text }));
+      if (p.section) li.append(el('span', { class: 'point-from', text: `— ${p.section}` }));
+      ol.append(li);
+    });
+    card.append(ol);
+    content.append(card);
   }
 
-  const wrap = el('div');
-  wrap.append(grid);
+  if (answer.topics.length) {
+    content.append(sectionHead({ title: t('fullArticle') }));
+    content.append(topicBlocks(answer.topics, { open: true, idPrefix: 'full-topic' }));
+  }
 
-  const gallery = buildGallery(root, data.title);
-  if (gallery) wrap.append(gallery);
+  const facts = factsBox(answer.facts, answer.title);
+  if (facts) content.append(facts);
 
-  // An article whose source carries no reference list is labelled as such,
-  // not presented as verified (F-04).
-  const references = (root.references || []).length
-    ? referencesBlock(root.references)
+  // The numbered Wikipedia references, and the pictures — the parts of the
+  // article the breakdown deliberately leaves out.
+  const references = (state.root.references || []).length
+    ? referencesBlock(state.root.references)
     : emptyReferences();
-  if (references) wrap.append(references);
+  if (references) content.append(references);
 
-  if (toc) {
-    const observer = observeToc(panel);
-    // The audit's lifecycle point (F-17): an observer left running after the
-    // reader navigates away is a leak. Hand it to the route cleanup.
-    if (observer) ctx.onCleanup(() => observer.disconnect());
-  }
-  return wrap;
+  const gallery = buildGallery(state.root, state.data.title);
+  if (gallery) content.append(gallery);
+
+  content.append(sourcesGroup({
+    lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl,
+    citations: answer.citations, project: state.project, revision: state.revision,
+  }));
+  content.append(methodNote(answer.method, { revid: answer.revid, lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl }));
+  content.append(scopeNote(t('scopeAnswer')));
+  content.append(feedback(ctx, `article-full:${state.lang}:${answer.title}`));
 }
 
-function factsFrom(infobox) {
-  const facts = [];
-  for (const tr of infobox.querySelectorAll('tr')) {
-    const th = tr.querySelector('th');
-    const td = tr.querySelector('td');
-    if (!th || !td) continue;
-    const label = th.textContent.replace(/\s+/g, ' ').trim();
-    const value = td.textContent.replace(/\s+/g, ' ').trim();
-    if (!label || !value || label.length > 60 || value.length > 260) continue;
-    facts.push({ label, value });
-    if (facts.length >= 14) break;
-  }
-  return facts;
-}
-
-function buildToc(sections) {
-  const top = (sections || []).filter((s) => s.level === 2);
-  if (top.length < 2) return null;
+/** The contents list for the full-article tab, pointing at its own blocks. */
+function fullToc(answer) {
   const toc = el('div', { class: 'toc' });
   toc.append(el('h3', { text: t('sections') }));
-  for (const s of sections) {
-    if (s.level > 3) continue;
-    const a = el('a', { href: `#${s.id}`, text: s.line, class: s.level === 3 ? 'lvl3' : '' });
+  answer.topics.forEach((topic) => {
+    const a = el('a', {
+      href: `#full-topic-${topic.id}`,
+      text: topic.number ? `${topic.number}. ${topic.title}` : topic.title,
+    });
     a.addEventListener('click', (event) => {
       event.preventDefault();
-      document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById(`full-topic-${topic.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
     toc.append(a);
-  }
-  return toc;
-}
-
-function observeToc(panel) {
-  // Scoped to this article's own contents list, not every .toc on the page.
-  const links = [...(panel.querySelectorAll('.toc a') || [])];
-  if (!links.length || !('IntersectionObserver' in window)) return null;
-  const map = new Map();
-  links.forEach((a) => {
-    const target = document.getElementById(a.getAttribute('href').slice(1));
-    if (target) map.set(target, a);
   });
-  const observer = new IntersectionObserver((entries) => {
-    for (const entry of entries) {
-      if (!entry.isIntersecting) continue;
-      links.forEach((l) => l.classList.remove('active'));
-      map.get(entry.target)?.classList.add('active');
-    }
-  }, { rootMargin: '-80px 0px -70% 0px', threshold: 0 });
-  map.forEach((_, target) => observer.observe(target));
-  return observer;
+  return toc;
 }
 
 function buildGallery(root, title) {
@@ -693,23 +711,6 @@ function routeOf(ctx) { return ctx.route || {}; }
  * "[2]" alone tells a reader nothing. Each marker becomes "Open source 2,
  * section 'Causes'" using the heading it sits under.
  */
-function labelCitations(prose) {
-  const heads = [...prose.querySelectorAll('h2, h3, h4')];
-  for (const link of prose.querySelectorAll('sup.cite a')) {
-    const number = (link.textContent || '').replace(/[^\d]/g, '');
-    let section = '';
-    for (const head of heads) {
-      if (head.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING) section = head.textContent.trim();
-      else break;
-    }
-    link.setAttribute('aria-label', section
-      ? `${t('openSource')} ${number}, ${t('sectionLabel')} “${section}”`
-      : `${t('openSource')} ${number}`);
-    link.setAttribute('title', link.getAttribute('aria-label'));
-  }
-}
-
-/** What to show when the source article has no references at all. */
 function emptyReferences() {
   const box = el('section', { class: 'sec' });
   box.append(el('div', { class: 'sec-head', html: `<h2>${esc(t('references'))}</h2><span class="more">0</span>` }));

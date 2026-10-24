@@ -113,21 +113,6 @@ async function getExtractor() {
   return extractorPromise;
 }
 
-function meanPool(tensor) {
-  const [rows, dim] = tensor.dims.slice(-2);
-  const data = tensor.data;
-  const out = new Float32Array(dim);
-  for (let r = 0; r < rows; r++) {
-    for (let d = 0; d < dim; d++) out[d] += data[r * dim + d];
-  }
-  for (let d = 0; d < dim; d++) out[d] /= rows;
-  let norm = 0;
-  for (let d = 0; d < dim; d++) norm += out[d] * out[d];
-  norm = Math.sqrt(norm) || 1;
-  for (let d = 0; d < dim; d++) out[d] /= norm;
-  return out;
-}
-
 function cosine(a, b) {
   let dot = 0;
   for (let i = 0; i < a.length; i++) dot += a[i] * b[i];
