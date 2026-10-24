@@ -57,10 +57,9 @@ export async function renderArticle(ctx, route) {
     project: route.query?.project || 'wikipedia',
     data: null,
     root: null,
-    breakdown: null,
     tabs: null,
   };
-  ctx.optionsChanged = () => { if (state.breakdown) repaintBreakdown(ctx, state); };
+  ctx.optionsChanged = () => { if (state.root) repaintFull(ctx, state); };
   ctx.toggleToc = () => toggleToc(state);
   ctx.onCleanup(() => { ctx.optionsChanged = () => {}; ctx.toggleToc = null; });
 
@@ -136,16 +135,10 @@ function render(ctx, mount, state) {
   mount.append(tabs.bar);
   state.tabs = tabs;
 
-  const panelBreakdown = el('div', { class: 'tabpanel', role: 'tabpanel', id: 'tab-panel-breakdown', 'aria-labelledby': 'tab-breakdown', tabindex: '0' });
-  const panelFull = el('div', { class: 'tabpanel', role: 'tabpanel', id: 'tab-panel-full', 'aria-labelledby': 'tab-full', hidden: true });
+  const panelFull = el('div', { class: 'tabpanel', role: 'tabpanel', id: 'tab-panel-full', 'aria-labelledby': 'tab-full', tabindex: '0' });
   const panelMd = el('div', { class: 'tabpanel', role: 'tabpanel', id: 'tab-panel-md', 'aria-labelledby': 'tab-md', hidden: true });
 
-  // Breakdown — filled by repaintBreakdown, so depth changes redraw only this.
-  const breakdownMount = el('div');
-  panelBreakdown.append(breakdownMount);
-  state.breakdownMount = breakdownMount;
-
-  // Full article — filled by repaintFull, in the site's own architecture.
+  // The article — filled by repaintFull, in the site's own architecture.
   const fullMount = el('div');
   panelFull.append(fullMount);
   state.fullMount = fullMount;
@@ -160,109 +153,13 @@ function render(ctx, mount, state) {
   }), pre);
   panelMd.append(md);
 
-  mount.append(panelBreakdown, panelFull, panelMd);
-  tabs.panels = { breakdown: panelBreakdown, full: panelFull, md: panelMd };
-  tabs.show('breakdown');
+  mount.append(panelFull, panelMd);
+  tabs.panels = { full: panelFull, md: panelMd };
+  tabs.show('full');
 
-  repaintBreakdown(ctx, state);
   repaintFull(ctx, state);
   loadRelated(ctx, mount, { title: data.title, lang });
   openDeepLinkedSection(state, routeOf(ctx));
-}
-
-/** Redraw only the breakdown — used on first paint and on a depth change. */
-async function repaintBreakdown(ctx, state) {
-  const mount = state.breakdownMount;
-  if (!mount) return;
-  mount.innerHTML = '';
-  mount.append(el('div', { class: 'state', html: `<span class="spinner" aria-hidden="true"></span><p>${esc(t('loading'))}</p>` }));
-
-  let answer;
-  try {
-    answer = await composeAnswer({
-      question: state.data.title,
-      root: state.root,
-      sections: state.data.sections,
-      depth: ctx.state.depth,
-      deep: ctx.state.deepRank,
-      lang: state.lang,
-      title: state.data.title,
-      mode: 'article',
-      // Every section, each opened short: the reader asked for the breakdown
-      // to be many small topics rather than a handful.
-      maxSections: Number.MAX_SAFE_INTEGER,
-    });
-  } catch (err) {
-    mount.innerHTML = '';
-    mount.append(errorBox(err, { query: state.data?.title || '' }));
-    return;
-  }
-  answer.wikiUrl = state.wikiUrl;
-  answer.revid = state.data.revid;
-  state.breakdown = answer;
-
-  state.answer = answer;
-  mount.innerHTML = '';
-  // Contents at the top, collapsed until asked for, and the content full width
-  // — the reader asked for the article to use the whole width of the site.
-  mount.append(tocTop(state, answer, 'topic'));
-  const content = el('div', { class: 'panel panel-wide' });
-  mount.append(content);
-  const mountInto = content;
-  if (answer.leadImage) {
-    const figure = el('figure', { class: 'art-figure', style: 'justify-items:start;margin:0 0 20px' });
-    figure.append(el('img', { src: answer.leadImage.src, alt: answer.leadImage.alt || '', loading: 'eager', decoding: 'async' }));
-    if (answer.leadImage.caption) figure.append(el('figcaption', { text: answer.leadImage.caption }));
-    mountInto.append(figure);
-  }
-  mountInto.append(evidenceStrip({
-    matched: answer.method.sentencesMatched,
-    considered: answer.method.sentencesConsidered,
-    sections: answer.method.sectionsRead,
-    title: answer.title,
-    deep: ctx.state.deepRank,
-  }));
-
-  const qa = el('div', { class: 'qa-answer' });
-  qa.append(el('h2', { text: t('coreAnswer') }));
-  qa.append(selectedNote(answer.title, state.lang, state.wikiUrl));
-  const list = el('ul', { class: 'line-list' });
-  (answer.core.length ? answer.core : [clamp(answer.leadText, 320)]).forEach((s) => list.append(el('li', { text: s })));
-  qa.append(list);
-  mountInto.append(qa);
-
-  if (answer.keyPoints.length > 1) {
-    const card = el('div', { class: 'answer-card' });
-    card.append(el('h2', { text: t('keyPoints') }));
-    const ol = el('ol', { class: 'points-list' });
-    answer.keyPoints.forEach((p) => {
-      const li = el('li');
-      li.append(el('span', { class: 'point-text', text: p.text }));
-      if (p.section) li.append(el('span', { class: 'point-from', text: `— ${p.section}` }));
-      ol.append(li);
-    });
-    card.append(ol);
-    mountInto.append(card);
-  }
-
-  // The article itself, in the core-answer architecture: one point per
-  // sentence under each section heading. No separate "breakdown".
-  if (answer.topics.length) {
-    mountInto.append(pointsBlocks(answer.topics, { idPrefix: 'topic' }));
-  }
-
-  const facts = factsBox(answer.facts, answer.title);
-  if (facts) mountInto.append(facts);
-
-  const sources = sourcesGroup({
-    lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl,
-    citations: answer.citations, project: state.project, revision: state.revision,
-  });
-  sources.id = 'sourcesBlock';
-  mountInto.append(sources);
-  mountInto.append(methodNote(answer.method, { revid: answer.revid, lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl }));
-  mountInto.append(scopeNote(t('scopeAnswer')));
-  mountInto.append(feedback(ctx, `article:${state.lang}:${answer.title}`));
 }
 
 /**
@@ -399,12 +296,11 @@ function observeSections(topics, links, bar, idPrefix = 'topic') {
  */
 function buildTabs() {
   const TABS = [
-    { name: 'breakdown', label: t('breakdown') },
     { name: 'full', label: t('fullArticle') },
     { name: 'md', label: t('markdown') },
   ];
   const uid = 'tab';
-  const bar = el('div', { class: 'tabs', role: 'tablist', 'aria-label': t('breakdown') });
+  const bar = el('div', { class: 'tabs', role: 'tablist', 'aria-label': t('fullArticle') });
   const buttons = {};
   const api = {
     bar,
@@ -653,10 +549,9 @@ function openDeepLinkedSection(state, route) {
   const wanted = route?.query?.s;
   if (!wanted) return;
   requestAnimationFrame(() => {
-    const target = document.getElementById(`topic-${wanted}`);
+    const target = document.getElementById(`full-topic-${wanted}`);
     if (!target) return;
     target.scrollIntoView({ block: 'start' });
-    if (!target.classList.contains('is-open')) target.querySelector('.topic-more')?.click();
   });
 }
 
