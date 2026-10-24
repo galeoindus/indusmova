@@ -16,18 +16,16 @@
 import { el, clamp, esc, prefersReducedMotion } from '../ui.js';
 import { icon } from '../icons.js';
 import { t } from '../i18n.js';
-import { clean, wordCount, collectImages, proseText } from '../parse.js';
-import { composeAnswer } from '../answer.js';
+import { clean, wordCount, proseText, splitArticle, paragraphsToPoints } from '../parse.js';
+import { factsFromInfobox } from '../answer.js';
 import { articleToMarkdown } from '../markdown.js';
 import {
-  pointsBlocks, methodNote, factsBox, sourcesGroup, scopeNote, feedback, referencesBlock, selectedNote,
-  markdownActions,
+  factsBox, sourcesGroup, feedback, referencesBlock, markdownActions,
 } from '../answerui.js';
 import { sectionHead, card, errorBox, emptyState, toast, breadcrumbs } from '../components.js';
 import { mountOpenSources } from './library.js';
 import { articleHref, searchHref } from '../router.js';
 import { updateRouteMetadata, setArticleStructuredData, markContentLang, pathFor } from '../meta.js';
-import * as api from '../api.js';
 import { CONTENT_LANGS } from '../config.js';
 
 const PROJECT_NAMES = {
@@ -362,158 +360,75 @@ async function repaintFull(ctx, state) {
   mount.innerHTML = '';
   mount.append(el('div', { class: 'state', html: `<span class="spinner" aria-hidden="true"></span><p>${esc(t('loading'))}</p>` }));
 
-  let answer;
+  let parts;
   try {
-    answer = await composeAnswer({
-      question: state.data.title,
-      root: state.root,
-      sections: state.data.sections,
-      depth: 'deep',
-      deep: ctx.state.deepRank,
-      lang: state.lang,
-      title: state.data.title,
-      mode: 'article',
-      // Every section, and every sentence in it: this tab is the whole article.
-      maxSections: Number.MAX_SAFE_INTEGER,
-      maxSentences: Number.MAX_SAFE_INTEGER,
-    });
+    parts = splitArticle(state.root, state.data.sections);
   } catch (err) {
     mount.innerHTML = '';
     mount.append(errorBox(err, { query: state.data?.title || '' }));
     return;
   }
-  answer.wikiUrl = state.wikiUrl;
-  answer.revid = state.data.revid;
-  state.fullAnswer = answer;
+
+  const facts = factsFromInfobox(parts.infoboxHtml);
+  const topics = parts.sections.map((s, i) => ({ id: s.id, title: s.line, number: s.number || String(i + 1) }));
 
   mount.innerHTML = '';
-  mount.append(tocTop(state, answer, 'full-topic'));
+  mount.append(tocTop(state, { topics }, 'full-topic'));
   const content = el('div', { class: 'panel panel-wide' });
   mount.append(content);
 
-  const qa = el('div', { class: 'qa-answer' });
-  qa.append(el('h2', { text: t('coreAnswer') }));
-  qa.append(selectedNote(answer.title, state.lang, state.wikiUrl));
-  const leadList = el('ul', { class: 'line-list' });
-  (answer.core.length ? answer.core : [clamp(answer.leadText, 320)]).forEach((line) => leadList.append(el('li', { text: line })));
-  qa.append(leadList);
-  content.append(qa);
-
-  if (answer.keyPoints.length > 1) {
-    const card = el('div', { class: 'answer-card' });
-    card.append(el('h2', { text: t('keyPoints') }));
-    const ol = el('ol', { class: 'points-list' });
-    answer.keyPoints.forEach((p) => {
-      const li = el('li');
-      li.append(el('span', { class: 'point-text', text: p.text }));
-      if (p.section) li.append(el('span', { class: 'point-from', text: `— ${p.section}` }));
-      ol.append(li);
-    });
-    card.append(ol);
-    content.append(card);
+  // The lead, then every section, in Wikipedia's own order — but read as
+  // points, with the pictures and tables left where Wikipedia puts them.
+  if (parts.leadHtml.trim()) content.append(articleSection({ html: parts.leadHtml, id: 'full-topic-lead' }));
+  for (const section of parts.sections) {
+    content.append(articleSection({ html: section.html, title: section.line, id: `full-topic-${section.id}`, number: section.number }));
   }
 
-  if (answer.topics.length) {
-    content.append(pointsBlocks(answer.topics, { idPrefix: 'full-topic' }));
-  }
+  const factbox = factsBox(facts, state.data.title);
+  if (factbox) content.append(factbox);
 
-  const facts = factsBox(answer.facts, answer.title);
-  if (facts) content.append(facts);
-
-  // The numbered Wikipedia references, and the pictures — the parts of the
-  // article the breakdown deliberately leaves out.
   const references = (state.root.references || []).length
     ? referencesBlock(state.root.references)
     : emptyReferences();
   if (references) content.append(references);
 
-  const gallery = buildGallery(state.root, state.data.title);
-  if (gallery) content.append(gallery);
-
   content.append(sourcesGroup({
-    lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl,
-    citations: answer.citations, project: state.project, revision: state.revision,
+    lang: state.lang, title: state.data.title, wikiUrl: state.wikiUrl,
+    citations: parts.citations, project: state.project, revision: state.revision,
   }));
-  content.append(methodNote(answer.method, { revid: answer.revid, lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl }));
-  content.append(scopeNote(t('scopeAnswer')));
-  content.append(feedback(ctx, `article-full:${state.lang}:${answer.title}`));
+  content.append(feedback(ctx, `article:${state.lang}:${state.data.title}`));
 }
 
-function buildGallery(root, title) {
-  const imgs = collectImages(root).slice(0, 24);
-  if (!imgs.length) return null;
-  const section = el('section', { class: 'sec' });
-  section.append(sectionHead({ title: t('pictures') }));
-  const gallery = el('div', { class: 'gallery' });
-  for (const img of imgs) {
-    const figure = el('figure');
-    figure.append(el('img', { src: img.src, alt: img.alt, loading: 'lazy', decoding: 'async' }));
-    const caption = el('figcaption');
-    if (img.caption) caption.append(el('span', { class: 'img-caption', text: clamp(img.caption, 160) }));
-    // Each picture is checked on its own: a text licence does not cover the
-    // media, and Commons files differ (F-06).
-    const credit = el('span', { class: 'imgcredit' });
-    if (img.file) {
-      credit.append(document.createTextNode(`${t('loading')}…`));
-      loadImageCredit(img.file, credit, figure);
-    } else {
-      credit.append(document.createTextNode(t('rightsUnknown')));
-    }
-    caption.append(credit);
-    figure.append(caption);
-    gallery.append(figure);
+/**
+ * One part of the article: its heading, then its body read as points.
+ *
+ * Wikipedia's own order is kept — a picture or a table stays exactly where it
+ * sits in the text — but every paragraph is re-read as one point per sentence,
+ * the way the rest of the site reads. The pictures are centred.
+ */
+function articleSection({ html, title, id, number }) {
+  const section = el('section', { class: 'art-section', id });
+  if (title) {
+    const head = el('h2', { class: 'art-section-head' });
+    if (number) head.append(el('span', { class: 'topic-num', text: String(number) }));
+    head.append(el('span', { text: title }));
+    section.append(head);
   }
-  section.append(gallery);
+  const body = el('div', { class: 'prose art-body' });
+  body.innerHTML = html;
+  // The infobox becomes the facts box; it is not repeated in the text.
+  body.querySelectorAll('table.infobox, .infobox').forEach((node) => node.remove());
+  paragraphsToPoints(body);
+  // A wide table scrolls on its own rather than breaking the column.
+  body.querySelectorAll('table').forEach((table) => {
+    const scroll = el('div', { class: 'table-scroll', tabindex: '0' });
+    table.replaceWith(scroll);
+    scroll.append(table);
+  });
+  section.append(body);
   return section;
 }
 
-/**
- * Ask Commons for one picture's author and licence, then show them with a link
- * to the file's own description page and to the licence itself. Where the
- * source states nothing, say so rather than implying it is free.
- */
-async function loadImageCredit(file, node, figure) {
-  const fallback = () => { node.textContent = `${file} · ${t('rightsUnknown')}`; };
-  try {
-    const info = await api.imageInfo(file);
-    if (!info) { fallback(); return; }
-    node.textContent = '';
-
-    const name = info.title || file;
-    if (info.filePage) {
-      node.append(el('a', { href: info.filePage, target: '_blank', rel: 'noopener noreferrer', text: name }));
-      const image = figure.querySelector('img');
-      if (image) {
-        const link = el('a', { href: info.filePage, target: '_blank', rel: 'noopener noreferrer', 'aria-label': name });
-        image.replaceWith(link);
-        link.append(image);
-      }
-    } else {
-      node.append(document.createTextNode(name));
-    }
-
-    const who = info.artist || info.credit;
-    if (who) node.append(document.createTextNode(` · ${t('imageCredit')}: ${clamp(who, 70)}`));
-
-    node.append(document.createTextNode(` · ${t('imageLicence')}: `));
-    if (info.licence && info.licenceUrl) {
-      node.append(el('a', { href: info.licenceUrl, target: '_blank', rel: 'noopener noreferrer', text: info.licence }));
-    } else if (info.licence) {
-      node.append(document.createTextNode(info.licence));
-    } else {
-      node.append(document.createTextNode(t('rightsUnknown')));
-    }
-    if (info.description) node.title = clamp(info.description, 200);
-  } catch {
-    fallback();
-  }
-}
-
-/**
- * Everything a crawler or a link preview needs, from the article that loaded:
- * a unique title and description, a clean canonical, matching Open Graph and
- * Twitter values, and Article structured data with only real facts (F-05).
- */
 function publishMetadata(ctx, state) {
   const lead = proseText(state.root.querySelector('p') || state.root).slice(0, 300);
   const title = `${state.data.title} — indusmova`;

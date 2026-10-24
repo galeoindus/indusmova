@@ -760,3 +760,29 @@ button, .btn, [role="button"], .tab, .chip, .depth-btn, .chip-btn {
    sit on the same centred axis, instead of a wide head above a narrow body. */
 [data-view="article"] .wrap { max-width: 940px; }
 .panel-wide { max-width: none; }
+
+/* ======================================================================
+   The article keeps Wikipedia's structure, read as points
+   ======================================================================
+   Sections, pictures and tables stay where Wikipedia puts them; each
+   paragraph is re-read as one point per sentence; and the pictures are
+   centred in the column. */
+
+.art-section { margin: 0 0 26px; scroll-margin-top: 96px; }
+.art-section-head {
+  display: flex; align-items: baseline; gap: 10px; margin: 0 0 12px;
+  font-family: var(--font-head); font-weight: 600; font-size: 22px; line-height: 1.25;
+}
+.art-section-head .topic-num {
+  font-family: var(--font-body); font-size: 12px; font-weight: 600;
+  color: var(--copper-ink); min-width: 1.4em; font-variant-numeric: tabular-nums;
+}
+
+/* Pictures and tables: no floats, centred, never wider than the column. */
+.art-body .thumb, .art-body figure, .art-body .gallery,
+.art-body .thumbinner, .art-body .floatright, .art-body .floatleft, .art-body .tright, .art-body .tleft {
+  float: none !important; margin-inline: auto !important; max-width: 100% !important; text-align: center;
+}
+.art-body img { max-width: 100%; height: auto; margin-inline: auto; }
+.art-body .thumbcaption, .art-body figcaption { text-align: center; }
+.art-body .table-scroll { margin: 18px auto; }
