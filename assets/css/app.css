@@ -664,3 +664,55 @@ button, .btn, [role="button"], .tab, .chip, .depth-btn, .chip-btn {
 @media (max-width: 700px) {
   .searchbar:has(> .composer-tools) > textarea { min-height: 54px; }
 }
+
+/* ======================================================================
+   The article reads across the whole width, contents at the top
+   ======================================================================
+   The reader asked for two things: the article should use the width the
+   site has, not a narrow column squeezed beside a rail; and the contents
+   ("jump to a section") should sit at the top, not down the side. So the
+   side rail is gone from the reading views, the contents panel opens above
+   the answer, and every control is one row. */
+
+.panel-wide { max-width: none; width: 100%; }
+.panel-wide .prose,
+.panel-wide .topic-block .topic-short,
+.panel-wide .topic-block .topic-full,
+.panel-wide .topic-block .line-list > li { max-width: 88ch; }
+
+/* The contents panel, above the answer, closed until asked for. */
+.toc-top { margin: 0 0 20px; }
+.toc-top[hidden] { display: none; }
+.toc-top .toc-jump { position: static; max-height: min(64vh, 620px); overflow: auto; }
+
+/* One row of controls, all on the same line. The Markdown disclosure opens
+   as a floating panel so it cannot push its neighbours out of line — that
+   ragged row was the "scattered" look. */
+.art-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+.art-actions > .btn, .art-actions > .md-disclosure > .btn { min-height: 40px; height: 40px; white-space: nowrap; }
+.art-actions .md-disclosure { position: relative; }
+.art-actions .md-disclosure-panel {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 90;
+  margin-top: 0; min-width: 220px;
+}
+
+/* The contents button in the header should not look active when there is
+   nothing to show. */
+#tocBtn[aria-expanded="true"] { border-color: var(--accent); color: var(--copper-ink); }
+
+/* The reading views use the site's width. */
+[data-view="article"] .wrap, [data-view="ask"] .wrap { max-width: var(--maxw); }
+
+/* The base .article-grid rule used to come after the phone rule below, so a
+   phone kept the two-column layout and the answer was squeezed into a sliver.
+   Keep the stacking rule last, where it wins. */
+@media (max-width: 1039px) {
+  .article-grid { grid-template-columns: minmax(0, 1fr); }
+  .article-grid > .toc-rail { order: -1; }
+}
+
+/* The Markdown actions panel is hidden with the `hidden` attribute, but the
+   panel's own `display: flex` outranks the browser's [hidden] rule, so it was
+   showing all the time. Once the panel left the collapsed rail and joined the
+   top row, that became visible. Pin it. */
+.md-disclosure-panel[hidden] { display: none; }

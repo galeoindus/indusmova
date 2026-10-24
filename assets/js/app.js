@@ -209,12 +209,10 @@ function wireHeader() {
   // The contents live in a rail beside the answer; this button shows or hides
   // that rail, which is also what its Close button does.
   document.getElementById('tocBtn')?.addEventListener('click', () => {
-    const grid = document.querySelector('.article-grid');
-    if (!grid || !document.getElementById('sectionJump')) { toast(t('noSectionsHere')); return; }
-    const open = !grid.classList.contains('rail-open');
-    grid.classList.toggle('rail-open', open);
-    document.getElementById('tocBtn').setAttribute('aria-expanded', String(open));
-    if (open) document.getElementById('sectionJump').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // The open view decides what the contents button does; if there is no
+    // contents panel here, say so rather than doing nothing.
+    if (typeof ctx.toggleToc === 'function') ctx.toggleToc();
+    else toast(t('noSectionsHere'));
   });
 
   document.getElementById('langBtn')?.addEventListener('click', (event) => openMenu(event.currentTarget, CONTENT_LANGS, ctx.state.contentLang, (code) => ctx.setContentLang(code), t('wikiEdition')));

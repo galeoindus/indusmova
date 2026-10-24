@@ -21,7 +21,7 @@ import { composeAnswer } from '../answer.js';
 import { articleToMarkdown } from '../markdown.js';
 import {
   evidenceStrip, topicBlocks, methodNote, factsBox, sourcesGroup, scopeNote, feedback, referencesBlock, selectedNote,
-  markdownActions, railActions,
+  markdownActions,
 } from '../answerui.js';
 import { sectionHead, card, errorBox, emptyState, toast, breadcrumbs } from '../components.js';
 import { mountOpenSources } from './library.js';
@@ -61,7 +61,8 @@ export async function renderArticle(ctx, route) {
     tabs: null,
   };
   ctx.optionsChanged = () => { if (state.breakdown) repaintBreakdown(ctx, state); };
-  ctx.onCleanup(() => { ctx.optionsChanged = () => {}; });
+  ctx.toggleToc = () => toggleToc(state);
+  ctx.onCleanup(() => { ctx.optionsChanged = () => {}; ctx.toggleToc = null; });
 
   build(ctx, mount, state, title);
   return wrap;
@@ -127,6 +128,7 @@ function render(ctx, mount, state) {
   meta.textContent = `${words.toLocaleString()} ${t('words')} · ~${Math.max(1, Math.round(words / 220))} ${t('minRead')}${data.revid ? ` · ${t('revision')} ${data.revid}` : ''}`;
   head.append(meta);
   mount.append(head);
+  mount.append(actionsRow(ctx, state));
 
   mount.append(languageBar(state));
 
@@ -186,10 +188,9 @@ async function repaintBreakdown(ctx, state) {
       lang: state.lang,
       title: state.data.title,
       mode: 'article',
-      // The breakdown is a summary, not the whole article. It follows the
-      // depth control — a handful of sections — while the Full article tab
-      // carries every section. The reader asked for the breakdown to stay
-      // short, roughly ten to twenty points.
+      // Every section, each opened short: the reader asked for the breakdown
+      // to be many small topics rather than a handful.
+      maxSections: Number.MAX_SAFE_INTEGER,
     });
   } catch (err) {
     mount.innerHTML = '';
@@ -202,19 +203,11 @@ async function repaintBreakdown(ctx, state) {
 
   state.answer = answer;
   mount.innerHTML = '';
-  // Contents in the side rail at the top, as the reader asked, rather than a
-  // panel wedged above the answer.
-  // Open beside the answer on a wide screen; closed above it on a phone, where
-  // it would otherwise push the answer off the first screen.
-  const wide = typeof window !== 'undefined' && window.matchMedia('(min-width: 1040px)').matches;
-  const grid = el('div', { class: `article-grid${wide ? ' rail-open' : ''}` });
-  const content = el('div', { class: 'panel' });
-  const rail = el('aside', { class: 'toc-rail', 'aria-label': t('jumpToSection') });
-  rail.append(jumper(state, answer));
-  rail.append(railActions(actionControls(ctx, state)));
-  grid.append(content, rail);
-  mount.append(grid);
-  // Everything below belongs in the content column, beside the contents rail.
+  // Contents at the top, collapsed until asked for, and the content full width
+  // — the reader asked for the article to use the whole width of the site.
+  mount.append(tocTop(state, answer, 'topic'));
+  const content = el('div', { class: 'panel panel-wide' });
+  mount.append(content);
   const mountInto = content;
   if (answer.leadImage) {
     const figure = el('figure', { class: 'art-figure', style: 'justify-items:start;margin:0 0 20px' });
@@ -287,7 +280,7 @@ async function repaintBreakdown(ctx, state) {
  * being read, and the progress is given as text as well as a bar, so it is not
  * colour alone.
  */
-export function jumper(state, answer) {
+export function jumper(state, answer, idPrefix = 'topic') {
   const topics = answer.topics || [];
   const wrap = el('div', { class: 'toc-jump', id: 'sectionJump' });
 
@@ -317,7 +310,7 @@ export function jumper(state, answer) {
     a.append(el('span', { class: 'toc-label', text: topic.title }));
     a.addEventListener('click', (event) => {
       event.preventDefault();
-      const target = document.getElementById(`topic-${topic.id}`);
+      const target = document.getElementById(`${idPrefix}-${topic.id}`);
       if (!target) return;
       // Keep the section in the address bar, so the link can be shared.
       const base = location.hash.split('?')[0];
@@ -333,15 +326,14 @@ export function jumper(state, answer) {
   });
   wrap.append(list);
 
-  // Closing collapses the rail, the same thing the header button does.
-  const setRail = (open) => {
-    wrap.closest('.article-grid')?.classList.toggle('rail-open', open);
-    document.getElementById('tocBtn')?.setAttribute('aria-expanded', String(open));
-  };
-  close.addEventListener('click', () => setRail(false));
+  // Closing hides the contents panel, the same thing the header button does.
+  close.addEventListener('click', () => {
+    wrap.closest('.toc-top')?.setAttribute('hidden', '');
+    document.getElementById('tocBtn')?.setAttribute('aria-expanded', 'false');
+  });
 
   // Track the reader's position and mark sections read / being read.
-  const observer = observeSections(topics, links, bar);
+  const observer = observeSections(topics, links, bar, idPrefix);
   if (observer) state.tocObserver = observer;
 
   return wrap;
@@ -351,7 +343,7 @@ export function jumper(state, answer) {
  * Mark a section read once its heading has passed, and the current one as it
  * arrives. The counts are text, so the state is not carried by colour alone.
  */
-function observeSections(topics, links, bar) {
+function observeSections(topics, links, bar, idPrefix = 'topic') {
   if (!('IntersectionObserver' in window) || !topics.length) return null;
   const seen = new Set();
   let current = '';
@@ -368,7 +360,7 @@ function observeSections(topics, links, bar) {
 
   const observer = new IntersectionObserver((entries) => {
     for (const entry of entries) {
-      const id = entry.target.id.replace(/^topic-/, '');
+      const id = entry.target.id.replace(new RegExp(`^${idPrefix}-`), '');
       const li = links.get(id);
       if (!li) continue;
       if (entry.isIntersecting && id !== current) {
@@ -391,7 +383,7 @@ function observeSections(topics, links, bar) {
   }, { rootMargin: '-90px 0px -60% 0px', threshold: 0 });
 
   for (const topic of topics) {
-    const target = document.getElementById(`topic-${topic.id}`);
+    const target = document.getElementById(`${idPrefix}-${topic.id}`);
     if (target) observer.observe(target);
   }
   paint();
@@ -462,7 +454,7 @@ function buildTabs() {
 /** Jump from a topic block to the same section inside the full article. */
 function gotoSection(state, topic) {
   state.tabs?.show('full');
-  const target = document.getElementById(topic.id);
+  const target = document.getElementById(`full-topic-${topic.id}`);
   if (target) {
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } else {
@@ -498,8 +490,9 @@ async function repaintFull(ctx, state) {
       lang: state.lang,
       title: state.data.title,
       mode: 'article',
-      // Every section, not the handful the breakdown shows.
+      // Every section, and every sentence in it: this tab is the whole article.
       maxSections: Number.MAX_SAFE_INTEGER,
+      maxSentences: Number.MAX_SAFE_INTEGER,
     });
   } catch (err) {
     mount.innerHTML = '';
@@ -511,13 +504,9 @@ async function repaintFull(ctx, state) {
   state.fullAnswer = answer;
 
   mount.innerHTML = '';
-  const wide = typeof window !== 'undefined' && window.matchMedia('(min-width: 1040px)').matches;
-  const grid = el('div', { class: `article-grid${wide ? ' rail-open' : ''}` });
-  const content = el('div', { class: 'panel' });
-  const rail = el('aside', { class: 'toc-rail', 'aria-label': t('jumpToSection') });
-  rail.append(fullToc(answer));
-  grid.append(content, rail);
-  mount.append(grid);
+  mount.append(tocTop(state, answer, 'full-topic'));
+  const content = el('div', { class: 'panel panel-wide' });
+  mount.append(content);
 
   content.append(evidenceStrip({
     matched: answer.method.sentencesMatched,
@@ -574,24 +563,6 @@ async function repaintFull(ctx, state) {
   content.append(methodNote(answer.method, { revid: answer.revid, lang: state.lang, title: answer.title, wikiUrl: state.wikiUrl }));
   content.append(scopeNote(t('scopeAnswer')));
   content.append(feedback(ctx, `article-full:${state.lang}:${answer.title}`));
-}
-
-/** The contents list for the full-article tab, pointing at its own blocks. */
-function fullToc(answer) {
-  const toc = el('div', { class: 'toc' });
-  toc.append(el('h3', { text: t('sections') }));
-  answer.topics.forEach((topic) => {
-    const a = el('a', {
-      href: `#full-topic-${topic.id}`,
-      text: topic.number ? `${topic.number}. ${topic.title}` : topic.title,
-    });
-    a.addEventListener('click', (event) => {
-      event.preventDefault();
-      document.getElementById(`full-topic-${topic.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-    toc.append(a);
-  });
-  return toc;
 }
 
 function buildGallery(root, title) {
@@ -772,6 +743,30 @@ function languageBar(state) {
   return bar;
 }
 
+/* ----------------------------------------------------- contents & actions */
+
+/** The contents panel, at the top of a tab, collapsed until asked for. */
+function tocTop(state, answer, idPrefix) {
+  const holder = el('div', { class: 'toc-top', id: `tocTop-${idPrefix}`, hidden: true });
+  holder.append(jumper(state, answer, idPrefix));
+  return holder;
+}
+
+/** Show or hide the contents panel inside `scope` (a view or a tab panel). */
+export function toggleContents(scope) {
+  const holder = scope?.querySelector?.('.toc-top');
+  if (!holder) { toast(t('noSectionsHere')); return; }
+  const open = holder.hasAttribute('hidden');
+  if (open) holder.removeAttribute('hidden'); else holder.setAttribute('hidden', '');
+  document.getElementById('tocBtn')?.setAttribute('aria-expanded', String(open));
+  if (open) holder.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
+}
+
+/** Show or hide the contents panel of whichever article tab is open. */
+function toggleToc(state) {
+  toggleContents(document.querySelector('.tabpanel:not([hidden])'));
+}
+
 /* --------------------------------------------------------------- actions */
 
 /**
@@ -810,6 +805,19 @@ function actionControls(ctx, state) {
 
   out.push(el('a', { class: 'btn btn-ghost', href: wikiUrl, target: '_blank', rel: 'noopener noreferrer', html: `${icon('external')}<span>${esc(t('readOnWikipedia'))}</span>` }));
   return out;
+}
+
+/** The article's controls as one clean row above the tabs. */
+function actionsRow(ctx, state) {
+  const row = el('div', { class: 'art-actions' });
+  for (const control of actionControls(ctx, state)) row.append(control);
+  const jump = el('button', {
+    type: 'button', class: 'btn btn-ghost',
+    html: `${icon('list')}<span>${esc(t('jumpToSection'))}</span>`,
+  });
+  jump.addEventListener('click', () => toggleToc(state));
+  row.append(jump);
+  return row;
 }
 
 async function loadRelated(ctx, mount, { title, lang }) {

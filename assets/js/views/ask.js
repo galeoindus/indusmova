@@ -25,13 +25,13 @@ import { composeAnswer } from '../answer.js';
 import { answerToMarkdown } from '../markdown.js';
 import {
   evidenceStrip, topicBlocks, methodNote, factsBox,
-  scopeNote, feedback, curatedNote, markdownActions, railActions, selectedNote,
+  scopeNote, feedback, curatedNote, markdownActions, selectedNote,
 } from '../answerui.js';
 import { sectionHead, card, errorBox, emptyState, toast } from '../components.js';
 import { mountOpenSources } from './library.js';
 import { composerForm, depthControl, attachSuggest } from '../composer.js';
 import { articleHref, searchHref } from '../router.js';
-import { jumper } from './article.js';
+import { jumper, toggleContents } from './article.js';
 
 export async function renderAsk(ctx, route) {
   const wrap = el('div', { class: 'wrap-narrow' });
@@ -63,7 +63,8 @@ export async function renderAsk(ctx, route) {
 
   // The depth and meaning controls call this, so the open answer updates at once.
   ctx.optionsChanged = () => { if (state.data) paint(ctx, mount, state); };
-  ctx.onCleanup(() => { ctx.optionsChanged = () => {}; });
+  ctx.toggleToc = () => toggleContents(mount);
+  ctx.onCleanup(() => { ctx.optionsChanged = () => {}; ctx.toggleToc = null; });
 
   load(ctx, mount, state);
   return wrap;
@@ -157,14 +158,16 @@ async function paint(ctx, mount, state) {
   // Contents and actions live in the rail beside the answer; the answer itself
   // is the reading column. Same shape as the article view, because the reader
   // asked for one architecture across the whole site.
-  const wide = typeof window !== 'undefined' && window.matchMedia('(min-width: 1040px)').matches;
-  const grid = el('div', { class: `article-grid${wide ? ' rail-open' : ''}` });
-  const content = el('div', { class: 'panel' });
-  const rail = el('aside', { class: 'toc-rail', 'aria-label': t('jumpToSection') });
-  rail.append(jumper(state, answer));
-  rail.append(railActions(articleActions(ctx, answer)));
-  grid.append(content, rail);
-  mount.append(grid);
+  // One clean row of controls, the contents panel at the top, and the answer
+  // full width — the same shape as the article view.
+  const row = el('div', { class: 'art-actions' });
+  row.append(...articleActions(ctx, answer).children);
+  mount.append(row);
+  const toc = el('div', { class: 'toc-top', id: 'tocTop-topic', hidden: true });
+  toc.append(jumper(state, answer, 'topic'));
+  mount.append(toc);
+  const content = el('div', { class: 'panel panel-wide' });
+  mount.append(content);
 
   content.append(evidenceStrip({
     matched: answer.rankedCount,

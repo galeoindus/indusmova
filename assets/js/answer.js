@@ -86,7 +86,7 @@ export function factsFromInfobox(infoboxHtml) {
  * @param {string} [args.depth]   quick | detailed | deep
  * @param {boolean} [args.deep]   use the on-device meaning model
  */
-export async function composeAnswer({ question, root, sections = [], depth = 'detailed', deep = false, lang = 'en', title = '', mode = 'ask', maxSections = null }) {
+export async function composeAnswer({ question, root, sections = [], depth = 'detailed', deep = false, lang = 'en', title = '', mode = 'ask', maxSections = null, maxSentences = null }) {
   const parts = splitArticle(root, sections);
   const preset = DEPTHS[depth] || DEPTHS.detailed;
 
@@ -150,7 +150,7 @@ export async function composeAnswer({ question, root, sections = [], depth = 'de
   const topics = orderedTopics
     .slice(0, limit)
     .map((s, i) => {
-      const points = dedupe(s.sentences, Math.max(4, preset.sentences));
+      const points = dedupe(s.sentences, maxSentences ?? Math.max(4, preset.sentences));
       return {
         id: s.id,
         title: s.line,
