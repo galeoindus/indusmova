@@ -20,7 +20,7 @@ import { clean, wordCount, collectImages, proseText } from '../parse.js';
 import { composeAnswer } from '../answer.js';
 import { articleToMarkdown } from '../markdown.js';
 import {
-  evidenceStrip, pointsBlocks, methodNote, factsBox, sourcesGroup, scopeNote, feedback, referencesBlock, selectedNote,
+  pointsBlocks, methodNote, factsBox, sourcesGroup, scopeNote, feedback, referencesBlock, selectedNote,
   markdownActions,
 } from '../answerui.js';
 import { sectionHead, card, errorBox, emptyState, toast, breadcrumbs } from '../components.js';
@@ -390,14 +390,6 @@ async function repaintFull(ctx, state) {
   mount.append(tocTop(state, answer, 'full-topic'));
   const content = el('div', { class: 'panel panel-wide' });
   mount.append(content);
-
-  content.append(evidenceStrip({
-    matched: answer.method.sentencesMatched,
-    considered: answer.method.sentencesConsidered,
-    sections: answer.method.sectionsRead,
-    title: answer.title,
-    deep: ctx.state.deepRank,
-  }));
 
   const qa = el('div', { class: 'qa-answer' });
   qa.append(el('h2', { text: t('coreAnswer') }));

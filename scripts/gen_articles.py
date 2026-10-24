@@ -366,8 +366,8 @@ HEAD = """<!DOCTYPE html>
   <meta property="og:site_name" content="indusmova">
   <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Lora:ital,wght@0,500;0,600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
-  <link rel="stylesheet" href="/assets/css/styles.css?v=3.0.1">
-  <link rel="stylesheet" href="/assets/css/app.css?v=3.0.1">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=3.0.2">
+  <link rel="stylesheet" href="/assets/css/app.css?v=3.0.2">
   <script type="application/ld+json">{jsonld}</script>
 </head>
 <body>
@@ -439,7 +439,7 @@ FOOT = """  </main>
     <div class="foot-legal">
       <p>Wikipedia article text is available under the Creative Commons Attribution-ShareAlike Licence (CC BY-SA 4.0). Wikidata data is released under CC0 1.0. Files on Wikimedia Commons carry their own licence, shown with each image. indusmova is an independent reader and is not affiliated with or endorsed by the Wikimedia Foundation.</p>
       <p>indusmova reformats, condenses and reorders this text for reading. The original, with its full edit history, is at <a href="{wikiUrl}" target="_blank" rel="noopener noreferrer">{lang}.wikipedia.org</a>.</p>
-      <p class="foot-version">indusmova v3.0.1</p>
+      <p class="foot-version">indusmova v3.0.2</p>
     </div>
   </footer>
 {POINTS_SCRIPT}</body>
@@ -601,8 +601,8 @@ def main():
   <meta name="theme-color" content="#101713">
   <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Lora:ital,wght@0,500;0,600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
-  <link rel="stylesheet" href="/assets/css/styles.css?v=3.0.1">
-  <link rel="stylesheet" href="/assets/css/app.css?v=3.0.1">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=3.0.2">
+  <link rel="stylesheet" href="/assets/css/app.css?v=3.0.2">
 </head>
 <body>
   <div class="grain" aria-hidden="true"></div>

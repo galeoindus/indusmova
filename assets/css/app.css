@@ -736,3 +736,27 @@ button, .btn, [role="button"], .tab, .chip, .depth-btn, .chip-btn {
 }
 .point-block .line-list { margin: 0; }
 .point-block .line-list > li { max-width: 88ch; }
+
+/* ======================================================================
+   The article is one centred column
+   ======================================================================
+   The reader asked for the article to sit centred, with the pictures centred
+   in it, and the whole thing to read as one ordered column. The reading
+   column is centred in the shell and the gallery is centred inside it. */
+
+.panel-wide { max-width: 900px; margin-inline: auto; }
+.panel-wide .gallery { justify-content: center; }
+.panel-wide .gallery figure,
+.panel-wide .art-figure,
+.panel-wide .topic-figure { margin-inline: auto; text-align: center; }
+.panel-wide figure img,
+.panel-wide .gallery img,
+.panel-wide .art-figure img { margin-inline: auto; }
+
+/* The tabs and the top controls line up on the same centred axis. */
+[data-view="article"] .tabs { justify-content: center; }
+
+/* One aligned column: the heading, the controls, the tabs and the article all
+   sit on the same centred axis, instead of a wide head above a narrow body. */
+[data-view="article"] .wrap { max-width: 940px; }
+.panel-wide { max-width: none; }
