@@ -20,7 +20,7 @@ import { clean, wordCount, collectImages, proseText } from '../parse.js';
 import { composeAnswer } from '../answer.js';
 import { articleToMarkdown } from '../markdown.js';
 import {
-  evidenceStrip, topicBlocks, methodNote, factsBox, sourcesGroup, scopeNote, feedback, referencesBlock, selectedNote,
+  evidenceStrip, pointsBlocks, methodNote, factsBox, sourcesGroup, scopeNote, feedback, referencesBlock, selectedNote,
   markdownActions,
 } from '../answerui.js';
 import { sectionHead, card, errorBox, emptyState, toast, breadcrumbs } from '../components.js';
@@ -245,12 +245,10 @@ async function repaintBreakdown(ctx, state) {
     mountInto.append(card);
   }
 
+  // The article itself, in the core-answer architecture: one point per
+  // sentence under each section heading. No separate "breakdown".
   if (answer.topics.length) {
-    mountInto.append(sectionHead({ title: t('breakdown') }));
-    mountInto.append(topicBlocks(answer.topics, {
-      open: ctx.state.depth === 'deep',
-      onGoto: (topic) => gotoSection(state, topic),
-    }));
+    mountInto.append(pointsBlocks(answer.topics, { idPrefix: 'topic' }));
   }
 
   const facts = factsBox(answer.facts, answer.title);
@@ -451,17 +449,6 @@ function buildTabs() {
   return api;
 }
 
-/** Jump from a topic block to the same section inside the full article. */
-function gotoSection(state, topic) {
-  state.tabs?.show('full');
-  const target = document.getElementById(`full-topic-${topic.id}`);
-  if (target) {
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  } else {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-}
-
 /* ------------------------------------------------------------ full article */
 
 /**
@@ -539,8 +526,7 @@ async function repaintFull(ctx, state) {
   }
 
   if (answer.topics.length) {
-    content.append(sectionHead({ title: t('fullArticle') }));
-    content.append(topicBlocks(answer.topics, { open: true, idPrefix: 'full-topic' }));
+    content.append(pointsBlocks(answer.topics, { idPrefix: 'full-topic' }));
   }
 
   const facts = factsBox(answer.facts, answer.title);

@@ -24,8 +24,8 @@ import { clean } from '../parse.js';
 import { composeAnswer } from '../answer.js';
 import { answerToMarkdown } from '../markdown.js';
 import {
-  evidenceStrip, topicBlocks, methodNote, factsBox,
-  scopeNote, feedback, curatedNote, markdownActions, selectedNote,
+  evidenceStrip, pointsBlocks, methodNote, factsBox,
+  scopeNote, feedback, markdownActions, selectedNote,
 } from '../answerui.js';
 import { sectionHead, card, errorBox, emptyState, toast } from '../components.js';
 import { mountOpenSources } from './library.js';
@@ -207,14 +207,10 @@ async function paint(ctx, mount, state) {
   }
 
   // The topic-wise breakdown: short by default, extended at deep-dive depth.
+  // The article, in the core-answer architecture: one point per sentence
+  // under each section heading.
   if (answer.topics.length) {
-    content.append(sectionHead({ title: t('inDepth') }));
-    content.append(topicBlocks(answer.topics, { open: ctx.state.depth === 'deep' }));
-    content.append(curatedNote(t('depthFootnote', {
-      shown: answer.method.topicsShown,
-      total: answer.method.sectionsRead,
-      depth: t(answer.method.depth === 'quick' ? 'quickAnswer' : answer.method.depth === 'deep' ? 'deepDive' : 'detailed'),
-    })));
+    content.append(pointsBlocks(answer.topics, { idPrefix: 'topic' }));
   }
 
   // Facts.

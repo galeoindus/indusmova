@@ -66,8 +66,8 @@ export function factsFromInfobox(infoboxHtml) {
     const th = tr.querySelector('th');
     const td = tr.querySelector('td');
     if (!th || !td) continue;
-    const label = textOf(th);
-    const value = textOf(td);
+    const label = factCell(th);
+    const value = factCell(td);
     if (!label || !value || label.length > 60 || value.length > 220) continue;
     if (/^(hide|show)$/i.test(label)) continue;
     facts.push({ label, value });
@@ -86,6 +86,22 @@ export function factsFromInfobox(infoboxHtml) {
  * @param {string} [args.depth]   quick | detailed | deep
  * @param {boolean} [args.deep]   use the on-device meaning model
  */
+/**
+ * The text of an infobox cell.
+ *
+ * Wikipedia puts a name, a date and a place in separate inline elements with
+ * nothing between them, so textOf fuses them into "...1982Mogadishu...". Put a
+ * space between the parts.
+ */
+function factCell(cell) {
+  const clone = cell.cloneNode(true);
+  clone.querySelectorAll('br').forEach((br) => br.replaceWith(' '));
+  for (const child of [...clone.children]) {
+    child.after(clone.ownerDocument.createTextNode(' '));
+  }
+  return textOf(clone);
+}
+
 export async function composeAnswer({ question, root, sections = [], depth = 'detailed', deep = false, lang = 'en', title = '', mode = 'ask', maxSections = null, maxSentences = null }) {
   const parts = splitArticle(root, sections);
   const preset = DEPTHS[depth] || DEPTHS.detailed;

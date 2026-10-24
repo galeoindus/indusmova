@@ -716,3 +716,23 @@ button, .btn, [role="button"], .tab, .chip, .depth-btn, .chip-btn {
    showing all the time. Once the panel left the collapsed rail and joined the
    top row, that became visible. Pin it. */
 .md-disclosure-panel[hidden] { display: none; }
+
+/* ======================================================================
+   The article as points
+   ======================================================================
+   The reader wanted the article to read the way the core answer reads —
+   one sentence, one point — not like a Wikipedia page and not as a separate
+   "breakdown" of collapsed topic boxes. So each section is a heading and the
+   same .line-list the core answer uses. */
+
+.point-block { margin: 0 0 24px; scroll-margin-top: 96px; }
+.point-block-head {
+  display: flex; align-items: baseline; gap: 10px; margin: 0 0 10px;
+  font-family: var(--font-head); font-weight: 600; font-size: 19px; line-height: 1.25;
+}
+.point-block-head .topic-num {
+  font-family: var(--font-body); font-size: 12px; font-weight: 600;
+  color: var(--copper-ink); min-width: 1.4em; font-variant-numeric: tabular-nums;
+}
+.point-block .line-list { margin: 0; }
+.point-block .line-list > li { max-width: 88ch; }

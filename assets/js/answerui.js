@@ -40,57 +40,24 @@ export function evidenceStrip({ matched = 0, considered = 0, sections = 0, title
 }
 
 /**
- * Numbered topic blocks. Each opens with two sentences and a control that
- * reveals the rest of the section — short by default, extended on demand.
- * At "deep dive" depth they open extended straight away.
+ * The article's own content, as points.
+ *
+ * The reader did not want a Wikipedia page. They wanted the article to read
+ * the way the core answer reads: one sentence, one point, under its section
+ * heading, in the same .line-list the core answer uses.
  */
-export function topicBlocks(topics, { open = false, onGoto = null, idPrefix = 'topic' } = {}) {
+export function pointsBlocks(topics, { idPrefix = 'topic' } = {}) {
   const frag = document.createDocumentFragment();
   for (const topic of topics) {
-    const block = el('div', { class: `topic-block${open ? ' is-open' : ''}`, id: `${idPrefix}-${topic.id}` });
-
-    const head = el('h3');
-    head.append(el('span', { class: 'topic-num', text: String(topic.number ?? '') }));
+    const section = el('section', { class: 'point-block', id: `${idPrefix}-${topic.id}` });
+    const head = el('h3', { class: 'point-block-head' });
+    if (topic.number) head.append(el('span', { class: 'topic-num', text: String(topic.number) }));
     head.append(el('span', { text: topic.title }));
-    if (onGoto) {
-      const goto = el('button', { type: 'button', class: 'topic-goto', text: `· ${t('readFullSection')}` });
-      goto.addEventListener('click', () => onGoto(topic));
-      head.append(goto);
-    }
-    block.append(head);
-
-    // A picture from this section, when the article has one.
-    const picture = (topic.images || [])[0];
-    if (picture) {
-      const figure = el('figure', { class: 'topic-figure' });
-      figure.append(el('img', { src: picture.src, alt: picture.alt || '', loading: 'lazy', decoding: 'async' }));
-      if (picture.caption) figure.append(el('figcaption', { text: picture.caption }));
-      block.append(figure);
-    }
-
-    const short = el('div', { class: 'topic-short' });
-    (topic.short || topic.points).forEach((line) => short.append(el('p', { text: line })));
-    block.append(short);
-
-    const rest = (topic.full || []).slice((topic.short || []).length);
-    if (rest.length) {
-      const full = el('div', { class: 'topic-full', hidden: !open });
-      rest.forEach((line) => full.append(el('p', { text: line })));
-      block.append(full);
-
-      const more = el('button', {
-        type: 'button', class: 'topic-more', 'aria-expanded': String(open),
-        text: open ? t('showLess') : `${t('showMore')} (${rest.length})`,
-      });
-      more.addEventListener('click', () => {
-        const nowOpen = block.classList.toggle('is-open');
-        full.hidden = !nowOpen;
-        more.setAttribute('aria-expanded', String(nowOpen));
-        more.textContent = nowOpen ? t('showLess') : `${t('showMore')} (${rest.length})`;
-      });
-      block.append(more);
-    }
-    frag.append(block);
+    section.append(head);
+    const ul = el('ul', { class: 'line-list' });
+    (topic.points || []).forEach((line) => ul.append(el('li', { text: line })));
+    section.append(ul);
+    frag.append(section);
   }
   return frag;
 }
@@ -342,11 +309,6 @@ export function feedback(ctx, key) {
 
   wrap.append(row, note, thanks);
   return wrap;
-}
-
-/** A curated footnote, for answers that lean on one section. */
-export function curatedNote(text) {
-  return el('p', { class: 'curated', text });
 }
 
 function esc(value) {
