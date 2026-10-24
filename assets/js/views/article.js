@@ -377,15 +377,16 @@ async function repaintFull(ctx, state) {
   const content = el('div', { class: 'panel panel-wide' });
   mount.append(content);
 
+  // The infobox sits at the top, where Wikipedia keeps it, as our facts box.
+  const factbox = factsBox(facts, state.data.title);
+  if (factbox) content.append(factbox);
+
   // The lead, then every section, in Wikipedia's own order — but read as
   // points, with the pictures and tables left where Wikipedia puts them.
   if (parts.leadHtml.trim()) content.append(articleSection({ html: parts.leadHtml, id: 'full-topic-lead' }));
   for (const section of parts.sections) {
     content.append(articleSection({ html: section.html, title: section.line, id: `full-topic-${section.id}`, number: section.number }));
   }
-
-  const factbox = factsBox(facts, state.data.title);
-  if (factbox) content.append(factbox);
 
   const references = (state.root.references || []).length
     ? referencesBlock(state.root.references)
