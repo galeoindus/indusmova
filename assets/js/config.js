@@ -16,7 +16,7 @@ export const SITE = {
   origin: 'https://indusmova.pages.dev',
   repo: 'https://github.com/galeoindus/indusmova',
   description:
-    'indusmova is a Wikimedia knowledge research and discovery platform. Ask a question or open a topic and get a direct answer, key points, a topic-wise breakdown, real facts and the sources behind them.',
+    'indusmova is a Wikimedia knowledge research and discovery platform. Ask a question or open a topic and get a direct answer, the key points, the facts from the infobox and the sources behind them.',
   ogDescription:
     'Understand the question. Research the sources. Filter the evidence. Explain the answer. Show the sources.',
   locale: 'en_IN',

@@ -786,3 +786,22 @@ button, .btn, [role="button"], .tab, .chip, .depth-btn, .chip-btn {
 .art-body img { max-width: 100%; height: auto; margin-inline: auto; }
 .art-body .thumbcaption, .art-body figcaption { text-align: center; }
 .art-body .table-scroll { margin: 18px auto; }
+
+/* ======================================================================
+   The article spreads across the width, with no side panel
+   ======================================================================
+   The reader asked for the article to spread out the way the core answer
+   does, and for the left-hand panel to be gone — the contents is the
+   "Jump to a section" button at the top instead. */
+
+[data-view="article"] .wrap { max-width: none; }
+.panel-wide { max-width: none; }
+.panel-wide .line-list > li,
+.art-body > p,
+.art-body > ul > li { max-width: 104ch; }
+
+/* No side navigation on the article: the header still carries the
+   destinations, and the contents is the button at the top. */
+[data-view="article"] .app-side { display: none !important; }
+[data-view="article"] .app-shell,
+[data-view="article"] .app-shell:has(.app-rail:not(:empty)) { grid-template-columns: minmax(0, 1fr); }

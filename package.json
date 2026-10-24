@@ -3,7 +3,7 @@
   "version": "3.0.2",
   "private": true,
   "type": "module",
-  "description": "indusmova \u2014 a Wikimedia knowledge research and discovery platform. Ask a question or open a topic and get a direct answer, key points, a topic-wise breakdown, real facts and the sources behind them.",
+  "description": "indusmova \u2014 a Wikimedia knowledge research and discovery platform. Ask a question or open a topic and get a direct answer, key points, the facts from the infobox and the sources behind them.",
   "homepage": "https://indusmova.pages.dev/",
   "repository": {
     "type": "git",
