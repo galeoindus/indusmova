@@ -807,407 +807,576 @@ button, .btn, [role="button"], .tab, .chip, .depth-btn, .chip-btn {
 [data-view="article"] .app-shell:has(.app-rail:not(:empty)) { grid-template-columns: minmax(0, 1fr); }
 
 /* ======================================================================
-   indusmova v4 — "Aurora Glass"
+   indusmova v4 — "Clay"
    ======================================================================
-   A visual layer on top of the original design system. It keeps every class
-   name and layout intact and re-skins the surfaces, so the whole site (the
-   app shell, the article pages, the static index pages) picks up the new
-   look from this one file.
+   A whole-site visual redesign built on claymorphism, layered over the
+   original design system. Nothing about the markup, the routes or the
+   layout changes — every option, card, panel, button and field is re-cut
+   from one material, so the app shell, the article pages and the static
+   index pages all read as one product.
 
-   The ideas it borrows, on purpose:
-     · glassmorphism  — frosted, translucent panels with a hairline highlight
-     · aurora mesh    — a slow, drifting colour field behind everything
-     · soft / neumorphic depth — light from above, a quiet contact shadow
-     · gradient hairline borders — a thin, lit edge rather than a flat rule
-     · micro-interaction — a lift, a glow and a shine on the things you touch
-   Every effect is optional to the reading: text stays on an opaque-enough
-   surface, contrast is preserved in light, dark and sepia, and motion is
-   switched off under `prefers-reduced-motion`.
+   Claymorphism, as studied (Malewicz; Smashing Magazine; LogRocket), is:
+     · big, soft, organic corners — rounder than a rectangle wants to be
+     · three shadows, not one: a soft outer drop, and two inner shadows —
+       a light one along the top-left edge, a darker one along the bottom-
+       right — so the surface looks inflated rather than flat
+     · a gentle gradient across the surface to fake the volume
+     · a muted, warm palette where the element sits a shade *lighter*
+       than the page behind it
+     · a tactile squish on press
+   The guidance that navigation and long text should stay legible is kept:
+   clay is on the containers, the controls and the accents; the prose
+   itself stays quiet. Depth is drawn with colour, so light, dark and
+   sepia all keep their contrast, and the squish is switched off under
+   `prefers-reduced-motion`.
    ====================================================================== */
 
 :root {
-  /* One easing for the whole site, so motion feels like one hand drew it. */
   --ease-out: cubic-bezier(.22, .68, .3, 1);
-  --glass-blur: 16px;
-  --glass-saturate: 1.35;
+  /* Focus stays clearly visible, but in the brand's own ink rather than
+     the generic blue the base system shipped. */
+  --focus: var(--copper-ink);
 
-  /* The lit edge of a glass panel. */
-  --glass-line: color-mix(in srgb, var(--copper) 42%, var(--border-2));
-  --glass-edge: inset 0 1px 0 color-mix(in srgb, #ffffff 55%, transparent);
-  --glass: color-mix(in srgb, var(--surface) 74%, transparent);
-  --glass-2: color-mix(in srgb, var(--surface-2) 68%, transparent);
+  /* The material. */
+  --clay-r: 26px;          /* the standard clay corner */
+  --clay-r-lg: 34px;       /* big containers */
+  --clay-r-sm: 16px;       /* chips and small controls */
+  --clay-r-pill: 999px;
 
-  /* The brand sweep, reused by every accent. */
-  --brand-a: var(--forest);
-  --brand-b: var(--copper);
-  --brand-sweep: linear-gradient(120deg, var(--forest) 0%, var(--accent-2) 42%, var(--copper) 100%);
-  --brand-soft: linear-gradient(120deg,
-      color-mix(in srgb, var(--forest) 12%, transparent),
-      color-mix(in srgb, var(--copper) 14%, transparent));
+  --clay-face: linear-gradient(145deg,
+      color-mix(in srgb, var(--surface) 100%, #ffffff 8%),
+      color-mix(in srgb, var(--surface) 94%, var(--sand)));
 
-  --radius-xl: 26px;
-  --radius-lg: 22px;
+  --clay-hi: inset 6px 6px 12px color-mix(in srgb, #ffffff 92%, transparent);
+  --clay-lo: inset -7px -7px 14px color-mix(in srgb, var(--forest) 13%, transparent);
+  --clay-drop: 0 22px 40px -22px color-mix(in srgb, var(--forest) 46%, transparent),
+               0 8px 16px -12px color-mix(in srgb, var(--forest) 30%, transparent);
+
+  --clay-press-hi: inset -5px -5px 10px color-mix(in srgb, #ffffff 70%, transparent);
+  --clay-press-lo: inset 6px 6px 12px color-mix(in srgb, var(--forest) 20%, transparent);
+
+  /* A pressed-in well, for fields and inputs. */
+  --well-face: linear-gradient(145deg,
+      color-mix(in srgb, var(--surface) 88%, var(--bg)),
+      color-mix(in srgb, var(--surface) 97%, #ffffff));
+  --well: inset 5px 5px 11px color-mix(in srgb, var(--forest) 16%, transparent),
+          inset -5px -5px 11px color-mix(in srgb, #ffffff 92%, transparent);
+
+  /* The tinted clay for the primary call to action. */
+  --clay-cta: linear-gradient(145deg,
+      color-mix(in srgb, var(--copper) 92%, #ffffff),
+      var(--copper-deep));
+  --clay-cta-hi: inset 6px 6px 13px color-mix(in srgb, #ffffff 40%, transparent);
+  --clay-cta-lo: inset -7px -7px 14px color-mix(in srgb, #000000 26%, transparent);
+  --clay-cta-drop: 0 20px 34px -20px color-mix(in srgb, var(--copper-deep) 80%, transparent);
 }
 
 [data-theme="dark"] {
-  --glass-line: color-mix(in srgb, var(--copper) 52%, var(--border-2));
-  --glass-edge: inset 0 1px 0 color-mix(in srgb, #ffffff 9%, transparent);
-  --glass: color-mix(in srgb, var(--surface) 72%, transparent);
-  --glass-2: color-mix(in srgb, var(--surface-2) 66%, transparent);
-  --brand-a: var(--sage);
-  --brand-b: var(--accent);
-  --brand-sweep: linear-gradient(120deg, var(--sage) 0%, var(--accent-2) 45%, var(--accent) 100%);
+  --focus: var(--sage);
+  /* In the dark the shapes sit a little above the page so the inner light
+     and the inner shadow still read (the claymorphism dark-mode caveat). */
+  --clay-face: linear-gradient(145deg,
+      color-mix(in srgb, var(--surface) 100%, #ffffff 6%),
+      color-mix(in srgb, var(--surface) 88%, #000000));
+  --clay-hi: inset 6px 6px 14px color-mix(in srgb, #ffffff 7%, transparent);
+  --clay-lo: inset -7px -7px 16px color-mix(in srgb, #000000 55%, transparent);
+  --clay-drop: 0 26px 46px -24px rgba(0, 0, 0, .92),
+               0 10px 20px -14px rgba(0, 0, 0, .72);
+
+  --clay-press-hi: inset -5px -5px 10px color-mix(in srgb, #ffffff 5%, transparent);
+  --clay-press-lo: inset 6px 6px 12px color-mix(in srgb, #000000 60%, transparent);
+
+  --well-face: linear-gradient(145deg,
+      color-mix(in srgb, var(--surface) 82%, #000000),
+      color-mix(in srgb, var(--surface) 100%, #ffffff 4%));
+  --well: inset 5px 5px 12px color-mix(in srgb, #000000 62%, transparent),
+          inset -5px -5px 12px color-mix(in srgb, #ffffff 6%, transparent);
+
+  --clay-cta: linear-gradient(145deg,
+      color-mix(in srgb, var(--accent) 92%, #ffffff),
+      color-mix(in srgb, var(--accent) 60%, #000000));
+  --clay-cta-drop: 0 22px 38px -20px color-mix(in srgb, #000000 85%, transparent);
 }
 
 [data-theme="sepia"] {
-  --glass-line: color-mix(in srgb, var(--copper) 40%, var(--border-2));
-  --glass: color-mix(in srgb, var(--surface) 80%, transparent);
+  --clay-face: linear-gradient(145deg, #faf3e2, #e9dcbd);
+  --clay-hi: inset 6px 6px 12px rgba(255, 255, 255, .9);
+  --clay-lo: inset -7px -7px 14px rgba(120, 96, 60, .16);
+  --clay-drop: 0 22px 40px -22px rgba(120, 96, 60, .5), 0 8px 16px -12px rgba(120, 96, 60, .3);
 }
 
-/* ---------------------------------------------------------- background */
+/* ---------------------------------------------------------------- page */
 
-/* A richer, slower aurora than the two-blob field it replaces. */
+/* A warm, softly-lit clay table under everything. The busy aurora is gone;
+   clay wants a calm surface so the raised shapes read. */
 body::before {
   background:
-    radial-gradient(44vw 34vw at 8% -8%, color-mix(in srgb, var(--sage) 46%, transparent), transparent 62%),
-    radial-gradient(40vw 30vw at 98% 2%, color-mix(in srgb, var(--copper) 30%, transparent), transparent 60%),
-    radial-gradient(52vw 40vw at 78% 96%, color-mix(in srgb, var(--accent-2) 26%, transparent), transparent 64%),
-    radial-gradient(46vw 34vw at 14% 108%, color-mix(in srgb, var(--forest) 20%, transparent), transparent 66%);
-  filter: blur(6px) saturate(1.05);
-  animation: auroraFloat 42s var(--ease-out) infinite alternate;
+    radial-gradient(60vw 46vw at 12% -10%, color-mix(in srgb, var(--sage) 38%, transparent), transparent 66%),
+    radial-gradient(52vw 40vw at 100% 4%, color-mix(in srgb, var(--copper) 20%, transparent), transparent 62%),
+    radial-gradient(70vw 50vw at 50% 112%, color-mix(in srgb, var(--forest) 12%, transparent), transparent 70%);
+  filter: blur(10px);
+  animation: none;
 }
+body::after { opacity: 0; }        /* the grid was glass; clay does not need it */
+.grain { opacity: .14; }
+[data-theme="dark"] .grain { opacity: .08; }
 
-[data-theme="dark"] body::before {
-  background:
-    radial-gradient(44vw 34vw at 8% -8%, color-mix(in srgb, var(--forest) 42%, transparent), transparent 62%),
-    radial-gradient(40vw 30vw at 98% 2%, color-mix(in srgb, var(--copper) 30%, transparent), transparent 60%),
-    radial-gradient(54vw 42vw at 80% 98%, color-mix(in srgb, var(--accent-2) 24%, transparent), transparent 64%),
-    radial-gradient(44vw 32vw at 10% 106%, color-mix(in srgb, var(--sage) 14%, transparent), transparent 66%);
-}
+::selection { background: color-mix(in srgb, var(--copper) 32%, transparent); color: var(--text); }
 
-@keyframes auroraFloat {
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  50%  { transform: translate3d(-2.2%, 1.6%, 0) scale(1.07); }
-  100% { transform: translate3d(2.4%, -1.8%, 0) scale(1.03); }
-}
-
-body::after { opacity: 0.4; }
-.grain { opacity: 0.22; }
-[data-theme="dark"] .grain { opacity: 0.12; }
-
-::selection { background: color-mix(in srgb, var(--copper) 34%, transparent); color: var(--text); }
-
-/* A slim, themed scrollbar that does not shout. */
 * { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--copper) 45%, var(--border-2)) transparent; }
-::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar { width: 12px; height: 12px; }
 ::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--copper) 40%, var(--border-2));
+  background: color-mix(in srgb, var(--copper) 38%, var(--border-2));
   border: 3px solid transparent; border-radius: 999px; background-clip: padding-box;
 }
-::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--copper) 62%, var(--border-2)); background-clip: padding-box; }
 
-/* ---------------------------------------------------------- the surfaces */
+/* ------------------------------------------------- the clay material */
 
-/* One glass recipe, applied to every panel-like surface on the site. */
+/* Every container on the site is one raised clay puck. */
 .panel, .answer-card, .sec:has(> .sec-head), .source-card, .page,
-.src-group, .topic-block, .factbox, .toc, .rail-card, .howstep,
-.ask-note, .method-note, .langbar, .aotd, .evidence, .scope-note,
-form.panel .searchbar, .src-group, .saved-item, .topic-card, .card,
-.q-card, .cat-card, .dash-action {
-  background: var(--glass);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border: 1px solid color-mix(in srgb, var(--border-2) 78%, transparent);
-  box-shadow: var(--glass-edge), var(--shadow);
+.src-group, .topic-block, .factbox, .toc, .toc-jump, .rail-card,
+.howstep, .ask-note, .method-note, .langbar, .aotd, .evidence,
+.scope-note, .saved-item, .state, .error-box, .md-raw, .rail-actions,
+.article-grid .panel {
+  background: var(--clay-face);
+  border: 0;
+  border-radius: var(--clay-r-lg);
+  box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop);
 }
 
-/* The accent hairline the panels already carry — recoloured to the brand
-   sweep and softened so it reads as a lit edge, not a stripe. */
+/* The little accent bar the panels carry becomes a clay ridge. */
 .panel::before, .answer-card::before, .sec:has(> .sec-head)::before,
 .src-group::before, .topic-block::before, .page::before {
-  height: 3px;
-  background: var(--brand-sweep);
-  opacity: .85;
+  content: ""; position: absolute; inset: 0 0 auto; height: 6px; border-radius: var(--clay-r-lg) var(--clay-r-lg) 0 0;
+  background: linear-gradient(90deg, var(--forest), var(--accent-2) 45%, var(--copper));
+  opacity: .9;
 }
 
-/* Cards get the lit edge on hover rather than a flat accent border. */
-.card, .topic-card, .q-card, .cat-card, .dash-action, .rail-card {
-  transition: transform .28s var(--ease-out), box-shadow .28s var(--ease-out),
-              border-color .28s var(--ease-out), background-color .28s var(--ease-out);
+/* ------------------------------------------------------ the cards */
+
+.card, .q-card, .cat-card, .dash-action, .topic-card, .howstep {
+  background: var(--clay-face);
+  border: 0;
+  border-radius: var(--clay-r);
+  box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop);
+  transition: transform .3s var(--ease-out), box-shadow .3s var(--ease-out);
 }
-.card:hover, .topic-card:hover, .q-card:hover, .cat-card:hover, .dash-action:hover {
-  transform: translateY(-4px);
-  border-color: var(--glass-line);
-  box-shadow: var(--glass-edge), var(--shadow-lg);
+.card:hover, .q-card:hover, .cat-card:hover, .dash-action:hover,
+.topic-card:hover, .howstep:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--clay-hi), var(--clay-lo),
+              0 30px 52px -24px color-mix(in srgb, var(--forest) 55%, transparent),
+              0 12px 22px -14px color-mix(in srgb, var(--copper) 45%, transparent);
+}
+.card-thumb, .q-thumb { background: color-mix(in srgb, var(--surface-2) 92%, var(--sand)); }
+.card-thumb.placeholder { box-shadow: var(--well); border-radius: 0; }
+
+/* The card icons sit in their own little clay tile. */
+.cat-card .ic, .dash-action .ic, .topic-card .ic, .feature .ic,
+.site-intro .intro-card .ic {
+  background: var(--clay-face);
+  border-radius: 14px;
+  box-shadow: inset 3px 3px 6px color-mix(in srgb, #ffffff 85%, transparent),
+              inset -4px -4px 8px color-mix(in srgb, var(--forest) 12%, transparent),
+              0 8px 14px -10px color-mix(in srgb, var(--forest) 45%, transparent);
+  color: var(--copper-ink);
+}
+[data-theme="dark"] .cat-card .ic, [data-theme="dark"] .dash-action .ic,
+[data-theme="dark"] .topic-card .ic, [data-theme="dark"] .feature .ic {
+  box-shadow: inset 3px 3px 6px color-mix(in srgb, #ffffff 6%, transparent),
+              inset -4px -4px 8px color-mix(in srgb, #000000 55%, transparent),
+              0 8px 14px -10px rgba(0, 0, 0, .8);
 }
 
-/* A slow diagonal shine that crosses a card on hover. */
-.card, .q-card, .cat-card, .dash-action, .topic-card { position: relative; overflow: hidden; }
-.card::after, .q-card::after, .cat-card::after, .dash-action::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0;
-  background: linear-gradient(115deg, transparent 30%,
-              color-mix(in srgb, var(--copper) 16%, transparent) 48%, transparent 66%);
-  transform: translateX(-30%);
-  transition: opacity .4s var(--ease-out), transform .7s var(--ease-out);
+/* ------------------------------------------------------ the controls */
+
+.btn {
+  border: 0;
+  border-radius: var(--clay-r-pill);
+  background: var(--clay-face);
+  color: var(--text);
+  box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop);
+  transition: transform .18s var(--ease-out), box-shadow .18s var(--ease-out), background-color .18s var(--ease-out);
 }
-.card:hover::after, .q-card:hover::after, .cat-card:hover::after, .dash-action:hover::after {
-  opacity: 1; transform: translateX(30%);
+.btn:hover { transform: translateY(-2px); }
+.btn:active {
+  transform: translateY(1px) scale(.97);
+  box-shadow: var(--clay-press-hi), var(--clay-press-lo), 0 6px 12px -10px color-mix(in srgb, var(--forest) 50%, transparent);
 }
 
-/* ------------------------------------------------------------- top bar */
+/* The primary call to action is the one deeply-tinted piece of clay. */
+.btn-primary, .btn-primary:hover {
+  background: var(--clay-cta);
+  border: 0;
+  color: #fff;
+  box-shadow: var(--clay-cta-hi), var(--clay-cta-lo), var(--clay-cta-drop);
+}
+[data-theme="dark"] .btn-primary, [data-theme="dark"] .btn-primary:hover {
+  background: var(--clay-cta);
+  color: var(--on-primary);
+  box-shadow: var(--clay-cta-hi), var(--clay-cta-lo), var(--clay-cta-drop);
+}
+.btn-primary:hover { filter: brightness(1.05); }
+.btn-primary:active { box-shadow: var(--clay-press-hi), var(--clay-press-lo), var(--clay-cta-drop); }
+.btn-ghost { background: var(--clay-face); }
+.btn-icon { border-radius: 50%; }
 
-/* The header becomes a floating glass capsule over the aurora. */
+/* Chips, pills, tabs and the segmented controls: small clay blobs. */
+.chip, .pill, .depth-btn, .chip-btn, .example-prompts button, .sc-kind,
+.badge, .mode, .mode-btn, .tab, .saved-del, .btn-sm {
+  border: 0;
+  background: var(--clay-face);
+  border-radius: var(--clay-r-pill);
+  box-shadow: inset 3px 3px 7px color-mix(in srgb, #ffffff 80%, transparent),
+              inset -4px -4px 8px color-mix(in srgb, var(--forest) 11%, transparent),
+              0 8px 15px -12px color-mix(in srgb, var(--forest) 45%, transparent);
+  transition: transform .18s var(--ease-out), box-shadow .18s var(--ease-out);
+}
+[data-theme="dark"] .chip, [data-theme="dark"] .pill, [data-theme="dark"] .depth-btn,
+[data-theme="dark"] .chip-btn, [data-theme="dark"] .example-prompts button,
+[data-theme="dark"] .badge, [data-theme="dark"] .mode, [data-theme="dark"] .mode-btn,
+[data-theme="dark"] .tab {
+  box-shadow: inset 3px 3px 7px color-mix(in srgb, #ffffff 6%, transparent),
+              inset -4px -4px 8px color-mix(in srgb, #000000 55%, transparent),
+              0 8px 15px -12px rgba(0, 0, 0, .8);
+}
+.chip:hover, .pill:hover, .depth-btn:hover, .chip-btn:hover, .example-prompts button:hover { transform: translateY(-2px); }
+.chip:active, .pill:active, .depth-btn:active, .chip-btn:active, .example-prompts button:active { transform: translateY(1px) scale(.97); }
+
+/* An active control is pressed *in*, not raised. */
+.depth-btn.is-active, .chip-btn.is-active, .chip.is-active,
+.dash-hero .depth-btn[aria-pressed="true"], .dash-hero .chip-btn.is-active,
+.mode-btn.is-active, .tab[aria-selected="true"], .tab.is-active {
+  background: var(--clay-cta);
+  color: #fff;
+  box-shadow: inset 4px 4px 9px color-mix(in srgb, #000000 22%, transparent),
+              inset -4px -4px 9px color-mix(in srgb, #ffffff 22%, transparent);
+}
+[data-theme="dark"] .depth-btn.is-active, [data-theme="dark"] .chip-btn.is-active,
+[data-theme="dark"] .mode-btn.is-active, [data-theme="dark"] .dash-hero .depth-btn[aria-pressed="true"] {
+  background: var(--clay-cta); color: var(--on-primary);
+}
+.badge { color: var(--copper-ink); }
+.badge.accent, .badge.accent:hover { background: var(--clay-cta); color: #fff; box-shadow: var(--clay-cta-hi), var(--clay-cta-lo), var(--clay-cta-drop); }
+[data-theme="dark"] .badge { color: var(--sage); }
+
+/* --------------------------------------------------- fields (pressed) */
+
+.searchbar, .composer .searchbar, .select, .langbar select,
+form.panel .searchbar, form.panel .select, .feedback .fb-note textarea,
+.langbar-inner input#langSelect {
+  background: var(--well-face);
+  border: 0;
+  border-radius: var(--clay-r);
+  box-shadow: var(--well);
+  transition: box-shadow .24s var(--ease-out);
+}
+.searchbar:focus-within, .composer .searchbar:focus-within,
+.select:focus, .langbar select:focus,
+form.panel .searchbar:focus-within, .feedback .fb-note textarea:focus {
+  box-shadow: var(--well), 0 0 0 3px color-mix(in srgb, var(--copper) 30%, transparent);
+}
+
+/* --------------------------------------------------------------- nav */
+
 .topbar {
   background: transparent;
   border-bottom: 0;
   box-shadow: none;
-  padding-top: 10px;
+  padding-top: 12px;
 }
 .topbar-inner {
-  background: var(--glass);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border: 1px solid color-mix(in srgb, var(--border-2) 72%, transparent);
-  border-radius: 999px;
-  box-shadow: var(--glass-edge), 0 10px 30px -18px color-mix(in srgb, var(--forest) 60%, transparent);
-  padding: 8px 12px 8px 16px;
+  background: var(--clay-face);
+  border: 0;
+  border-radius: var(--clay-r-pill);
+  box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop);
+  padding: 9px 14px;
 }
-[data-theme="dark"] .topbar-inner { box-shadow: var(--glass-edge), 0 12px 34px -20px rgba(0, 0, 0, .9); }
-
-.topnav a { border-radius: 999px; }
+.topnav a { border-radius: var(--clay-r-pill); transition: background-color .2s var(--ease-out), color .2s var(--ease-out), box-shadow .2s var(--ease-out); }
+.topnav a:hover { background: var(--well-face); box-shadow: var(--well); }
 .topnav a[aria-current="page"] {
   color: var(--text);
-  background: var(--brand-soft);
-  box-shadow: inset 0 0 0 1px var(--glass-line);
+  background: var(--clay-face);
+  box-shadow: inset 4px 4px 8px color-mix(in srgb, var(--forest) 14%, transparent),
+              inset -4px -4px 8px color-mix(in srgb, #ffffff 80%, transparent);
 }
-.btn-icon { border-radius: 999px; }
-
-/* ------------------------------------------------------------- searchbar */
-
-.searchbar, .composer .searchbar {
-  background: color-mix(in srgb, var(--surface) 82%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border-2) 80%, transparent);
-  box-shadow: var(--glass-edge), var(--shadow-sm);
-  transition: box-shadow .28s var(--ease-out), border-color .28s var(--ease-out);
+[data-theme="dark"] .topnav a[aria-current="page"] {
+  box-shadow: inset 4px 4px 8px color-mix(in srgb, #000000 55%, transparent),
+              inset -4px -4px 8px color-mix(in srgb, #ffffff 6%, transparent);
 }
-.composer .searchbar { border-radius: var(--radius-lg); box-shadow: var(--glass-edge), var(--shadow); }
-.searchbar:focus-within, .composer .searchbar:focus-within {
-  border-color: color-mix(in srgb, var(--copper) 62%, var(--border-2));
-  box-shadow: var(--glass-edge), 0 0 0 4px color-mix(in srgb, var(--copper) 18%, transparent),
-              0 22px 50px -26px color-mix(in srgb, var(--copper) 55%, transparent);
-}
-
-/* ------------------------------------------------------------- buttons */
-
-.btn {
-  border-radius: 999px;
-  border-color: color-mix(in srgb, var(--border-2) 80%, transparent);
-  background: color-mix(in srgb, var(--surface) 82%, transparent);
-  box-shadow: var(--glass-edge), var(--shadow-sm);
-}
-.btn:hover { box-shadow: var(--glass-edge), var(--shadow); }
-
-.btn-primary {
-  background: var(--brand-sweep);
-  border-color: transparent;
-  color: var(--on-primary);
-  box-shadow: var(--glass-edge), 0 12px 26px -14px color-mix(in srgb, var(--forest) 75%, transparent);
-}
-[data-theme="dark"] .btn-primary {
-  background: var(--brand-sweep);
-  border-color: transparent;
-  color: var(--on-primary);
-}
-.btn-primary:hover, [data-theme="dark"] .btn-primary:hover {
-  background: var(--brand-sweep);
-  color: var(--on-primary);
-  filter: brightness(1.08) saturate(1.05);
-  box-shadow: var(--glass-edge), 0 16px 34px -14px color-mix(in srgb, var(--copper) 70%, transparent);
-}
-
-.btn-ghost { background: color-mix(in srgb, var(--surface) 55%, transparent); }
-.btn-ghost:hover { background: var(--glass-2); border-color: var(--glass-line); }
-
-/* Chips, pills and the small segmented controls share one glassy pill. */
-.chip, .pill, .depth-btn, .chip-btn, .example-prompts button, .sc-kind {
-  background: color-mix(in srgb, var(--surface) 70%, transparent);
-  border-color: color-mix(in srgb, var(--border-2) 76%, transparent);
-  box-shadow: var(--glass-edge);
-  transition: transform .2s var(--ease-out), border-color .2s var(--ease-out),
-              color .2s var(--ease-out), background-color .2s var(--ease-out), box-shadow .2s var(--ease-out);
-}
-.chip:hover, .pill:hover, .depth-btn:hover, .chip-btn:hover, .example-prompts button:hover {
-  transform: translateY(-1px);
-  border-color: var(--glass-line);
-  box-shadow: var(--glass-edge), 0 10px 22px -14px color-mix(in srgb, var(--copper) 65%, transparent);
-}
-.depth-btn.is-active, .chip-btn.is-active, .chip.is-active,
-.dash-hero .depth-btn[aria-pressed="true"], .dash-hero .chip-btn.is-active {
-  background: var(--brand-sweep);
-  border-color: transparent;
-  color: var(--on-primary);
-  box-shadow: var(--glass-edge), 0 10px 24px -14px color-mix(in srgb, var(--copper) 70%, transparent);
-}
-[data-theme="dark"] .depth-btn.is-active,
-[data-theme="dark"] .dash-hero .depth-btn[aria-pressed="true"] { background: var(--brand-sweep); border-color: transparent; color: var(--on-primary); }
-
-.mode { background: color-mix(in srgb, var(--surface-2) 70%, transparent); box-shadow: var(--glass-edge); }
-.mode-btn.is-active { background: var(--brand-sweep); color: var(--on-primary); box-shadow: var(--glass-edge); }
-
-.badge { background: color-mix(in srgb, var(--sage) 45%, transparent); box-shadow: var(--glass-edge); }
-.badge.accent { background: var(--brand-sweep); }
-
-/* ------------------------------------------------------------- side nav */
 
 .app-side {
-  background: var(--glass);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border: 1px solid color-mix(in srgb, var(--border-2) 66%, transparent);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--glass-edge), var(--shadow);
+  background: var(--clay-face);
+  border: 0;
+  border-radius: var(--clay-r-lg);
+  box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop);
 }
-.side-link { border-radius: var(--radius-xs); transition: background-color .2s var(--ease-out), color .2s var(--ease-out); }
-.side-link:hover { background: var(--brand-soft); }
+.side-link { border-radius: 14px; transition: background-color .2s var(--ease-out), box-shadow .2s var(--ease-out), color .2s var(--ease-out); }
+.side-link:hover { background: var(--well-face); box-shadow: var(--well); }
 .side-link[aria-current="page"] {
-  background: var(--brand-soft);
+  background: var(--clay-face);
   color: var(--text);
-  box-shadow: inset 0 0 0 1px var(--glass-line);
+  box-shadow: inset 4px 4px 8px color-mix(in srgb, var(--forest) 14%, transparent),
+              inset -4px -4px 8px color-mix(in srgb, #ffffff 78%, transparent);
+}
+[data-theme="dark"] .side-link[aria-current="page"] {
+  box-shadow: inset 4px 4px 8px color-mix(in srgb, #000000 55%, transparent),
+              inset -4px -4px 8px color-mix(in srgb, #ffffff 6%, transparent);
 }
 .side-heading { color: var(--copper-ink); }
 
+.bottom-nav, .bottom-nav.glass {
+  background: var(--clay-face);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  border: 0;
+  box-shadow: var(--clay-hi), var(--clay-lo), 0 -10px 30px -18px color-mix(in srgb, var(--forest) 50%, transparent), var(--clay-drop);
+}
+.bottom-nav a[aria-current="page"] { color: var(--copper-ink); }
+.bottom-nav a[aria-current="page"] svg { filter: drop-shadow(0 3px 4px color-mix(in srgb, var(--copper) 55%, transparent)); }
+
 /* --------------------------------------------------------------- hero */
 
-.dash-hero { position: relative; }
+/* The hero is a card too, so it is cut from the same clay, and its field is
+   pressed into it like every other input. */
+.dash-hero {
+  position: relative;
+  background: var(--clay-face);
+  border: 0;
+  border-radius: var(--clay-r-lg);
+  box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop);
+}
+.dash-hero::after { display: none; }   /* the old flat radial wash */
+.dash-hero .searchbar, .dash-hero-ask .searchbar {
+  background: var(--well-face);
+  border: 0;
+  box-shadow: var(--well);
+}
+.dash-hero .depth-btn, .dash-hero .chip-btn, .dash-hero .chips .chip,
+.dash-hero .example-prompts button {
+  background: var(--clay-face);
+  border: 0;
+  color: var(--text);
+  box-shadow: inset 3px 3px 7px color-mix(in srgb, #ffffff 80%, transparent),
+              inset -4px -4px 8px color-mix(in srgb, var(--forest) 11%, transparent);
+}
+[data-theme="dark"] .dash-hero .depth-btn, [data-theme="dark"] .dash-hero .chip-btn,
+[data-theme="dark"] .dash-hero .chips .chip, [data-theme="dark"] .dash-hero .example-prompts button {
+  box-shadow: inset 3px 3px 7px color-mix(in srgb, #ffffff 6%, transparent),
+              inset -4px -4px 8px color-mix(in srgb, #000000 55%, transparent);
+}
+.dash-hero .depth-btn:hover, .dash-hero .chip-btn:hover, .dash-hero .chips .chip:hover,
+.dash-hero .example-prompts button:hover { background: var(--clay-face); color: var(--copper-ink); }
+.dash-hero .depth-btn[aria-pressed="true"], .dash-hero .depth-btn.is-active,
+.dash-hero .chip-btn.is-active, .dash-hero .mode-btn.is-active {
+  background: var(--clay-cta); border: 0; color: #fff;
+  box-shadow: inset 4px 4px 9px color-mix(in srgb, #000000 22%, transparent),
+              inset -4px -4px 9px color-mix(in srgb, #ffffff 22%, transparent);
+}
+.dash-hero .mode { background: var(--well-face); box-shadow: var(--well); }
+.dash-hero .mode-btn { color: var(--muted); }
+.dash-hero .trust-strip { color: var(--muted); }
+.dash-hero .trust-strip li::before { color: var(--copper-ink); }
+.dash-hero .chips > span { color: var(--faint) !important; }
+
+/* Two small clay pebbles, one sage and one copper, tucked into the top
+   corners behind the headline. Kept low-contrast and slightly blurred so
+   they read as background material, not as content competing with the h1. */
 .dash-hero::before, .dash-hero::after {
-  content: ""; position: absolute; z-index: -1; border-radius: 50%;
-  filter: blur(46px); opacity: .5; pointer-events: none;
+  content: ""; position: absolute; z-index: -1; border-radius: 50%; pointer-events: none;
+  filter: blur(1.5px); opacity: .55;
+  box-shadow: inset 8px 8px 18px color-mix(in srgb, #ffffff 40%, transparent),
+              inset -10px -10px 22px color-mix(in srgb, #000000 16%, transparent),
+              0 26px 44px -30px color-mix(in srgb, var(--forest) 55%, transparent);
 }
 .dash-hero::before {
-  width: 340px; height: 340px; top: -60px; left: -40px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--sage) 60%, transparent), transparent 70%);
+  width: 132px; height: 132px; top: -46px; left: -58px;
+  background: radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--sage) 96%, #fff), color-mix(in srgb, var(--sage) 68%, var(--forest)));
 }
 .dash-hero::after {
-  width: 300px; height: 300px; top: -20px; right: -30px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--copper) 55%, transparent), transparent 70%);
+  width: 104px; height: 104px; top: -26px; right: -46px;
+  background: radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--copper) 86%, #fff), var(--copper-deep));
 }
-[data-theme="dark"] .dash-hero::before { opacity: .35; }
-[data-theme="dark"] .dash-hero::after { opacity: .4; }
+[data-theme="dark"] .dash-hero::before { opacity: .3; }
+[data-theme="dark"] .dash-hero::after { opacity: .35; }
 
 .dash-hero-badge {
-  background: var(--glass);
-  border: 1px solid var(--glass-line);
-  box-shadow: var(--glass-edge), var(--shadow-sm);
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  background: var(--clay-face);
+  border: 0;
+  box-shadow: inset 3px 3px 7px color-mix(in srgb, #ffffff 80%, transparent),
+              inset -4px -4px 8px color-mix(in srgb, var(--forest) 11%, transparent),
+              0 10px 18px -14px color-mix(in srgb, var(--forest) 50%, transparent);
 }
+[data-theme="dark"] .dash-hero-badge { box-shadow: inset 3px 3px 7px color-mix(in srgb, #ffffff 6%, transparent), inset -4px -4px 8px color-mix(in srgb, #000000 55%, transparent), 0 10px 18px -14px rgba(0,0,0,.8); }
 
-/* The headline gets the brand sweep on its accent half. */
 .dash-hero h1 .dash-grad {
-  background: var(--brand-sweep);
+  background: linear-gradient(120deg, var(--forest) 0%, var(--accent-2) 44%, var(--copper) 100%);
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent; color: transparent;
-  background-size: 200% 100%;
-  animation: sweep 9s var(--ease-out) infinite alternate;
 }
-@keyframes sweep { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
-
+[data-theme="dark"] .dash-hero h1 .dash-grad {
+  background: linear-gradient(120deg, var(--sage) 0%, var(--accent-2) 46%, var(--accent) 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
 .hero-clock {
-  background: var(--glass);
-  border-color: color-mix(in srgb, var(--border-2) 76%, transparent);
-  box-shadow: var(--glass-edge);
+  background: var(--clay-face);
+  border: 0;
+  box-shadow: inset 3px 3px 7px color-mix(in srgb, #ffffff 80%, transparent),
+              inset -4px -4px 8px color-mix(in srgb, var(--forest) 11%, transparent);
 }
+[data-theme="dark"] .hero-clock { box-shadow: inset 3px 3px 7px color-mix(in srgb, #ffffff 6%, transparent), inset -4px -4px 8px color-mix(in srgb, #000000 55%, transparent); }
+
+.kicker {
+  background: var(--clay-face);
+  border: 0;
+  box-shadow: inset 3px 3px 7px color-mix(in srgb, #ffffff 78%, transparent),
+              inset -4px -4px 8px color-mix(in srgb, var(--forest) 11%, transparent);
+}
+.kicker::before { background: var(--clay-cta); }
 
 /* ------------------------------------------------------- section heads */
 
 .sec-head { border-bottom: 0; padding-bottom: 10px; position: relative; }
 .sec-head::after {
-  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
-  background: linear-gradient(90deg, var(--glass-line), transparent 72%);
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; border-radius: 4px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--copper) 45%, transparent), transparent 78%);
 }
 .sec-head h2 { letter-spacing: -.02em; }
-.band-head, .dash-band-head { position: relative; }
 
-/* ------------------------------------------------------ bottom dock nav */
+/* ------------------------------------------------------ article bits */
 
-.bottom-nav.glass, .bottom-nav {
-  background: color-mix(in srgb, var(--surface) 82%, transparent);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  backdrop-filter: blur(20px) saturate(1.4);
-  border: 1px solid color-mix(in srgb, var(--border-2) 70%, transparent);
-  box-shadow: var(--glass-edge), 0 -6px 30px -18px rgba(0, 0, 0, .5), 0 20px 40px -28px rgba(0, 0, 0, .6);
+.article-title, .qa-question, .page h1 { letter-spacing: -.025em; }
+.prose h2 { border-bottom: 0; position: relative; }
+.prose h2::after {
+  content: ""; display: block; width: 64px; height: 5px; border-radius: 5px; margin-top: 8px;
+  background: linear-gradient(90deg, var(--forest), var(--copper));
 }
-.bottom-nav a[aria-current="page"] { color: var(--copper-ink); }
-.bottom-nav a[aria-current="page"] svg { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--copper) 60%, transparent)); }
+.prose h3 { letter-spacing: -.01em; }
+.prose .thumb, .gallery img, .topic-figure img, .art-body img, .aotd-media img {
+  border-radius: var(--clay-r);
+  box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop);
+}
+.reference-list li, .timeline li, .points-list > li, .line-list > li { border-radius: var(--clay-r-sm); }
+.points-list > li {
+  background: var(--clay-face); border: 0;
+  box-shadow: inset 4px 4px 9px color-mix(in srgb, #ffffff 78%, transparent),
+              inset -5px -5px 10px color-mix(in srgb, var(--forest) 11%, transparent),
+              0 12px 22px -18px color-mix(in srgb, var(--forest) 45%, transparent);
+}
+[data-theme="dark"] .points-list > li {
+  box-shadow: inset 4px 4px 9px color-mix(in srgb, #ffffff 5%, transparent),
+              inset -5px -5px 10px color-mix(in srgb, #000000 55%, transparent),
+              0 12px 22px -18px rgba(0, 0, 0, .8);
+}
+.points-list > li::before {
+  background: var(--clay-face);
+  box-shadow: inset 2px 2px 4px color-mix(in srgb, #ffffff 80%, transparent), inset -3px -3px 6px color-mix(in srgb, var(--forest) 14%, transparent);
+  color: var(--copper-ink);
+}
+.timeline li::before { box-shadow: 0 2px 5px color-mix(in srgb, var(--copper) 60%, transparent); }
+.toc a.active { background: var(--clay-cta); color: #fff; box-shadow: none; }
+[data-theme="dark"] .toc a.active { background: var(--clay-cta); color: var(--on-primary); }
+.factbox h3, .panel-head { color: var(--copper-ink); }
+.tabs { background: var(--well-face); border: 0; box-shadow: var(--well); border-radius: var(--clay-r-pill); padding: 5px; }
+.tab[aria-selected="true"], .tab.is-active { box-shadow: var(--clay-cta-hi), var(--clay-cta-lo); }
 
-/* ------------------------------------------------------------ footer */
+/* ------------------------------------------------------------- footer */
 
 .site-foot {
-  background: color-mix(in srgb, var(--surface) 70%, transparent);
-  -webkit-backdrop-filter: blur(var(--glass-blur)); backdrop-filter: blur(var(--glass-blur));
-  border-top: 1px solid color-mix(in srgb, var(--border-2) 62%, transparent);
+  background: var(--clay-face);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  border-top: 0;
+  box-shadow: inset 0 6px 14px color-mix(in srgb, var(--forest) 8%, transparent);
 }
+.foot-col strong { color: var(--copper-ink); }
 
-/* --------------------------------------------------- static intro block */
+/* -------------------------------------------------- static intro block */
 
-/* The crawlable, no-JS introduction on the home page. It is replaced the
-   moment the app boots, but a search engine or a scriptless reader gets a
-   real page instead of an empty shell. */
-.site-intro { padding: 40px 0 8px; }
-.site-intro .kicker { margin-bottom: 18px; }
+.site-intro { padding: 46px 0 10px; }
+.site-intro .kicker { margin-bottom: 20px; }
 .site-intro h1 {
   font-family: var(--font-display);
   font-size: clamp(34px, 6.4vw, 60px);
   line-height: 1.06; letter-spacing: -.025em; margin: 0 0 16px;
 }
 .site-intro h1 .grad {
-  background: var(--brand-sweep);
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent; color: transparent;
+  background: linear-gradient(120deg, var(--forest) 0%, var(--accent-2) 44%, var(--copper) 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
 }
-.site-intro .lead { font-size: clamp(16px, 2vw, 19px); color: var(--muted); max-width: 62ch; margin: 0 0 22px; }
-.site-intro .intro-grid {
-  display: grid; gap: 12px; grid-template-columns: 1fr; margin: 0 0 24px;
+[data-theme="dark"] .site-intro h1 .grad {
+  background: linear-gradient(120deg, var(--sage), var(--accent-2) 46%, var(--accent));
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
+.site-intro .lead { font-size: clamp(16px, 2vw, 19px); color: var(--muted); max-width: 62ch; margin: 0 0 26px; }
+.site-intro .intro-grid { display: grid; gap: 16px; grid-template-columns: 1fr; margin: 0 0 28px; }
 @media (min-width: 620px) { .site-intro .intro-grid { grid-template-columns: 1fr 1fr; } }
 .site-intro .intro-card {
-  display: flex; gap: 12px; align-items: flex-start;
-  padding: 16px 18px; border-radius: var(--radius);
-  background: var(--glass); border: 1px solid color-mix(in srgb, var(--border-2) 72%, transparent);
-  box-shadow: var(--glass-edge);
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 20px 22px; border-radius: var(--clay-r);
+  background: var(--clay-face); border: 0;
+  box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop);
 }
 .site-intro .intro-card h2 { font-size: 16px; margin: 0 0 4px; font-family: var(--font-body); font-weight: 650; }
 .site-intro .intro-card p { margin: 0; color: var(--muted); font-size: 14px; }
-.site-intro .intro-card .ic {
-  width: 34px; height: 34px; flex: 0 0 auto; border-radius: 11px; display: grid; place-items: center;
-  background: var(--brand-soft); color: var(--copper-ink); box-shadow: inset 0 0 0 1px var(--glass-line);
-}
-.site-intro .intro-card .ic svg { width: 17px; height: 17px; fill: currentColor; }
-.site-intro .intro-links { display: flex; flex-wrap: wrap; gap: 10px; }
+.site-intro .intro-card .ic { width: 38px; height: 38px; flex: 0 0 auto; display: grid; place-items: center; }
+.site-intro .intro-card .ic svg { width: 18px; height: 18px; fill: currentColor; }
+.site-intro .intro-links { display: flex; flex-wrap: wrap; gap: 12px; }
 .site-intro .intro-links a {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 10px 16px; border-radius: 999px; font-weight: 550; font-size: 14.5px;
-  color: var(--text); background: color-mix(in srgb, var(--surface) 78%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border-2) 76%, transparent);
-  box-shadow: var(--glass-edge); text-decoration: none;
-  transition: transform .2s var(--ease-out), border-color .2s var(--ease-out), box-shadow .2s var(--ease-out);
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 20px; border-radius: var(--clay-r-pill); font-weight: 550; font-size: 14.5px;
+  color: var(--text); background: var(--clay-face); border: 0;
+  box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop); text-decoration: none;
+  transition: transform .2s var(--ease-out), box-shadow .2s var(--ease-out);
 }
-.site-intro .intro-links a:hover {
-  transform: translateY(-2px); border-color: var(--glass-line); text-decoration: none;
-  box-shadow: var(--glass-edge), 0 14px 30px -18px color-mix(in srgb, var(--copper) 70%, transparent);
-}
+.site-intro .intro-links a:hover { transform: translateY(-2px); text-decoration: none; }
+.site-intro .intro-links a:active { transform: translateY(1px) scale(.97); box-shadow: var(--clay-press-hi), var(--clay-press-lo); }
 .site-intro .intro-links a::after { content: "→"; opacity: .6; }
+
+/* ------------------------------------------------ overlays and misc */
+
+.suggest, .lang-menu {
+  background: var(--clay-face);
+  border: 0;
+  border-radius: var(--clay-r);
+  box-shadow: var(--clay-hi), var(--clay-lo), 0 34px 60px -30px color-mix(in srgb, var(--forest) 65%, transparent);
+}
+.suggest-item:hover, .suggest-item.active, .lang-menu-item:hover { background: var(--well-face); }
+.lang-menu-item.is-active { background: var(--clay-cta); color: #fff; }
+[data-theme="dark"] .lang-menu-item.is-active { background: var(--clay-cta); color: var(--on-primary); }
+.lang-menu-item.is-active::after { color: #fff; }
+.toast {
+  background: var(--clay-face); color: var(--text); border-radius: var(--clay-r-pill);
+  box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop);
+}
+[data-theme="dark"] .toast { background: var(--clay-face); color: var(--text); }
+.saved-main img, .saved-ph { border-radius: 14px; }
+.saved-ph { background: var(--well-face); box-shadow: var(--well); }
+.src-mark {
+  background: var(--clay-face); border-radius: 10px;
+  box-shadow: inset 2px 2px 5px color-mix(in srgb, #ffffff 80%, transparent), inset -3px -3px 6px color-mix(in srgb, var(--forest) 12%, transparent);
+}
+.sk-line { background: color-mix(in srgb, var(--border-2) 60%, transparent); }
+.read-progress span { background: linear-gradient(90deg, var(--forest), var(--accent-2), var(--copper)); }
+[data-theme="dark"] .read-progress span { background: linear-gradient(90deg, var(--sage), var(--accent-2), var(--accent)); }
+.crumbs a { color: var(--muted); }
+.error-box { background: var(--clay-face); }
+
+/* The evidence and scope notes carried a coloured left rule. The clay
+   surface drops flat borders, so the rule is rebuilt as an inset ridge. */
+.evidence, .scope-note {
+  box-shadow: inset 9px 0 0 -5px var(--copper), var(--clay-hi), var(--clay-lo), var(--clay-drop);
+}
+.evidence.is-ok { box-shadow: inset 9px 0 0 -5px var(--ok), var(--clay-hi), var(--clay-lo), var(--clay-drop); }
+.evidence.is-warn { box-shadow: inset 9px 0 0 -5px var(--warn), var(--clay-hi), var(--clay-lo), var(--clay-drop); }
 
 /* --------------------------------------------------- reduced motion */
 
 @media (prefers-reduced-motion: reduce) {
-  body::before { animation: none; }
-  .dash-hero h1 .dash-grad { animation: none; }
-  .card::after, .q-card::after, .cat-card::after, .dash-action::after { transition: none; }
-  .card:hover, .topic-card:hover, .q-card:hover, .cat-card:hover, .dash-action:hover { transform: none; }
+  .card:hover, .q-card:hover, .cat-card:hover, .dash-action:hover,
+  .topic-card:hover, .howstep:hover, .btn:hover, .chip:hover, .pill:hover { transform: none; }
+  .btn:active, .chip:active, .pill:active { transform: none; }
 }
 
 @media print {
-  .topbar-inner, .app-side, .bottom-nav, .site-intro { box-shadow: none !important; }
+  .topbar-inner, .app-side, .bottom-nav { box-shadow: none !important; }
   .panel, .page, .answer-card, .card { background: #fff !important; box-shadow: none !important; }
 }
