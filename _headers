@@ -38,3 +38,16 @@
 
 /
   Cache-Control: public, max-age=0, must-revalidate
+
+# The CDN kept serving the first copy of the CSS and JS, so a query-string
+# change did not reach readers. The assets now live under /assets/v3/, and
+# the CDN is told not to store them at all.
+/assets/v3/*
+  Cache-Control: public, max-age=0, must-revalidate
+  CDN-Cache-Control: no-store
+
+/assets/js/*
+  CDN-Cache-Control: no-store
+
+/assets/css/*
+  CDN-Cache-Control: no-store

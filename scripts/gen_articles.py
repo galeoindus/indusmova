@@ -366,8 +366,8 @@ HEAD = """<!DOCTYPE html>
   <meta property="og:site_name" content="indusmova">
   <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Lora:ital,wght@0,500;0,600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
-  <link rel="stylesheet" href="/assets/css/styles.css?v=3.0.2">
-  <link rel="stylesheet" href="/assets/css/app.css?v=3.0.2">
+  <link rel="stylesheet" href="/assets/v3/css/styles.css?v=3.0.2">
+  <link rel="stylesheet" href="/assets/v3/css/app.css?v=3.0.2">
   <script type="application/ld+json">{jsonld}</script>
 </head>
 <body>
@@ -601,8 +601,8 @@ def main():
   <meta name="theme-color" content="#101713">
   <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Lora:ital,wght@0,500;0,600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
-  <link rel="stylesheet" href="/assets/css/styles.css?v=3.0.2">
-  <link rel="stylesheet" href="/assets/css/app.css?v=3.0.2">
+  <link rel="stylesheet" href="/assets/v3/css/styles.css?v=3.0.2">
+  <link rel="stylesheet" href="/assets/v3/css/app.css?v=3.0.2">
 </head>
 <body>
   <div class="grain" aria-hidden="true"></div>
