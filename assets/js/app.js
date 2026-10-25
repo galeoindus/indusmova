@@ -150,6 +150,12 @@ async function render(route) {
     console.error('view failed', err);
     main.append(el('div', { class: 'wrap-narrow', html: `<div class="error-box"><p><strong>${t('errorTitle')}</strong> ${t('errorBody')}</p></div>` }));
   }
+  // The contents button only means something where the open view actually
+  // built a contents rail. Before this it stayed in the header on every page
+  // and answered a press with a "no sections here" toast — a dead control.
+  const tocBtn = document.getElementById('tocBtn');
+  if (tocBtn) tocBtn.hidden = typeof ctx.toggleToc !== 'function';
+
   main.focus({ preventScroll: true });
   window.scrollTo({ top: 0, behavior: 'auto' });
 }

@@ -124,6 +124,10 @@ function render(ctx, mount, state) {
   const meta = el('p', { class: 'article-sub', style: 'color:var(--faint);font-size:13px' });
   meta.textContent = `${words.toLocaleString()} ${t('words')} · ~${Math.max(1, Math.round(words / 220))} ${t('minRead')}${data.revid ? ` · ${t('revision')} ${data.revid}` : ''}`;
   head.append(meta);
+  // The container renderRevisionLine() writes into. Without it the "source
+  // revision as of …" line was built and then thrown away, because the
+  // element it looks up never existed.
+  head.append(el('p', { class: 'article-sub', id: 'revLine', style: 'color:var(--faint);font-size:13px' }));
   mount.append(head);
   mount.append(actionsRow(ctx, state));
 

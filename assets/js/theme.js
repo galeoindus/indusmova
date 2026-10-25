@@ -54,7 +54,10 @@ export function initTheme() {
   const comfort = getPref('comfort', false);
   applyComfort(comfort);
   document.getElementById('comfortBtn')?.addEventListener('click', () => {
-    const next = document.documentElement.getAttribute('data-comfort') !== 'on';
+    // The stylesheet switches on `data-comfort="opaque"`; writing "on" here
+    // meant the button flipped an attribute no rule listened to, so the
+    // control did nothing at all.
+    const next = document.documentElement.getAttribute('data-comfort') !== 'opaque';
     setPref('comfort', next);
     applyComfort(next);
   });
@@ -63,7 +66,7 @@ export function initTheme() {
 }
 
 function applyComfort(on) {
-  document.documentElement.setAttribute('data-comfort', on ? 'on' : 'auto');
+  document.documentElement.setAttribute('data-comfort', on ? 'opaque' : 'auto');
   const btn = document.getElementById('comfortBtn');
   if (btn) {
     btn.setAttribute('aria-pressed', String(on));

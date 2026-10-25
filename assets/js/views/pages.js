@@ -163,7 +163,7 @@ export function renderBookmarks(ctx) {
     const list = ctx.getBookmarks();
     mount.innerHTML = '';
     if (!list.length) {
-      mount.append(emptyState({ iconName: 'bookmark', title: t('noBookmarks'), body: t('savedBlurb'), cta: t('explore'), ctaHref: '#/explore' }));
+      mount.append(emptyState({ iconName: 'bookmark', title: t('noBookmarks'), body: t('localOnlyNote'), cta: t('explore'), ctaHref: '#/explore' }));
       return;
     }
     const head = el('div', { class: 'dash-band-head' });
@@ -199,7 +199,7 @@ export function renderBookmarks(ctx) {
 
 export function renderHistory(ctx) {
   const wrap = el('div', { class: 'wrap-narrow' });
-  wrap.append(head(t('history'), t('noHistory')));
+  wrap.append(head(t('history'), t('historyBlurb')));
   const mount = el('div');
   wrap.append(mount);
 

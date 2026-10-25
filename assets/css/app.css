@@ -807,46 +807,65 @@ button, .btn, [role="button"], .tab, .chip, .depth-btn, .chip-btn {
 [data-view="article"] .app-shell:has(.app-rail:not(:empty)) { grid-template-columns: minmax(0, 1fr); }
 
 /* ======================================================================
-   indusmova v4 — "Clay"
+   indusmova v5 — "Morphisms"
    ======================================================================
-   A whole-site visual redesign built on claymorphism, layered over the
-   original design system. Nothing about the markup, the routes or the
-   layout changes — every option, card, panel, button and field is re-cut
-   from one material, so the app shell, the article pages and the static
-   index pages all read as one product.
+   Not one style painted over everything. Each morphism is given the job
+   it is actually good at, and only that job — which is the rule the
+   design references all agree on: one base material per surface, never a
+   different style on every card.
 
-   Claymorphism, as studied (Malewicz; Smashing Magazine; LogRocket), is:
-     · big, soft, organic corners — rounder than a rectangle wants to be
-     · three shadows, not one: a soft outer drop, and two inner shadows —
-       a light one along the top-left edge, a darker one along the bottom-
-       right — so the surface looks inflated rather than flat
-     · a gentle gradient across the surface to fake the volume
-     · a muted, warm palette where the element sits a shade *lighter*
-       than the page behind it
-     · a tactile squish on press
-   The guidance that navigation and long text should stay legible is kept:
-   clay is on the containers, the controls and the accents; the prose
-   itself stays quiet. Depth is drawn with colour, so light, dark and
-   sepia all keep their contrast, and the squish is switched off under
-   `prefers-reduced-motion`.
+   The system, surface by surface:
+
+     · AURORA / MESH  — the background. A slow, soft colour field behind
+       the page so the glass layer above it has something to refract.
+
+     · SKELETON PAPER — grain and a faint paper tooth under the reading
+       surfaces, so long prose sits on something that feels like a page.
+
+     · LIQUID GLASS (glassmorphism, navigation layer only) — the top bar,
+       the side rail, the bottom dock, and every floating overlay (the
+       suggestion list, the language menu, the toast). Apple's guidance is
+       explicit that the glass material belongs to the functional layer
+       that floats above content, never to the content cards themselves,
+       and that glass is never stacked on glass. That is how it is used
+       here: translucent, blurred, saturating, with one hairline highlight
+       along the top edge and a deep, soft shadow beneath.
+
+     · CLAYMORPHISM — the content layer: every card, panel, article
+       surface and the hero. Inflated soft-3D shapes: big radii, a light
+       inner shadow top-left, a darker one bottom-right, a soft drop, and
+       a gentle gradient across the face for volume.
+
+     · NEUMORPHISM — the controls that should feel pressed rather than
+       raised: text fields, the segmented switches, tabs and the active
+       state of a control. Used only there, and always with a visible
+       border, because neumorphism on its own cannot clear the 3:1
+       non-text contrast a control edge needs.
+
+     · BENTO — the layout of the dashboard bands and the category grid:
+       tiles of two sizes that lock together, one idea per tile.
+
+     · MICRO-INTERACTION — a lift, a squish, a specular sweep. Never the
+       only signal for a state.
+
+   Accessibility is a floor, not a finish: text 4.5:1, control edges 3:1,
+   a visible focus ring in the brand's ink, and real fallbacks for
+   reduced motion, reduced transparency, increased contrast and print.
    ====================================================================== */
 
 :root {
   --ease-out: cubic-bezier(.22, .68, .3, 1);
-  /* Focus stays clearly visible, but in the brand's own ink rather than
-     the generic blue the base system shipped. */
   --focus: var(--copper-ink);
 
-  /* The material. */
-  --clay-r: 26px;          /* the standard clay corner */
-  --clay-r-lg: 34px;       /* big containers */
-  --clay-r-sm: 16px;       /* chips and small controls */
+  /* ---------------------------------------------------- clay (content) */
+  --clay-r: 26px;
+  --clay-r-lg: 34px;
+  --clay-r-sm: 16px;
   --clay-r-pill: 999px;
 
   --clay-face: linear-gradient(145deg,
       color-mix(in srgb, var(--surface) 100%, #ffffff 8%),
       color-mix(in srgb, var(--surface) 94%, var(--sand)));
-
   --clay-hi: inset 6px 6px 12px color-mix(in srgb, #ffffff 92%, transparent);
   --clay-lo: inset -7px -7px 14px color-mix(in srgb, var(--forest) 13%, transparent);
   --clay-drop: 0 22px 40px -22px color-mix(in srgb, var(--forest) 46%, transparent),
@@ -855,47 +874,68 @@ button, .btn, [role="button"], .tab, .chip, .depth-btn, .chip-btn {
   --clay-press-hi: inset -5px -5px 10px color-mix(in srgb, #ffffff 70%, transparent);
   --clay-press-lo: inset 6px 6px 12px color-mix(in srgb, var(--forest) 20%, transparent);
 
-  /* A pressed-in well, for fields and inputs. */
-  --well-face: linear-gradient(145deg,
-      color-mix(in srgb, var(--surface) 88%, var(--bg)),
-      color-mix(in srgb, var(--surface) 97%, #ffffff));
-  --well: inset 5px 5px 11px color-mix(in srgb, var(--forest) 16%, transparent),
-          inset -5px -5px 11px color-mix(in srgb, #ffffff 92%, transparent);
-
-  /* The tinted clay for the primary call to action. */
   --clay-cta: linear-gradient(145deg,
-      color-mix(in srgb, var(--copper) 92%, #ffffff),
-      var(--copper-deep));
+      color-mix(in srgb, var(--copper) 92%, #ffffff), var(--copper-deep));
   --clay-cta-hi: inset 6px 6px 13px color-mix(in srgb, #ffffff 40%, transparent);
   --clay-cta-lo: inset -7px -7px 14px color-mix(in srgb, #000000 26%, transparent);
   --clay-cta-drop: 0 20px 34px -20px color-mix(in srgb, var(--copper-deep) 80%, transparent);
+
+  /* --------------------------------------- liquid glass (navigation) */
+  --glass-bg: color-mix(in srgb, var(--surface) 60%, transparent);
+  --glass-bg-strong: color-mix(in srgb, var(--surface) 82%, transparent);
+  --glass-line: color-mix(in srgb, #ffffff 62%, transparent);
+  --glass-hi: inset 0 1px 0 color-mix(in srgb, #ffffff 55%, transparent);
+  --glass-drop: 0 18px 44px -24px color-mix(in srgb, var(--forest) 62%, transparent),
+                0 6px 16px -12px color-mix(in srgb, var(--forest) 34%, transparent);
+  --glass-blur: 22px;
+  --glass-sat: 1.6;
+
+  /* ------------------------------------- neumorphism (pressed controls) */
+  --neo-face: linear-gradient(145deg,
+      color-mix(in srgb, var(--surface) 88%, var(--bg)),
+      color-mix(in srgb, var(--surface) 97%, #ffffff));
+  --neo-in: inset 5px 5px 11px color-mix(in srgb, var(--forest) 16%, transparent),
+            inset -5px -5px 11px color-mix(in srgb, #ffffff 92%, transparent);
+  --neo-edge: color-mix(in srgb, var(--border-2) 92%, var(--forest));
+
+  /* --------------------------------------------------- paper (prose) */
+  --paper-tooth: radial-gradient(color-mix(in srgb, var(--forest) 7%, transparent) .5px, transparent .6px);
+  --paper-bg: color-mix(in srgb, var(--surface) 97%, var(--sand));
 }
 
 [data-theme="dark"] {
   --focus: var(--sage);
-  /* In the dark the shapes sit a little above the page so the inner light
-     and the inner shadow still read (the claymorphism dark-mode caveat). */
+
   --clay-face: linear-gradient(145deg,
       color-mix(in srgb, var(--surface) 100%, #ffffff 6%),
       color-mix(in srgb, var(--surface) 88%, #000000));
   --clay-hi: inset 6px 6px 14px color-mix(in srgb, #ffffff 7%, transparent);
   --clay-lo: inset -7px -7px 16px color-mix(in srgb, #000000 55%, transparent);
-  --clay-drop: 0 26px 46px -24px rgba(0, 0, 0, .92),
-               0 10px 20px -14px rgba(0, 0, 0, .72);
+  --clay-drop: 0 26px 46px -24px rgba(0, 0, 0, .92), 0 10px 20px -14px rgba(0, 0, 0, .72);
 
   --clay-press-hi: inset -5px -5px 10px color-mix(in srgb, #ffffff 5%, transparent);
   --clay-press-lo: inset 6px 6px 12px color-mix(in srgb, #000000 60%, transparent);
-
-  --well-face: linear-gradient(145deg,
-      color-mix(in srgb, var(--surface) 82%, #000000),
-      color-mix(in srgb, var(--surface) 100%, #ffffff 4%));
-  --well: inset 5px 5px 12px color-mix(in srgb, #000000 62%, transparent),
-          inset -5px -5px 12px color-mix(in srgb, #ffffff 6%, transparent);
 
   --clay-cta: linear-gradient(145deg,
       color-mix(in srgb, var(--accent) 92%, #ffffff),
       color-mix(in srgb, var(--accent) 60%, #000000));
   --clay-cta-drop: 0 22px 38px -20px color-mix(in srgb, #000000 85%, transparent);
+
+  --glass-bg: color-mix(in srgb, var(--surface) 52%, transparent);
+  --glass-bg-strong: color-mix(in srgb, var(--surface) 86%, transparent);
+  --glass-line: color-mix(in srgb, #ffffff 16%, transparent);
+  --glass-hi: inset 0 1px 0 color-mix(in srgb, #ffffff 12%, transparent);
+  --glass-drop: 0 20px 48px -24px rgba(0, 0, 0, .95), 0 8px 18px -12px rgba(0, 0, 0, .8);
+
+  --neo-face: linear-gradient(145deg,
+      color-mix(in srgb, var(--surface) 82%, #000000),
+      color-mix(in srgb, var(--surface) 100%, #ffffff 4%));
+  --neo-in: inset 5px 5px 12px color-mix(in srgb, #000000 62%, transparent),
+            inset -5px -5px 12px color-mix(in srgb, #ffffff 6%, transparent);
+  --neo-edge: color-mix(in srgb, var(--border-2) 86%, #ffffff);
+
+  --paper-tooth: radial-gradient(color-mix(in srgb, #ffffff 4%, transparent) .5px, transparent .6px);
+  --paper-bg: color-mix(in srgb, var(--surface) 96%, #000000);
 }
 
 [data-theme="sepia"] {
@@ -903,21 +943,28 @@ button, .btn, [role="button"], .tab, .chip, .depth-btn, .chip-btn {
   --clay-hi: inset 6px 6px 12px rgba(255, 255, 255, .9);
   --clay-lo: inset -7px -7px 14px rgba(120, 96, 60, .16);
   --clay-drop: 0 22px 40px -22px rgba(120, 96, 60, .5), 0 8px 16px -12px rgba(120, 96, 60, .3);
+  --glass-bg: color-mix(in srgb, var(--surface) 66%, transparent);
+  --glass-line: rgba(255, 255, 255, .7);
+  --paper-bg: #f6ecd7;
 }
 
-/* ---------------------------------------------------------------- page */
+/* ======================================================================
+   1 · AURORA — the background
+   ====================================================================== */
 
-/* A warm, softly-lit clay table under everything. The busy aurora is gone;
-   clay wants a calm surface so the raised shapes read. */
 body::before {
   background:
     radial-gradient(60vw 46vw at 12% -10%, color-mix(in srgb, var(--sage) 38%, transparent), transparent 66%),
     radial-gradient(52vw 40vw at 100% 4%, color-mix(in srgb, var(--copper) 20%, transparent), transparent 62%),
     radial-gradient(70vw 50vw at 50% 112%, color-mix(in srgb, var(--forest) 12%, transparent), transparent 70%);
   filter: blur(10px);
-  animation: none;
+  animation: auroraDrift 48s var(--ease-out) infinite alternate;
 }
-body::after { opacity: 0; }        /* the grid was glass; clay does not need it */
+@keyframes auroraDrift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(1.6%, -1.4%, 0) scale(1.05); }
+}
+body::after { opacity: 0; }   /* the old grid belongs to the glass era */
 .grain { opacity: .14; }
 [data-theme="dark"] .grain { opacity: .08; }
 
@@ -930,9 +977,86 @@ body::after { opacity: 0; }        /* the grid was glass; clay does not need it 
   border: 3px solid transparent; border-radius: 999px; background-clip: padding-box;
 }
 
-/* ------------------------------------------------- the clay material */
+/* ======================================================================
+   2 · LIQUID GLASS — the navigation layer
+   ======================================================================
+   Glass is used only for chrome that floats above content. Everything is
+   translucent, blurred and slightly over-saturated, with a single bright
+   hairline on the top edge — the tell that makes it read as a sheet of
+   material rather than a grey box. */
 
-/* Every container on the site is one raised clay puck. */
+.topbar { background: transparent; border-bottom: 0; box-shadow: none; padding-top: 12px; }
+
+.topbar-inner {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  border: 1px solid var(--glass-line);
+  border-radius: var(--clay-r-pill);
+  box-shadow: var(--glass-hi), var(--glass-drop);
+  padding: 9px 14px;
+}
+
+.app-side {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  border: 1px solid var(--glass-line);
+  border-radius: var(--clay-r-lg);
+  box-shadow: var(--glass-hi), var(--glass-drop);
+}
+
+.bottom-nav, .bottom-nav.glass {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-hi), 0 -10px 34px -20px color-mix(in srgb, var(--forest) 55%, transparent), var(--glass-drop);
+}
+
+.suggest, .lang-menu, .toast {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  border: 1px solid var(--glass-line);
+  border-radius: var(--clay-r);
+  box-shadow: var(--glass-hi), var(--glass-drop);
+}
+.suggest-item:hover, .suggest-item.active, .lang-menu-item:hover { background: color-mix(in srgb, var(--surface) 70%, transparent); }
+.lang-menu-item.is-active { background: var(--clay-cta); color: #fff; }
+[data-theme="dark"] .lang-menu-item.is-active { background: var(--clay-cta); color: var(--on-primary); }
+.lang-menu-item.is-active::after { color: inherit; }
+
+/* The nav links themselves stay flat and legible — glass is the sheet,
+   not every word on it. */
+.topnav a { border-radius: var(--clay-r-pill); transition: background-color .2s var(--ease-out), color .2s var(--ease-out), box-shadow .2s var(--ease-out); }
+.topnav a:hover { background: color-mix(in srgb, var(--surface) 62%, transparent); }
+.topnav a[aria-current="page"] {
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  box-shadow: inset 0 0 0 1px var(--glass-line);
+}
+.side-link { border-radius: 14px; transition: background-color .2s var(--ease-out), box-shadow .2s var(--ease-out), color .2s var(--ease-out); }
+.side-link:hover { background: color-mix(in srgb, var(--surface) 58%, transparent); }
+.side-link[aria-current="page"] {
+  background: color-mix(in srgb, var(--surface) 74%, transparent);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--glass-line);
+}
+.side-heading { color: var(--copper-ink); }
+.bottom-nav a[aria-current="page"] { color: var(--copper-ink); }
+
+/* A browser without backdrop-filter gets an opaque sheet, not a mess. */
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  .topbar-inner, .app-side, .bottom-nav, .suggest, .lang-menu, .toast {
+    background: var(--surface);
+  }
+}
+
+/* ======================================================================
+   3 · CLAYMORPHISM — the content layer
+   ====================================================================== */
+
 .panel, .answer-card, .sec:has(> .sec-head), .source-card, .page,
 .src-group, .topic-block, .factbox, .toc, .toc-jump, .rail-card,
 .howstep, .ask-note, .method-note, .langbar, .aotd, .evidence,
@@ -944,15 +1068,12 @@ body::after { opacity: 0; }        /* the grid was glass; clay does not need it 
   box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop);
 }
 
-/* The little accent bar the panels carry becomes a clay ridge. */
 .panel::before, .answer-card::before, .sec:has(> .sec-head)::before,
 .src-group::before, .topic-block::before, .page::before {
   content: ""; position: absolute; inset: 0 0 auto; height: 6px; border-radius: var(--clay-r-lg) var(--clay-r-lg) 0 0;
   background: linear-gradient(90deg, var(--forest), var(--accent-2) 45%, var(--copper));
   opacity: .9;
 }
-
-/* ------------------------------------------------------ the cards */
 
 .card, .q-card, .cat-card, .dash-action, .topic-card, .howstep {
   background: var(--clay-face);
@@ -969,9 +1090,8 @@ body::after { opacity: 0; }        /* the grid was glass; clay does not need it 
               0 12px 22px -14px color-mix(in srgb, var(--copper) 45%, transparent);
 }
 .card-thumb, .q-thumb { background: color-mix(in srgb, var(--surface-2) 92%, var(--sand)); }
-.card-thumb.placeholder { box-shadow: var(--well); border-radius: 0; }
+.card-thumb.placeholder { box-shadow: var(--neo-in); border-radius: 0; }
 
-/* The card icons sit in their own little clay tile. */
 .cat-card .ic, .dash-action .ic, .topic-card .ic, .feature .ic,
 .site-intro .intro-card .ic {
   background: var(--clay-face);
@@ -988,10 +1108,12 @@ body::after { opacity: 0; }        /* the grid was glass; clay does not need it 
               0 8px 14px -10px rgba(0, 0, 0, .8);
 }
 
-/* ------------------------------------------------------ the controls */
+/* ======================================================================
+   4 · CONTROLS — clay when raised, neumorphic when pressed
+   ====================================================================== */
 
 .btn {
-  border: 0;
+  border: 1px solid color-mix(in srgb, var(--border-2) 55%, transparent);
   border-radius: var(--clay-r-pill);
   background: var(--clay-face);
   color: var(--text);
@@ -1004,140 +1126,99 @@ body::after { opacity: 0; }        /* the grid was glass; clay does not need it 
   box-shadow: var(--clay-press-hi), var(--clay-press-lo), 0 6px 12px -10px color-mix(in srgb, var(--forest) 50%, transparent);
 }
 
-/* The primary call to action is the one deeply-tinted piece of clay. */
+/* The primary action is the one deeply-tinted piece of clay, with a
+   specular sweep on hover so it reads as the loudest thing on the page. */
 .btn-primary, .btn-primary:hover {
-  background: var(--clay-cta);
-  border: 0;
+  background-image: var(--clay-cta),
+    linear-gradient(115deg, transparent 38%, color-mix(in srgb, #ffffff 34%, transparent) 50%, transparent 62%);
+  background-size: 100% 100%, 240% 100%;
+  background-position: 0 0, 130% 0;
+  border-color: transparent;
   color: #fff;
   box-shadow: var(--clay-cta-hi), var(--clay-cta-lo), var(--clay-cta-drop);
+  transition: background-position .7s var(--ease-out), filter .18s var(--ease-out),
+              transform .18s var(--ease-out), box-shadow .18s var(--ease-out);
 }
+.btn-primary:hover { background-position: 0 0, -30% 0; filter: brightness(1.04); }
 [data-theme="dark"] .btn-primary, [data-theme="dark"] .btn-primary:hover {
-  background: var(--clay-cta);
+  background-image: var(--clay-cta),
+    linear-gradient(115deg, transparent 38%, color-mix(in srgb, #ffffff 30%, transparent) 50%, transparent 62%);
+  background-size: 100% 100%, 240% 100%;
   color: var(--on-primary);
   box-shadow: var(--clay-cta-hi), var(--clay-cta-lo), var(--clay-cta-drop);
 }
-.btn-primary:hover { filter: brightness(1.05); }
 .btn-primary:active { box-shadow: var(--clay-press-hi), var(--clay-press-lo), var(--clay-cta-drop); }
 .btn-ghost { background: var(--clay-face); }
 .btn-icon { border-radius: 50%; }
 
-/* Chips, pills, tabs and the segmented controls: small clay blobs. */
+/* Small clay blobs: chips, pills, badges. Each keeps a border so its edge
+   clears the contrast a control needs. */
 .chip, .pill, .depth-btn, .chip-btn, .example-prompts button, .sc-kind,
-.badge, .mode, .mode-btn, .tab, .saved-del, .btn-sm {
-  border: 0;
+.badge, .saved-del, .btn-sm {
+  border: 1px solid color-mix(in srgb, var(--border-2) 62%, transparent);
   background: var(--clay-face);
   border-radius: var(--clay-r-pill);
   box-shadow: inset 3px 3px 7px color-mix(in srgb, #ffffff 80%, transparent),
               inset -4px -4px 8px color-mix(in srgb, var(--forest) 11%, transparent),
               0 8px 15px -12px color-mix(in srgb, var(--forest) 45%, transparent);
-  transition: transform .18s var(--ease-out), box-shadow .18s var(--ease-out);
+  transition: transform .18s var(--ease-out), box-shadow .18s var(--ease-out), border-color .18s var(--ease-out);
 }
 [data-theme="dark"] .chip, [data-theme="dark"] .pill, [data-theme="dark"] .depth-btn,
 [data-theme="dark"] .chip-btn, [data-theme="dark"] .example-prompts button,
-[data-theme="dark"] .badge, [data-theme="dark"] .mode, [data-theme="dark"] .mode-btn,
-[data-theme="dark"] .tab {
+[data-theme="dark"] .badge {
   box-shadow: inset 3px 3px 7px color-mix(in srgb, #ffffff 6%, transparent),
               inset -4px -4px 8px color-mix(in srgb, #000000 55%, transparent),
               0 8px 15px -12px rgba(0, 0, 0, .8);
 }
-.chip:hover, .pill:hover, .depth-btn:hover, .chip-btn:hover, .example-prompts button:hover { transform: translateY(-2px); }
+.chip:hover, .pill:hover, .depth-btn:hover, .chip-btn:hover, .example-prompts button:hover { transform: translateY(-2px); border-color: var(--glass-line); }
 .chip:active, .pill:active, .depth-btn:active, .chip-btn:active, .example-prompts button:active { transform: translateY(1px) scale(.97); }
 
-/* An active control is pressed *in*, not raised. */
+/* An active control is pressed *into* the surface — neumorphism's one job. */
 .depth-btn.is-active, .chip-btn.is-active, .chip.is-active,
 .dash-hero .depth-btn[aria-pressed="true"], .dash-hero .chip-btn.is-active,
-.mode-btn.is-active, .tab[aria-selected="true"], .tab.is-active {
+.mode-btn.is-active, .tab[aria-selected="true"], .tab.is-active,
+.toc a.active {
   background: var(--clay-cta);
   color: #fff;
-  box-shadow: inset 4px 4px 9px color-mix(in srgb, #000000 22%, transparent),
+  border-color: transparent;
+  box-shadow: inset 4px 4px 9px color-mix(in srgb, #000000 24%, transparent),
               inset -4px -4px 9px color-mix(in srgb, #ffffff 22%, transparent);
 }
 [data-theme="dark"] .depth-btn.is-active, [data-theme="dark"] .chip-btn.is-active,
-[data-theme="dark"] .mode-btn.is-active, [data-theme="dark"] .dash-hero .depth-btn[aria-pressed="true"] {
-  background: var(--clay-cta); color: var(--on-primary);
-}
+[data-theme="dark"] .mode-btn.is-active, [data-theme="dark"] .dash-hero .depth-btn[aria-pressed="true"],
+[data-theme="dark"] .toc a.active { background: var(--clay-cta); color: var(--on-primary); }
 .badge { color: var(--copper-ink); }
-.badge.accent, .badge.accent:hover { background: var(--clay-cta); color: #fff; box-shadow: var(--clay-cta-hi), var(--clay-cta-lo), var(--clay-cta-drop); }
+.badge.accent, .badge.accent:hover { background: var(--clay-cta); color: #fff; border-color: transparent; box-shadow: var(--clay-cta-hi), var(--clay-cta-lo), var(--clay-cta-drop); }
 [data-theme="dark"] .badge { color: var(--sage); }
 
-/* --------------------------------------------------- fields (pressed) */
-
+/* Fields are pressed in, not raised, and keep a visible edge. */
 .searchbar, .composer .searchbar, .select, .langbar select,
 form.panel .searchbar, form.panel .select, .feedback .fb-note textarea,
 .langbar-inner input#langSelect {
-  background: var(--well-face);
-  border: 0;
+  background: var(--neo-face);
+  border: 1px solid var(--neo-edge);
   border-radius: var(--clay-r);
-  box-shadow: var(--well);
-  transition: box-shadow .24s var(--ease-out);
+  box-shadow: var(--neo-in);
+  transition: box-shadow .24s var(--ease-out), border-color .24s var(--ease-out);
 }
 .searchbar:focus-within, .composer .searchbar:focus-within,
 .select:focus, .langbar select:focus,
 form.panel .searchbar:focus-within, .feedback .fb-note textarea:focus {
-  box-shadow: var(--well), 0 0 0 3px color-mix(in srgb, var(--copper) 30%, transparent);
+  border-color: var(--copper);
+  box-shadow: var(--neo-in), 0 0 0 3px color-mix(in srgb, var(--copper) 30%, transparent);
 }
 
-/* --------------------------------------------------------------- nav */
+/* Segmented controls: a pressed track with a raised thumb. */
+.mode, .tabs { background: var(--neo-face); border: 1px solid var(--neo-edge); box-shadow: var(--neo-in); border-radius: var(--clay-r-pill); }
+.tabs { padding: 5px; }
+.mode { padding: 4px; }
+.mode-btn { border-radius: var(--clay-r-pill); }
+.tab { border-radius: var(--clay-r-pill); }
 
-.topbar {
-  background: transparent;
-  border-bottom: 0;
-  box-shadow: none;
-  padding-top: 12px;
-}
-.topbar-inner {
-  background: var(--clay-face);
-  border: 0;
-  border-radius: var(--clay-r-pill);
-  box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop);
-  padding: 9px 14px;
-}
-.topnav a { border-radius: var(--clay-r-pill); transition: background-color .2s var(--ease-out), color .2s var(--ease-out), box-shadow .2s var(--ease-out); }
-.topnav a:hover { background: var(--well-face); box-shadow: var(--well); }
-.topnav a[aria-current="page"] {
-  color: var(--text);
-  background: var(--clay-face);
-  box-shadow: inset 4px 4px 8px color-mix(in srgb, var(--forest) 14%, transparent),
-              inset -4px -4px 8px color-mix(in srgb, #ffffff 80%, transparent);
-}
-[data-theme="dark"] .topnav a[aria-current="page"] {
-  box-shadow: inset 4px 4px 8px color-mix(in srgb, #000000 55%, transparent),
-              inset -4px -4px 8px color-mix(in srgb, #ffffff 6%, transparent);
-}
+/* ======================================================================
+   5 · HERO — clay card, aurora pebbles, gradient headline
+   ====================================================================== */
 
-.app-side {
-  background: var(--clay-face);
-  border: 0;
-  border-radius: var(--clay-r-lg);
-  box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop);
-}
-.side-link { border-radius: 14px; transition: background-color .2s var(--ease-out), box-shadow .2s var(--ease-out), color .2s var(--ease-out); }
-.side-link:hover { background: var(--well-face); box-shadow: var(--well); }
-.side-link[aria-current="page"] {
-  background: var(--clay-face);
-  color: var(--text);
-  box-shadow: inset 4px 4px 8px color-mix(in srgb, var(--forest) 14%, transparent),
-              inset -4px -4px 8px color-mix(in srgb, #ffffff 78%, transparent);
-}
-[data-theme="dark"] .side-link[aria-current="page"] {
-  box-shadow: inset 4px 4px 8px color-mix(in srgb, #000000 55%, transparent),
-              inset -4px -4px 8px color-mix(in srgb, #ffffff 6%, transparent);
-}
-.side-heading { color: var(--copper-ink); }
-
-.bottom-nav, .bottom-nav.glass {
-  background: var(--clay-face);
-  -webkit-backdrop-filter: none; backdrop-filter: none;
-  border: 0;
-  box-shadow: var(--clay-hi), var(--clay-lo), 0 -10px 30px -18px color-mix(in srgb, var(--forest) 50%, transparent), var(--clay-drop);
-}
-.bottom-nav a[aria-current="page"] { color: var(--copper-ink); }
-.bottom-nav a[aria-current="page"] svg { filter: drop-shadow(0 3px 4px color-mix(in srgb, var(--copper) 55%, transparent)); }
-
-/* --------------------------------------------------------------- hero */
-
-/* The hero is a card too, so it is cut from the same clay, and its field is
-   pressed into it like every other input. */
 .dash-hero {
   position: relative;
   background: var(--clay-face);
@@ -1145,16 +1226,16 @@ form.panel .searchbar:focus-within, .feedback .fb-note textarea:focus {
   border-radius: var(--clay-r-lg);
   box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop);
 }
-.dash-hero::after { display: none; }   /* the old flat radial wash */
+.dash-hero::after { display: none; }
 .dash-hero .searchbar, .dash-hero-ask .searchbar {
-  background: var(--well-face);
-  border: 0;
-  box-shadow: var(--well);
+  background: var(--neo-face);
+  border: 1px solid var(--neo-edge);
+  box-shadow: var(--neo-in);
 }
 .dash-hero .depth-btn, .dash-hero .chip-btn, .dash-hero .chips .chip,
 .dash-hero .example-prompts button {
   background: var(--clay-face);
-  border: 0;
+  border: 1px solid color-mix(in srgb, var(--border-2) 62%, transparent);
   color: var(--text);
   box-shadow: inset 3px 3px 7px color-mix(in srgb, #ffffff 80%, transparent),
               inset -4px -4px 8px color-mix(in srgb, var(--forest) 11%, transparent);
@@ -1165,48 +1246,38 @@ form.panel .searchbar:focus-within, .feedback .fb-note textarea:focus {
               inset -4px -4px 8px color-mix(in srgb, #000000 55%, transparent);
 }
 .dash-hero .depth-btn:hover, .dash-hero .chip-btn:hover, .dash-hero .chips .chip:hover,
-.dash-hero .example-prompts button:hover { background: var(--clay-face); color: var(--copper-ink); }
+.dash-hero .example-prompts button:hover { background: var(--clay-face); color: var(--copper-ink); border-color: var(--glass-line); }
 .dash-hero .depth-btn[aria-pressed="true"], .dash-hero .depth-btn.is-active,
 .dash-hero .chip-btn.is-active, .dash-hero .mode-btn.is-active {
-  background: var(--clay-cta); border: 0; color: #fff;
+  background: var(--clay-cta); border-color: transparent; color: #fff;
   box-shadow: inset 4px 4px 9px color-mix(in srgb, #000000 22%, transparent),
               inset -4px -4px 9px color-mix(in srgb, #ffffff 22%, transparent);
 }
-.dash-hero .mode { background: var(--well-face); box-shadow: var(--well); }
+.dash-hero .mode { background: var(--neo-face); box-shadow: var(--neo-in); border: 1px solid var(--neo-edge); }
 .dash-hero .mode-btn { color: var(--muted); }
 .dash-hero .trust-strip { color: var(--muted); }
 .dash-hero .trust-strip li::before { color: var(--copper-ink); }
 .dash-hero .chips > span { color: var(--faint) !important; }
 
-/* Two small clay pebbles, one sage and one copper, tucked into the top
-   corners behind the headline. Kept low-contrast and slightly blurred so
-   they read as background material, not as content competing with the h1. */
-.dash-hero::before, .dash-hero::after {
+/* Two small clay pebbles, low-contrast, tucked into the corners. */
+.dash-hero::before {
   content: ""; position: absolute; z-index: -1; border-radius: 50%; pointer-events: none;
+  width: 132px; height: 132px; top: -46px; left: -58px;
   filter: blur(1.5px); opacity: .55;
+  background: radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--sage) 96%, #fff), color-mix(in srgb, var(--sage) 68%, var(--forest)));
   box-shadow: inset 8px 8px 18px color-mix(in srgb, #ffffff 40%, transparent),
               inset -10px -10px 22px color-mix(in srgb, #000000 16%, transparent),
               0 26px 44px -30px color-mix(in srgb, var(--forest) 55%, transparent);
 }
-.dash-hero::before {
-  width: 132px; height: 132px; top: -46px; left: -58px;
-  background: radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--sage) 96%, #fff), color-mix(in srgb, var(--sage) 68%, var(--forest)));
-}
-.dash-hero::after {
-  width: 104px; height: 104px; top: -26px; right: -46px;
-  background: radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--copper) 86%, #fff), var(--copper-deep));
-}
 [data-theme="dark"] .dash-hero::before { opacity: .3; }
-[data-theme="dark"] .dash-hero::after { opacity: .35; }
 
 .dash-hero-badge {
   background: var(--clay-face);
-  border: 0;
+  border: 1px solid color-mix(in srgb, var(--border-2) 50%, transparent);
   box-shadow: inset 3px 3px 7px color-mix(in srgb, #ffffff 80%, transparent),
-              inset -4px -4px 8px color-mix(in srgb, var(--forest) 11%, transparent),
-              0 10px 18px -14px color-mix(in srgb, var(--forest) 50%, transparent);
+              inset -4px -4px 8px color-mix(in srgb, var(--forest) 11%, transparent);
 }
-[data-theme="dark"] .dash-hero-badge { box-shadow: inset 3px 3px 7px color-mix(in srgb, #ffffff 6%, transparent), inset -4px -4px 8px color-mix(in srgb, #000000 55%, transparent), 0 10px 18px -14px rgba(0,0,0,.8); }
+[data-theme="dark"] .dash-hero-badge { box-shadow: inset 3px 3px 7px color-mix(in srgb, #ffffff 6%, transparent), inset -4px -4px 8px color-mix(in srgb, #000000 55%, transparent); }
 
 .dash-hero h1 .dash-grad {
   background: linear-gradient(120deg, var(--forest) 0%, var(--accent-2) 44%, var(--copper) 100%);
@@ -1219,7 +1290,7 @@ form.panel .searchbar:focus-within, .feedback .fb-note textarea:focus {
 }
 .hero-clock {
   background: var(--clay-face);
-  border: 0;
+  border: 1px solid color-mix(in srgb, var(--border-2) 45%, transparent);
   box-shadow: inset 3px 3px 7px color-mix(in srgb, #ffffff 80%, transparent),
               inset -4px -4px 8px color-mix(in srgb, var(--forest) 11%, transparent);
 }
@@ -1227,13 +1298,44 @@ form.panel .searchbar:focus-within, .feedback .fb-note textarea:focus {
 
 .kicker {
   background: var(--clay-face);
-  border: 0;
+  border: 1px solid color-mix(in srgb, var(--border-2) 50%, transparent);
   box-shadow: inset 3px 3px 7px color-mix(in srgb, #ffffff 78%, transparent),
               inset -4px -4px 8px color-mix(in srgb, var(--forest) 11%, transparent);
 }
 .kicker::before { background: var(--clay-cta); }
 
-/* ------------------------------------------------------- section heads */
+/* ======================================================================
+   6 · BENTO — the dashboard and category bands
+   ====================================================================== */
+
+.dash { gap: 26px; }
+@media (min-width: 900px) {
+  .dash-actions { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .dash-actions > :first-child { grid-column: span 2; }
+  .cat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .cat-grid > :nth-child(4n + 1) { grid-column: span 2; }
+}
+@media (min-width: 1200px) {
+  .dash-actions { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .dash-actions > :first-child { grid-column: span 2; }
+  .dash-actions > :nth-child(2) { grid-column: span 2; }
+}
+
+/* ======================================================================
+   7 · SKELETON PAPER — the reading surfaces
+   ====================================================================== */
+
+.prose, .md, .page, .answer-card .core {
+  background-image: var(--paper-tooth);
+  background-size: 4px 4px;
+}
+.prose, .md { border-radius: var(--clay-r-sm); }
+.page { background-color: var(--paper-bg); }
+.panel .prose, .answer-card .core { background-image: none; }
+
+/* ======================================================================
+   8 · SECTION HEADS, ARTICLE BITS, FOOTER
+   ====================================================================== */
 
 .sec-head { border-bottom: 0; padding-bottom: 10px; position: relative; }
 .sec-head::after {
@@ -1241,8 +1343,6 @@ form.panel .searchbar:focus-within, .feedback .fb-note textarea:focus {
   background: linear-gradient(90deg, color-mix(in srgb, var(--copper) 45%, transparent), transparent 78%);
 }
 .sec-head h2 { letter-spacing: -.02em; }
-
-/* ------------------------------------------------------ article bits */
 
 .article-title, .qa-question, .page h1 { letter-spacing: -.025em; }
 .prose h2 { border-bottom: 0; position: relative; }
@@ -1255,9 +1355,8 @@ form.panel .searchbar:focus-within, .feedback .fb-note textarea:focus {
   border-radius: var(--clay-r);
   box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop);
 }
-.reference-list li, .timeline li, .points-list > li, .line-list > li { border-radius: var(--clay-r-sm); }
 .points-list > li {
-  background: var(--clay-face); border: 0;
+  background: var(--clay-face); border: 0; border-radius: var(--clay-r-sm);
   box-shadow: inset 4px 4px 9px color-mix(in srgb, #ffffff 78%, transparent),
               inset -5px -5px 10px color-mix(in srgb, var(--forest) 11%, transparent),
               0 12px 22px -18px color-mix(in srgb, var(--forest) 45%, transparent);
@@ -1272,14 +1371,7 @@ form.panel .searchbar:focus-within, .feedback .fb-note textarea:focus {
   box-shadow: inset 2px 2px 4px color-mix(in srgb, #ffffff 80%, transparent), inset -3px -3px 6px color-mix(in srgb, var(--forest) 14%, transparent);
   color: var(--copper-ink);
 }
-.timeline li::before { box-shadow: 0 2px 5px color-mix(in srgb, var(--copper) 60%, transparent); }
-.toc a.active { background: var(--clay-cta); color: #fff; box-shadow: none; }
-[data-theme="dark"] .toc a.active { background: var(--clay-cta); color: var(--on-primary); }
 .factbox h3, .panel-head { color: var(--copper-ink); }
-.tabs { background: var(--well-face); border: 0; box-shadow: var(--well); border-radius: var(--clay-r-pill); padding: 5px; }
-.tab[aria-selected="true"], .tab.is-active { box-shadow: var(--clay-cta-hi), var(--clay-cta-lo); }
-
-/* ------------------------------------------------------------- footer */
 
 .site-foot {
   background: var(--clay-face);
@@ -1289,7 +1381,9 @@ form.panel .searchbar:focus-within, .feedback .fb-note textarea:focus {
 }
 .foot-col strong { color: var(--copper-ink); }
 
-/* -------------------------------------------------- static intro block */
+/* ======================================================================
+   9 · STATIC INTRO BLOCK (the crawlable home page)
+   ====================================================================== */
 
 .site-intro { padding: 46px 0 10px; }
 .site-intro .kicker { margin-bottom: 20px; }
@@ -1323,7 +1417,8 @@ form.panel .searchbar:focus-within, .feedback .fb-note textarea:focus {
 .site-intro .intro-links a {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 12px 20px; border-radius: var(--clay-r-pill); font-weight: 550; font-size: 14.5px;
-  color: var(--text); background: var(--clay-face); border: 0;
+  color: var(--text); background: var(--clay-face);
+  border: 1px solid color-mix(in srgb, var(--border-2) 55%, transparent);
   box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop); text-decoration: none;
   transition: transform .2s var(--ease-out), box-shadow .2s var(--ease-out);
 }
@@ -1331,25 +1426,18 @@ form.panel .searchbar:focus-within, .feedback .fb-note textarea:focus {
 .site-intro .intro-links a:active { transform: translateY(1px) scale(.97); box-shadow: var(--clay-press-hi), var(--clay-press-lo); }
 .site-intro .intro-links a::after { content: "→"; opacity: .6; }
 
-/* ------------------------------------------------ overlays and misc */
+/* ======================================================================
+   10 · MISC
+   ====================================================================== */
 
-.suggest, .lang-menu {
-  background: var(--clay-face);
-  border: 0;
-  border-radius: var(--clay-r);
-  box-shadow: var(--clay-hi), var(--clay-lo), 0 34px 60px -30px color-mix(in srgb, var(--forest) 65%, transparent);
+.evidence, .scope-note {
+  box-shadow: inset 9px 0 0 -5px var(--copper), var(--clay-hi), var(--clay-lo), var(--clay-drop);
 }
-.suggest-item:hover, .suggest-item.active, .lang-menu-item:hover { background: var(--well-face); }
-.lang-menu-item.is-active { background: var(--clay-cta); color: #fff; }
-[data-theme="dark"] .lang-menu-item.is-active { background: var(--clay-cta); color: var(--on-primary); }
-.lang-menu-item.is-active::after { color: #fff; }
-.toast {
-  background: var(--clay-face); color: var(--text); border-radius: var(--clay-r-pill);
-  box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop);
-}
-[data-theme="dark"] .toast { background: var(--clay-face); color: var(--text); }
+.evidence.is-ok { box-shadow: inset 9px 0 0 -5px var(--ok), var(--clay-hi), var(--clay-lo), var(--clay-drop); }
+.evidence.is-warn { box-shadow: inset 9px 0 0 -5px var(--warn), var(--clay-hi), var(--clay-lo), var(--clay-drop); }
+
 .saved-main img, .saved-ph { border-radius: 14px; }
-.saved-ph { background: var(--well-face); box-shadow: var(--well); }
+.saved-ph { background: var(--neo-face); box-shadow: var(--neo-in); }
 .src-mark {
   background: var(--clay-face); border-radius: 10px;
   box-shadow: inset 2px 2px 5px color-mix(in srgb, #ffffff 80%, transparent), inset -3px -3px 6px color-mix(in srgb, var(--forest) 12%, transparent);
@@ -1357,26 +1445,60 @@ form.panel .searchbar:focus-within, .feedback .fb-note textarea:focus {
 .sk-line { background: color-mix(in srgb, var(--border-2) 60%, transparent); }
 .read-progress span { background: linear-gradient(90deg, var(--forest), var(--accent-2), var(--copper)); }
 [data-theme="dark"] .read-progress span { background: linear-gradient(90deg, var(--sage), var(--accent-2), var(--accent)); }
-.crumbs a { color: var(--muted); }
-.error-box { background: var(--clay-face); }
 
-/* The evidence and scope notes carried a coloured left rule. The clay
-   surface drops flat borders, so the rule is rebuilt as an inset ridge. */
-.evidence, .scope-note {
-  box-shadow: inset 9px 0 0 -5px var(--copper), var(--clay-hi), var(--clay-lo), var(--clay-drop);
-}
-.evidence.is-ok { box-shadow: inset 9px 0 0 -5px var(--ok), var(--clay-hi), var(--clay-lo), var(--clay-drop); }
-.evidence.is-warn { box-shadow: inset 9px 0 0 -5px var(--warn), var(--clay-hi), var(--clay-lo), var(--clay-drop); }
+/* The contents button is hidden by the app on views that have no contents
+   rail; make sure `hidden` wins over the header's flex rules. */
+#tocBtn[hidden] { display: none !important; }
 
-/* --------------------------------------------------- reduced motion */
+/* ======================================================================
+   11 · THE FLOOR — motion, transparency, contrast, comfort, print
+   ====================================================================== */
 
 @media (prefers-reduced-motion: reduce) {
+  body::before { animation: none; }
   .card:hover, .q-card:hover, .cat-card:hover, .dash-action:hover,
   .topic-card:hover, .howstep:hover, .btn:hover, .chip:hover, .pill:hover { transform: none; }
   .btn:active, .chip:active, .pill:active { transform: none; }
+  .btn-primary:hover { background-position: 0 0, 130% 0; }
 }
 
+/* Readers who ask the system to reduce transparency get solid chrome. */
+@media (prefers-reduced-transparency: reduce) {
+  .topbar-inner, .app-side, .bottom-nav, .suggest, .lang-menu, .toast {
+    background: var(--surface) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* Increased contrast: firm up every control edge and every hairline. */
+@media (prefers-contrast: more) {
+  .btn, .chip, .pill, .depth-btn, .chip-btn, .badge, .example-prompts button,
+  .searchbar, .composer .searchbar, .select, .mode, .tabs {
+    border-color: var(--text) !important;
+  }
+  .topbar-inner, .app-side, .bottom-nav { border-color: var(--text) !important; }
+}
+
+/* The in-app reading-comfort switch (data-comfort="opaque"): flatten the
+   translucency and the clay gradient, keep the shapes. */
+[data-comfort="opaque"] .topbar-inner,
+[data-comfort="opaque"] .app-side,
+[data-comfort="opaque"] .bottom-nav,
+[data-comfort="opaque"] .suggest,
+[data-comfort="opaque"] .lang-menu,
+[data-comfort="opaque"] .toast,
+[data-comfort="opaque"] .composer .searchbar {
+  background: var(--surface) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border: 1px solid var(--border-2) !important;
+  box-shadow: none !important;
+}
+[data-comfort="opaque"] body::before { display: none !important; }
+
 @media print {
-  .topbar-inner, .app-side, .bottom-nav { box-shadow: none !important; }
+  .topbar-inner, .app-side, .bottom-nav, .site-intro { box-shadow: none !important; }
   .panel, .page, .answer-card, .card { background: #fff !important; box-shadow: none !important; }
+  .prose, .md, .page { background-image: none !important; }
 }
