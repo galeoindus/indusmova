@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>indusmova — सवाल से समझ तक</title>
-  <meta name="description" content="indusmova is a Wikimedia knowledge research and discovery platform. Ask a question or open a topic and get a direct answer, the key points, the facts from the infobox and the sources behind them.">
+  <title>indusmova — Source-based Wikipedia answers in Hindi &amp; English</title>
+  <meta name="description" content="indusmova turns a question into a source-linked answer from Wikipedia and Wikidata. Ask in Hindi or English, read the key points and facts, and follow every citation back to the article it came from.">
   <meta name="indusmova-version" content="3.0.2">
   <meta name="theme-color" content="#f5f0e6" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#101713" media="(prefers-color-scheme: dark)">
@@ -19,16 +19,16 @@
   <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1">
 
   <meta property="og:type" content="website">
-  <meta property="og:title" content="indusmova — सवाल से समझ तक">
-  <meta property="og:description" content="Understand the question. Research the sources. Filter the evidence. Explain the answer. Show the sources.">
+  <meta property="og:title" content="indusmova — Source-based Wikipedia answers in Hindi &amp; English">
+  <meta property="og:description" content="Ask a question in your own words and get a source-linked answer from Wikipedia and Wikidata — key points, facts and the citations behind them.">
   <meta property="og:site_name" content="indusmova">
   <meta property="og:url" content="https://indusmova.pages.dev/">
   <meta property="og:locale" content="en_IN">
   <meta property="og:locale:alternate" content="hi_IN">
   <meta property="og:image" content="https://indusmova.pages.dev/assets/img/og.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="indusmova — सवाल से समझ तक">
-  <meta name="twitter:description" content="Ask a question, get a source-linked answer from Wikipedia and Wikidata.">
+  <meta name="twitter:title" content="indusmova — Source-based Wikipedia answers in Hindi &amp; English">
+  <meta name="twitter:description" content="Ask a question in Hindi or English, get a source-linked answer from Wikipedia and Wikidata, and follow every citation back.">
   <meta name="twitter:image" content="https://indusmova.pages.dev/assets/img/og.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com/">
@@ -198,11 +198,47 @@
 
     <div class="app-main">
       <main id="main" tabindex="-1">
+        <!-- Pre-rendered so a crawler that does not run JavaScript, or a
+             reader who has it switched off, still gets a real page: what the
+             site is, what it does, and links into the crawlable index pages.
+             The app clears this the moment it boots, so nobody sees it twice. -->
+        <section class="site-intro" aria-label="About indusmova">
+          <div class="wrap-narrow">
+            <p class="kicker">Source-based answers · Hindi &amp; English</p>
+            <h1>Wikipedia, <span class="grad">understood</span>.</h1>
+            <p class="lead">indusmova turns a question into a clear, source-linked answer. Ask in your own words and it reads live from Wikipedia and Wikidata — a direct answer, the key points, a topic-wise breakdown and the facts, each one traceable back to the article it came from. No AI writes the answers; every sentence is quoted from a published source.</p>
+            <div class="intro-grid">
+              <div class="intro-card">
+                <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"></path></svg></span>
+                <div><h2>Ask, don't hunt</h2><p>One question returns a direct answer with the points that support it, instead of a list of links to sift through.</p></div>
+              </div>
+              <div class="intro-card">
+                <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7.5" ry="3"></ellipse><path d="M4.5 6v12c0 1.66 3.36 3 7.5 3s7.5-1.34 7.5-3V6"></path></svg></span>
+                <div><h2>Every claim sourced</h2><p>Facts come from the Wikipedia infobox and Wikidata, and each answer keeps the citations attached so you can check it yourself.</p></div>
+              </div>
+              <div class="intro-card">
+                <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h10"></path></svg></span>
+                <div><h2>Read in Hindi or English</h2><p>Ask and read in either language, with the article, its sections and its references kept together.</p></div>
+              </div>
+              <div class="intro-card">
+                <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 3.5h11a1 1 0 0 1 1 1v16l-6.5-4-6.5 4v-16a1 1 0 0 1 1-1z"></path></svg></span>
+                <div><h2>Save what matters</h2><p>Bookmark answers and keep a reading history, stored in your own browser and never sent anywhere.</p></div>
+              </div>
+            </div>
+            <nav class="intro-links" aria-label="Explore indusmova">
+              <a href="/articles/">Articles</a>
+              <a href="/topics/">Topics</a>
+              <a href="/questions/">Popular questions</a>
+              <a href="/how-it-works/">How it works</a>
+              <a href="/help/">Help</a>
+            </nav>
+          </div>
+        </section>
         <noscript>
           <div class="wrap-narrow">
             <div class="panel">
-              <h1 class="article-title">indusmova needs JavaScript</h1>
-              <p>indusmova reads live from the Wikipedia and Wikidata APIs in your browser, so the app itself needs JavaScript switched on. You can still browse the <a href="/topics/">topics index</a>, read <a href="/how-it-works/">how it works</a>, or <a href="/help/">get help</a> without it.</p>
+              <h2 class="article-title">indusmova needs JavaScript</h2>
+              <p>indusmova reads live from the Wikipedia and Wikidata APIs in your browser, so the app itself needs JavaScript switched on. You can still browse the <a href="/articles/">articles</a>, the <a href="/topics/">topics index</a>, read <a href="/how-it-works/">how it works</a>, or <a href="/help/">get help</a> without it.</p>
             </div>
           </div>
         </noscript>

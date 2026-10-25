@@ -156,15 +156,20 @@ async function render(route) {
 
 
 function markNav(route) {
+  // Compare normalised paths, not raw hrefs. The old check used
+  // `href.endsWith(key)` with the home key reduced to "/", which is true for
+  // every path that ends in a slash — so Topics, Help and every other
+  // trailing-slash link lit up as "current" on the home page.
   const map = {
-    home: '#/', explore: '#/explore', today: '#/today', bookmarks: '#/bookmarks',
-    history: '#/history', sources: '#/sources', topics: '#/topics', ask: '#/ask',
-    library: '#/library',
+    home: '/', explore: '/explore', today: '/today', bookmarks: '/bookmarks',
+    history: '/history', sources: '/sources', topics: '/topics', ask: '/ask',
+    library: '/library',
   };
+  const target = map[route.name] || null;
   document.querySelectorAll('.side-link, .topnav a, .bottom-nav a').forEach((a) => {
     const href = a.getAttribute('href') || '';
-    const key = map[route.name];
-    const isActive = key && (href === key || href.endsWith(key.replace('#', '')));
+    const norm = (href.startsWith('#') ? href.slice(1) : href).replace(/\/+$/, '') || '/';
+    const isActive = target != null && norm === target;
     if (isActive) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   });
