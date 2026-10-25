@@ -203,6 +203,32 @@ export async function summary(lang, title, { signal, project = 'wikipedia' } = {
   return normalisePage(data);
 }
 
+/**
+ * The article's own lead picture, at a size worth showing.
+ *
+ * `action=parse` does not carry a page image, and the picture a reader
+ * expects at the top of an article is the one Wikipedia itself puts there.
+ * This asks the query API for exactly that, with the File: name so the
+ * reading view can tell it apart from the pictures inside the body.
+ */
+export async function pageImage(lang, title, { signal, project = 'wikipedia' } = {}) {
+  if (!title) return null;
+  const url = actionUrl(lang, {
+    action: 'query', titles: title, redirects: 1,
+    prop: 'pageimages', piprop: 'thumbnail|name', pithumbsize: 1200,
+  }, project);
+  const data = await get(url, { ttl: TTL.article, signal });
+  const page = data.query?.pages?.[0];
+  const thumb = page?.thumbnail;
+  if (!thumb?.source) return null;
+  return {
+    src: cleanUrl(thumb.source),
+    width: thumb.width || 0,
+    height: thumb.height || 0,
+    file: page.pageimage || '',
+  };
+}
+
 /** Summaries for many titles at once (Action API), keyed by title. */
 export async function summaries(lang, titles, { signal } = {}) {
   const list = [...new Set((titles || []).filter(Boolean))];

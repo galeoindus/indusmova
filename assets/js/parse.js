@@ -516,20 +516,30 @@ export function splitArticle(root, sectionMeta = []) {
     const level = Number(h.tagName.slice(1)) || 2;
     const body = document.createElement('div');
     body.className = 'prose';
+    // A deeper heading starts a subsection, and everything after it belongs
+    // to that subsection until a heading of this level or higher. Those
+    // blocks are rendered by the subsection's own pass, so skipping only the
+    // heading here (and not its body) made every parent section repeat all of
+    // its children — text and pictures alike.
+    let inSubtree = false;
     for (let j = i + 1; j < blocks.length; j++) {
       const nextH = blocks[j].heading;
       if (nextH) {
         const nextLevel = Number(nextH.tagName.slice(1)) || 2;
-        if (nextLevel <= level) break;
-        // A deeper heading is its own section; skip it here so a section's
-        // text does not begin with the next subsection's title.
+        if (nextLevel <= level) break;   // sibling or parent: this section ends
+        inSubtree = true;                // a child section begins here
         continue;
       }
+      if (inSubtree) continue;           // the child owns this block, not us
       body.append(blocks[j].node.cloneNode(true));
     }
     const id = h.id || body.querySelector('[id]')?.id || `section-${i}`;
     const meta = sectionMeta.find((s) => s.id === id) || {};
-    if (textOf(body).length > 40) {
+    // Keep a short section when it carries a picture or a table — a heading
+    // over "App market share" and one chart is a real section, and dropping
+    // it on a text-length test was losing the chart entirely.
+    const hasMedia = !!body.querySelector('img, figure, table, .thumb');
+    if (textOf(body).length > 40 || hasMedia) {
       sections.push({
         id,
         // The API's section label can carry markup ("<i>Vikram</i> lander").
@@ -551,9 +561,18 @@ export function splitArticle(root, sectionMeta = []) {
     ? root.references.slice()
     : [...container.querySelectorAll('ol.references li, .references li, cite')].map((li) => textOf(li)).filter(Boolean);
 
+  // The article's own lead picture. On Wikipedia it sits inside the infobox,
+  // which the reading view strips to turn into a facts box — so without this
+  // the lead image vanished from the page entirely.
+  const leadImage = (infobox ? collectImages(infobox)[0] : null)
+    || collectImages(lead)[0]
+    || images[0]
+    || null;
+
   return {
     leadHtml: lead.innerHTML,
     leadText: proseText(lead),
+    leadImage,
     sections,
     infoboxHtml: infobox ? infobox.outerHTML : '',
     factboxes: factboxes.map((f) => f.outerHTML),

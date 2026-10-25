@@ -1502,3 +1502,16 @@ form.panel .searchbar:focus-within, .feedback .fb-note textarea:focus {
   .panel, .page, .answer-card, .card { background: #fff !important; box-shadow: none !important; }
   .prose, .md, .page { background-image: none !important; }
 }
+
+/* ======================================================================
+   12 · THE ARTICLE'S LEAD PICTURE
+   ======================================================================
+   Sits at the top of the reading panel, where a reader looks for it. */
+
+.lead-figure { max-width: 620px; margin: 4px auto 18px; }
+.lead-figure img {
+  margin: 0 auto; max-height: 360px; border: 0;
+  background: color-mix(in srgb, var(--surface-2) 92%, var(--sand));
+  box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop);
+}
+.lead-figure figcaption { text-align: center; color: var(--faint); }

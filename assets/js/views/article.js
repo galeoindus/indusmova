@@ -13,7 +13,7 @@
  * in, so the answer is one tap away in the reader's own language.
  */
 
-import { el, clamp, esc, prefersReducedMotion } from '../ui.js';
+import { el, clamp, esc, cleanUrl, prefersReducedMotion } from '../ui.js';
 import { icon } from '../icons.js';
 import { t } from '../i18n.js';
 import { clean, wordCount, proseText, splitArticle, paragraphsToPoints } from '../parse.js';
@@ -67,7 +67,14 @@ export async function renderArticle(ctx, route) {
 
 async function build(ctx, mount, state, title, retry = 0) {
   try {
-    state.data = await ctx.api.article(state.lang, title, { project: state.project });
+    // The article body and its lead picture come from two different API
+    // modules, so ask for both at once rather than one after the other.
+    const [data, lead] = await Promise.all([
+      ctx.api.article(state.lang, title, { project: state.project }),
+      ctx.api.pageImage(state.lang, title, { project: state.project }).catch(() => null),
+    ]);
+    state.data = data;
+    state.leadImage = lead;
     ctx.api.revisionInfo(state.lang, state.data.revid, { project: state.project })
       .then((rev) => {
         state.revision = rev;
@@ -381,6 +388,12 @@ async function repaintFull(ctx, state) {
   const content = el('div', { class: 'panel panel-wide' });
   mount.append(content);
 
+  // The article's own picture, at the top where a reader looks for it. It
+  // used to live inside the infobox, which this view turns into a facts box,
+  // so the picture disappeared with it.
+  const leadPic = state.leadImage || parts.leadImage;
+  if (leadPic) content.append(leadFigure(leadPic, state));
+
   // The infobox sits at the top, where Wikipedia keeps it, as our facts box.
   const factbox = factsBox(facts, state.data.title);
   if (factbox) content.append(factbox);
@@ -391,6 +404,10 @@ async function repaintFull(ctx, state) {
   for (const section of parts.sections) {
     content.append(articleSection({ html: section.html, title: section.line, id: `full-topic-${section.id}`, number: section.number }));
   }
+
+  // A picture must never appear twice on one page. The splitter no longer
+  // repeats a section's children, but this is the guarantee.
+  dedupeImages(content);
 
   const references = (state.root.references || []).length
     ? referencesBlock(state.root.references)
@@ -434,13 +451,65 @@ function articleSection({ html, title, id, number }) {
   return section;
 }
 
+/* ---------------------------------------------------------- pictures */
+
+/** The canonical file name behind a Wikimedia image URL, lower-cased. */
+function fileKeyOf(src) {
+  const s = String(src || '');
+  const thumb = s.match(/\/thumb\/[0-9a-f]\/[0-9a-f]{2}\/([^/]+)\//i);
+  if (thumb) { try { return decodeURIComponent(thumb[1]).toLowerCase(); } catch { return thumb[1].toLowerCase(); } }
+  const plain = s.split('?')[0].split('/').pop() || '';
+  return plain.replace(/^\d+px-/, '').toLowerCase();
+}
+
+/** One picture, at the top of the article, linked to its Commons page. */
+function leadFigure(pic, state) {
+  const file = String(pic.file || '').replace(/^File:/i, '').trim();
+  const href = file
+    ? `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(file.replace(/ /g, '_'))}`
+    : cleanUrl(pic.src);
+  const fig = el('figure', { class: 'topic-figure lead-figure' });
+  const link = el('a', { href, target: '_blank', rel: 'noopener noreferrer' });
+  link.append(el('img', {
+    src: cleanUrl(pic.src),
+    alt: pic.alt || state.data?.title || '',
+    loading: 'eager', decoding: 'async', fetchpriority: 'high',
+  }));
+  fig.append(link);
+  const credit = pic.caption || (file
+    ? file.replace(/_/g, ' ').replace(/\.(svg|png|jpe?g|gif|webp|tiff?)$/i, '')
+    : '');
+  if (credit) fig.append(el('figcaption', { text: credit }));
+  return fig;
+}
+
+/**
+ * Remove any article illustration that has already appeared once.
+ *
+ * Only figures and thumbnails are considered. A chess board diagram, for
+ * instance, is built from the same pawn and knight images many times over —
+ * those are not duplicates, they are the board, and they must be left alone.
+ */
+function dedupeImages(root) {
+  const seen = new Set();
+  for (const img of [...root.querySelectorAll('figure img, .thumb img, .thumbinner img')]) {
+    if (img.closest('table')) continue;
+    const key = fileKeyOf(img.getAttribute('src'));
+    if (!key) continue;
+    if (!seen.has(key)) { seen.add(key); continue; }
+    const holder = img.closest('figure, .thumb, .thumbinner');
+    if (holder) holder.remove();
+    else img.remove();
+  }
+}
+
 function publishMetadata(ctx, state) {
   const lead = proseText(state.root.querySelector('p') || state.root).slice(0, 300);
   const title = `${state.data.title} — indusmova`;
   updateRouteMetadata(ctx.route, {
     title,
     description: lead || state.data.title,
-    image: state.data.thumb || undefined,
+    image: state.leadImage?.src || undefined,
     type: 'article',
   });
   setArticleStructuredData({
