@@ -1,0 +1,77 @@
+/* Galeoindus — polish for the parts added after the first build.
+ *
+ * Loaded by galeo-chat.js, so the base sheet stays the base sheet and this
+ * only dresses the newer furniture: the day dividers, the per-message meta
+ * and actions, the follow-up chips, the retry button and the answer body. */
+
+/* the bubble and its furniture stack, so meta and actions sit under it */
+.bubble-wrap { display: flex; flex-direction: column; gap: 5px; min-width: 0; max-width: min(74%, 660px); }
+.row.me .bubble-wrap { align-items: flex-end; max-width: min(74%, 660px); }
+.bubble-wrap .bubble { max-width: 100%; }
+
+/* a quiet provenance line, never a coloured status light */
+.meta { display: flex; align-items: center; gap: 8px; padding: 0 4px; font-size: 11.5px; color: var(--ink-faint); }
+.meta .via {
+  padding: 2px 8px; border-radius: 999px; font-size: 10.5px; letter-spacing: .02em;
+  border: 1px solid var(--line); background: var(--grad-soft); color: var(--ink-soft);
+}
+.meta .time { font-variant-numeric: tabular-nums; }
+.row.me .meta { justify-content: flex-end; }
+
+/* actions appear on hover, and are always reachable by keyboard */
+.actions { display: flex; gap: 4px; padding: 0 2px; opacity: 0; transition: opacity .16s var(--ease); }
+.row.bot:hover .actions, .actions:focus-within { opacity: 1; }
+.act {
+  width: 26px; height: 26px; display: grid; place-items: center;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--panel-strong);
+  color: var(--ink-faint); cursor: pointer;
+  transition: color .16s var(--ease), border-color .16s var(--ease), transform .16s var(--ease);
+}
+.act svg { width: 14px; height: 14px; }
+.act:hover { color: var(--ink); border-color: var(--line-2); transform: translateY(-1px); }
+.act.done { color: var(--mint); border-color: var(--mint); }
+
+/* the answer body: comfortable measure, no orphan headings */
+.bubble .body { white-space: pre-wrap; }
+.bubble .body:empty { display: none; }
+
+/* a day divider */
+.day { display: flex; align-items: center; gap: 12px; margin: 6px 0 2px; font-size: 11.5px; color: var(--ink-faint); }
+.day::before, .day::after { content: ""; flex: 1 1 auto; height: 1px; background: var(--line); }
+.day span { padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+
+/* follow-up suggestions under the newest answer */
+.follow { display: flex; flex-wrap: wrap; gap: 7px; margin: 2px 0 6px 46px; }
+.follow-chip {
+  padding: 8px 14px; border-radius: 999px; cursor: pointer; font: inherit; font-size: 12.8px;
+  color: var(--ink); border: 1px solid var(--line-2); background: var(--panel);
+  box-shadow: var(--glass-hi);
+  transition: transform .16s var(--ease), border-color .16s var(--ease), background-color .16s var(--ease);
+}
+.follow-chip:hover { transform: translateY(-1px); border-color: rgba(123, 107, 255, .6); background: var(--grad-soft); }
+
+/* the small in-bubble button */
+.mini-btn {
+  margin-top: 10px; padding: 7px 13px; border-radius: 999px; cursor: pointer;
+  font: inherit; font-size: 12.5px; font-weight: 600;
+  color: #fff; border: 0; background: var(--grad);
+  box-shadow: 0 12px 22px -14px rgba(224, 68, 127, .9);
+}
+.mini-btn:hover { filter: brightness(1.06); }
+
+/* the send button in its busy state */
+.send:disabled { opacity: .45; cursor: progress; }
+
+/* a slightly calmer thread rhythm now that messages carry meta lines */
+.thread { gap: 20px; }
+.row + .row.bot { margin-top: -4px; }
+
+@media (max-width: 900px) {
+  .bubble-wrap, .row.me .bubble-wrap { max-width: 90%; }
+  .follow { margin-left: 0; }
+  .actions { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .act:hover, .follow-chip:hover { transform: none; }
+}
