@@ -1515,3 +1515,162 @@ form.panel .searchbar:focus-within, .feedback .fb-note textarea:focus {
   box-shadow: var(--clay-hi), var(--clay-lo), var(--clay-drop);
 }
 .lead-figure figcaption { text-align: center; color: var(--faint); }
+
+/* ======================================================================
+   13 · LAYOUT REPAIR
+   ======================================================================
+   The reading view had drifted into a full-bleed panel with a narrow
+   column lost inside it, blocks with no space between them, and a header
+   that wrapped to 142px on a phone. This section puts the page back into
+   one column with a real rhythm, and keeps pictures inside it. */
+
+/* --- one centred reading column, for the header and the body alike --- */
+[data-view="article"] .wrap {
+  max-width: 1160px;
+  margin-inline: auto;
+  padding: 18px 20px 72px;
+}
+[data-view="article"] .article-head,
+[data-view="article"] .article-actions,
+[data-view="article"] .langbar,
+[data-view="article"] .tabs { max-width: 100%; margin-inline: 0; }
+
+.panel.panel-wide {
+  max-width: 100%;
+  margin-inline: auto;
+  padding: 30px 36px 36px;
+}
+/* Every block in the article shares one measure, so the headline, the
+   facts, the pictures and the prose all line up. */
+.panel.panel-wide > * { max-width: 74ch; margin-inline: auto; }
+
+/* --- vertical rhythm: nothing sticks to anything --- */
+.lead-figure { margin: 0 auto 28px; }
+.panel-wide .factbox { margin: 0 auto 30px; }
+.panel-wide .art-section { margin: 0 auto 30px; }
+.panel-wide .art-section:last-of-type { margin-bottom: 34px; }
+.panel-wide .art-section-head { margin-bottom: 14px; }
+.panel-wide .art-body > * + * { margin-top: 12px; }
+.panel-wide .art-body > .line-list { margin-top: 0; }
+
+/* --- pictures: contained, centred, never stretched or cropped --- */
+.prose img:not([width]), .art-body img { aspect-ratio: auto !important; }
+.art-body img,
+.art-body .thumb img,
+.art-body figure img {
+  max-width: 100% !important;
+  height: auto !important;
+  object-fit: contain;
+  border-radius: var(--clay-r-sm);
+}
+.art-body figure,
+.art-body .thumb,
+.art-body .thumbinner {
+  max-width: 100% !important;
+  margin: 20px auto !important;
+  float: none !important;
+  width: auto !important;
+}
+.art-body figcaption,
+.art-body .thumbcaption {
+  text-align: center;
+  color: var(--faint);
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin-top: 6px;
+}
+.lead-figure img { max-width: 100%; max-height: 340px; object-fit: contain; }
+
+/* Tables scroll inside the column instead of pushing it wide. */
+.panel-wide .table-scroll { max-width: 100%; }
+
+/* --- the header stops wrapping on a phone --- */
+@media (max-width: 860px) {
+  /* The four text links live in the bottom dock on small screens; keeping
+     them in the header as well is what pushed it to three rows. */
+  .topnav a { display: none; }
+}
+@media (max-width: 700px) {
+  .topbar { padding-top: 8px; }
+  .topbar-inner {
+    padding: 6px 10px;
+    gap: 6px;
+    flex-wrap: nowrap;
+    border-radius: 999px;
+  }
+  .topnav { flex-wrap: nowrap; gap: 3px; margin-left: auto; }
+  .btn-icon { width: 32px; height: 32px; min-height: 32px; padding: 6px; }
+  .brand-mark { width: 30px; height: 30px; }
+  .brand-text strong { font-size: 15.5px; }
+  .nav-sep { display: none; }
+
+  [data-view="article"] .wrap { padding: 12px 12px 64px; }
+  .panel.panel-wide { padding: 18px 16px 22px; }
+  .panel.panel-wide > * { max-width: 100%; }
+  .lead-figure { margin-bottom: 20px; }
+  .panel-wide .factbox { margin-bottom: 22px; }
+  .panel-wide .art-section { margin-bottom: 22px; }
+  .lead-figure img { max-height: 260px; }
+}
+@media (max-width: 400px) {
+  /* The two least-used header buttons step aside on the smallest screens. */
+  #randomBtn, #comfortBtn { display: none; }
+}
+
+/* ======================================================================
+   14 · HEADER, FACT NOTE AND LEAD PICTURE — the last of the collisions
+   ======================================================================
+   The floating pill left the page visible in the gutters either side of
+   it, so text slid out from behind its edges while scrolling. The header
+   is a full-width glass bar again: same material, no gaps for content to
+   leak through. */
+
+.topbar {
+  padding-top: 0;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  backdrop-filter: blur(18px) saturate(1.4);
+  border-bottom: 1px solid color-mix(in srgb, var(--border-2) 58%, transparent);
+  box-shadow: 0 10px 30px -24px color-mix(in srgb, var(--forest) 60%, transparent);
+}
+.topbar-inner {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 10px 16px;
+}
+[data-theme="dark"] .topbar { background: color-mix(in srgb, var(--bg) 78%, transparent); }
+
+/* Anchor jumps land below the sticky header, not under it. */
+html { scroll-padding-top: 84px; }
+
+/* The fact box note sat in the rounded corner and lost its first letters. */
+.factbox .src-credit { margin: 0; padding: 10px 15px 14px; }
+
+/* A lead picture is a picture, not a billboard. */
+.lead-figure { max-width: min(100%, 560px); }
+.lead-figure img { max-height: 300px; }
+
+/* ======================================================================
+   15 · THE ACTION AND CATEGORY BANDS
+   ======================================================================
+   The earlier bento spans assumed a column count that the real content
+   never fills, so five action cards left the fifth one stranded alone on
+   a second row with a hole beside it. These bands simply flow: every
+   tile the same height, wrapping evenly at any width. */
+
+.dash-actions { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+.dash-actions > * { grid-column: auto !important; }
+.dash-actions .dash-action { min-height: 108px; }
+
+.cat-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.cat-grid > * { grid-column: auto !important; }
+
+@media (min-width: 1200px) {
+  .dash-actions { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+/* The trending spark line was drawn past the card edge. */
+.trend-row { overflow: hidden; }
+.trend-spark { flex: 0 0 auto; width: 46px; max-width: 46px; overflow: visible; }

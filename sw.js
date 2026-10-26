@@ -5,7 +5,7 @@
  * and the app already has its own in-memory cache for that.
  */
 
-const VERSION = 'indusmova-v3.3.1';
+const VERSION = 'indusmova-v3.3.2';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 
