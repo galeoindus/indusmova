@@ -546,6 +546,46 @@ def page_html(art, related):
     return "".join(out)
 
 
+# ── one picture, one place ────────────────────────────────────────────────
+# Wikipedia's galleries and thumbs can repeat the same file, and a repeated
+# picture is the thing a reader notices first. Every generated page is
+# deduped by file name before it is written: the first occurrence stays
+# where Wikipedia put it, the later copies (and their empty gallery cells)
+# are dropped. Small repeated icons — chess pieces, map pins — are left
+# alone, because there they are the diagram.
+
+_IMG_FILE = re.compile(r"/thumb/[0-9a-f]/[0-9a-f]{2}/([^/]+)/", re.I)
+_ICONISH = re.compile(r"(chess_|chessboard|red_pog|blue_pog|symbol|_icon|flag_|commons-logo|edit-ltr)", re.I)
+
+
+def _file_key(src):
+    src = (src or "").split("?")[0]
+    m = _IMG_FILE.search(src)
+    return (m.group(1) if m else src.split("/")[-1]).lower()
+
+
+def dedupe_images(html_text):
+    soup = BeautifulSoup(html_text, "html.parser")
+    seen = set()
+    for img in list(soup.find_all("img")):
+        if img.attrs is None or img.parent is None:
+            continue
+        key = _file_key(img.get("src"))
+        if not key or _ICONISH.search(key):
+            continue
+        if key in seen:
+            block = (img.find_parent("li", class_="gallerybox")
+                     or img.find_parent("figure")
+                     or img.find_parent("div", class_="thumb"))
+            if block is not None:
+                block.decompose()
+            else:
+                img.decompose()
+        else:
+            seen.add(key)
+    return str(soup)
+
+
 def main():
     built = {}
     for i, topic in enumerate(TOPICS):
@@ -567,7 +607,7 @@ def main():
         out_dir = os.path.join(ROOT, "articles", slug(title))
         os.makedirs(out_dir, exist_ok=True)
         with open(os.path.join(out_dir, "index.html"), "w", encoding="utf-8") as fh:
-            fh.write(page_html(art, related))
+            fh.write(dedupe_images(page_html(art, related)))
     print(f"wrote {len(built)} article pages")
 
     # A sitemap that includes them.

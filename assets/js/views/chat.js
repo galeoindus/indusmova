@@ -36,6 +36,36 @@ function saveMessages(list) {
 
 /* --------------------------------------------------------------- brain */
 
+/**
+ * Ask the server for an answer, when the server has keys.
+ *
+ * /api/chat is a Pages Function holding up to six OpenRouter keys; it
+ * spreads requests across them and fails over. If the site is deployed
+ * without that function (or without keys) it answers 501/404, and this
+ * returns null so the encyclopedia path below takes over. Nothing here
+ * ever sees a key.
+ */
+async function askModel(ctx, history) {
+  const last = [...history].reverse().find((m) => m.role === 'user');
+  const skill = routeSkill(last?.text || '');
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        mode: skill?.mode || 'default',
+        messages: history.slice(-8).map((m) => ({ role: m.role, content: m.text })),
+      }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data || typeof data.reply !== 'string' || !data.reply.trim()) return null;
+    return { text: data.reply.trim(), via: 'model' };
+  } catch { return null; }
+}
+
+
+
 /** Resolve a message to an encyclopedia page, or null. */
 async function findPage(ctx, text) {
   const lang = ctx.state.contentLang;
@@ -54,7 +84,10 @@ async function findPage(ctx, text) {
  * words, and the source attached. `support` never pretends to be an
  * encyclopedia answer.
  */
-async function answer(ctx, text) {
+async function answer(ctx, text, history = []) {
+  const model = await askModel(ctx, history);
+  if (model) return model;
+
   const skill = routeSkill(text);
   const shape = replyShape(skill?.mode || 'default');
   const lang = ctx.state.contentLang;
@@ -227,7 +260,7 @@ export function buildChat(ctx, { docked = false } = {}) {
     thread.scrollTop = thread.scrollHeight;
 
     let reply;
-    try { reply = await answer(ctx, value); }
+    try { reply = await answer(ctx, value, messages); }
     catch { reply = { text: 'That lookup did not come back. Check the connection and ask me again.' }; }
 
     messages.push({ role: 'assistant', ...reply });
