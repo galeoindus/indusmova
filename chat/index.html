@@ -2,8 +2,107 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Galeoindus — chat</title>
-  <meta name="robots" content="noindex">
+  <meta name="description" content="Galeoindus is the conversation side of indusmova: ask a question in your own words and get a source-linked answer from Wikipedia and Wikidata, with the article kept attached.">
+  <link rel="canonical" href="https://indusmova.pages.dev/chat/">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+  <meta name="theme-color" content="#0a0c12" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f4f1fb" media="(prefers-color-scheme: light)">
+  <meta name="color-scheme" content="light dark">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Galeoindus — chat">
+  <meta property="og:description" content="A conversation with indusmova. Ask in your own words; every answer keeps the article it came from.">
+  <meta property="og:url" content="https://indusmova.pages.dev/chat/">
+  <meta property="og:site_name" content="Galeoindus">
+  <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+  <link rel="stylesheet" href="/assets/css/galeo.css?v=1.0.0">
 </head>
-<body></body>
+<body>
+  <div class="sky" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <div class="app" id="app">
+    <aside class="side" id="side" aria-label="Conversations">
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40">
+            <defs><linearGradient id="gm" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ff5f9e"></stop><stop offset="1" stop-color="#7b6bff"></stop>
+            </linearGradient></defs>
+            <rect width="40" height="40" rx="13" fill="url(#gm)"></rect>
+            <path d="M11.6 12.4h16.8a3.4 3.4 0 0 1 3.4 3.4v7.2a3.4 3.4 0 0 1-3.4 3.4h-7.6L15.4 30.2v-3.8h-3.8a3.4 3.4 0 0 1-3.4-3.4v-7.2a3.4 3.4 0 0 1 3.4-3.4Z" fill="none" stroke="#fff" stroke-width="2.1" stroke-linejoin="round"></path>
+            <g fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round">
+              <path d="M14.6 17.4c1.8-2.1 3.6-2.1 5.4 0s3.6 2.1 5.4 0"></path>
+              <path d="M14.6 21.9c1.8-2.1 3.6-2.1 5.4 0s3.6 2.1 5.4 0" stroke-opacity=".72"></path>
+            </g>
+          </svg>
+        </span>
+        <span class="brand-text"><b>Galeoindus</b><small>the chat side of indusmova</small></span>
+      </a>
+
+      <button class="new-chat" id="newChat" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        New chat
+      </button>
+
+      <div class="find">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="find" type="search" placeholder="Search chats" aria-label="Search chats" autocomplete="off">
+      </div>
+
+      <ul class="threads" id="threads" aria-label="Chat history"></ul>
+
+      <div class="side-foot">
+        <button class="ghost-btn" id="themeBtn" type="button" aria-label="Switch theme">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A8.6 8.6 0 1 1 11.2 3a6.7 6.7 0 0 0 9.8 9.8Z"/></svg>
+          <span>Theme</span>
+        </button>
+        <a class="ghost-btn" href="/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5M6 10v9h12v-9"/></svg>
+          <span>indusmova</span>
+        </a>
+      </div>
+    </aside>
+
+    <main class="work">
+      <header class="top">
+        <button class="icon-btn only-small" id="menuBtn" type="button" aria-label="Open conversations">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <div class="titles">
+          <h1 id="chatTitle">New chat</h1>
+          <p id="chatSub">Ask in your own words — every answer keeps its source.</p>
+        </div>
+        <span class="pill" id="langPill" title="Answer language">EN</span>
+      </header>
+
+      <div class="thread" id="thread" role="log" aria-live="polite" aria-label="Conversation"></div>
+
+      <button class="jump" id="jump" type="button" aria-label="Jump to the newest message" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+      </button>
+
+      <form class="composer" id="composer" autocomplete="off">
+        <label class="sr-only" for="input">Message</label>
+        <textarea id="input" rows="1" placeholder="Ask anything…" spellcheck="false"></textarea>
+        <div class="tools">
+          <button class="icon-btn" id="micBtn" type="button" aria-label="Speak instead of typing" title="Speak">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
+          </button>
+          <span class="hint" id="hint">Enter to send · Shift+Enter for a new line</span>
+          <button class="send" id="send" type="submit" aria-label="Send">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12 20 4l-4.5 16-4-6.5L4 12Z"/></svg>
+          </button>
+        </div>
+      </form>
+      <p class="fineprint">Answers are quoted from Wikipedia and Wikidata and keep their source. Galeoindus is not an advice service.</p>
+    </main>
+  </div>
+
+  <script type="module" src="/assets/js/galeo-chat.js?v=1.0.0"></script>
+</body>
 </html>
