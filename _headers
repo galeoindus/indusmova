@@ -1,5 +1,10 @@
 # indusmova — Cloudflare Pages headers.
 # https://developers.cloudflare.com/pages/configuration/headers/
+#
+# The rule this file follows: a page must never be served from a cache it
+# cannot revalidate. The document, the service worker and the build stamp
+# are no-store at the browser AND at the edge; the code revalidates on every
+# load; only images and icons, which really do not change, keep a long cache.
 
 /*
   X-Content-Type-Options: nosniff
@@ -9,45 +14,60 @@
   Cross-Origin-Opener-Policy: same-origin
   Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.wikipedia.org https://*.wikiquote.org https://*.wikisource.org https://*.wikinews.org https://*.wikibooks.org https://*.wikiversity.org https://*.wikivoyage.org https://*.wiktionary.org https://www.wikidata.org https://commons.wikimedia.org https://wikimedia.org https://*.wikimedia.org https://gutendex.com https://openlibrary.org https://covers.openlibrary.org https://archive.org https://api.crossref.org https://api.openalex.org https://www.ebi.ac.uk https://eutils.ncbi.nlm.nih.gov https://doaj.org https://cdn.jsdelivr.net https://huggingface.co https://*.huggingface.co https://*.hf.co; manifest-src 'self'; upgrade-insecure-requests
 
-# JavaScript and CSS are referenced with a ?v= query that only changes when
-# someone remembers to change it. A one-year immutable cache meant a returning
-# reader kept the first copy of a file forever, so a fixed search bar or layout
-# could still look broken to them. Let the code revalidate on every load; the
-# images and icons, which really never change, keep the long cache.
+# ── the document: never cached, at the browser or at the edge ─────────────
+/
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-store
+
+/index.html
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-store
+
+/*.html
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-store
+
+/chat/
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-store
+
+/chat/index.html
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-store
+
+# the build stamp the page polls to notice a new deploy
+/assets/version.json
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-store
+
+# ── the service worker: must be re-fetched, or it keeps serving the old app ─
+/sw.js
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-store
+
+# ── code: always revalidate, never trust a stored copy blindly ────────────
 /assets/js/*
   Cache-Control: public, max-age=0, must-revalidate
+  CDN-Cache-Control: no-store
 
 /assets/css/*
   Cache-Control: public, max-age=0, must-revalidate
+  CDN-Cache-Control: no-store
 
+# the versioned alias every page actually requests
+/assets/v3/*
+  Cache-Control: public, max-age=0, must-revalidate
+  CDN-Cache-Control: no-store
+
+# ── images and icons: these really do not change ─────────────────────────
 /assets/img/*
-  Cache-Control: public, max-age=604800
-
-/assets/*
   Cache-Control: public, max-age=604800
 
 /manifest.webmanifest
   Content-Type: application/manifest+json; charset=utf-8
   Cache-Control: public, max-age=3600
 
-/sw.js
+# ── the article pages are content, so they revalidate but may be stored ───
+/articles/*
   Cache-Control: public, max-age=0, must-revalidate
-
-/*.html
-  Cache-Control: public, max-age=0, must-revalidate
-
-/
-  Cache-Control: public, max-age=0, must-revalidate
-
-# The CDN kept serving the first copy of the CSS and JS, so a query-string
-# change did not reach readers. The assets now live under /assets/v3/, and
-# the CDN is told not to store them at all.
-/assets/v3/*
-  Cache-Control: public, max-age=0, must-revalidate
-  CDN-Cache-Control: no-store
-
-/assets/js/*
-  CDN-Cache-Control: no-store
-
-/assets/css/*
   CDN-Cache-Control: no-store
