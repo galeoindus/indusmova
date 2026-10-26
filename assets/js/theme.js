@@ -4,6 +4,9 @@
  * so the first paint is already right; this module takes over from there.
  * Theme cycles auto -> light -> dark, stored per device. Comfort (opaque
  * surfaces) is a separate boolean. A reading-progress bar is updated on scroll.
+ *
+ * It also watches the build stamp, so a reader never sits on an old copy of
+ * the site waiting to be told to hard-refresh.
  */
 
 import { getPref, setPref } from './store.js';
@@ -64,6 +67,7 @@ export function initTheme() {
 
   initProgress();
   initGaleoindusLink();
+  initBuildWatch();
 }
 
 function applyComfort(on) {
@@ -98,8 +102,6 @@ function initProgress() {
 export function getTheme() {
   return currentTheme;
 }
-
-export { prefersReducedMotion };
 
 /**
  * Galeoindus — the chat page — in the site's own navigation.
@@ -138,3 +140,56 @@ function initGaleoindusLink() {
     else side.insertBefore(a, side.querySelector('.side-heading + .side-link') || side.firstChild);
   }
 }
+
+/**
+ * Watch the build stamp.
+ *
+ * /assets/version.json is rewritten by the version workflow on every push,
+ * and is served no-store. This page remembers the stamp it was loaded from
+ * and re-checks when the tab comes back into view. If the stamp has moved
+ * on, the page reloads itself once — the reader never has to know that a
+ * hard refresh exists.
+ *
+ * The first visit only records the stamp, so nobody is reloaded for nothing,
+ * and the reload happens at most once per build.
+ */
+function initBuildWatch() {
+  const SEEN = 'indusmova:build';
+  let reloading = false;
+
+  const check = async () => {
+    if (reloading || document.visibilityState !== 'visible') return;
+    let stamp = '';
+    try {
+      const res = await fetch(`/assets/version.json?t=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      stamp = `${data.version || ''}+${data.commit || ''}`;
+    } catch { return; }
+    if (!stamp || stamp === '+') return;
+
+    let seen = null;
+    try { seen = localStorage.getItem(SEEN); } catch { return; }
+    if (!seen) { try { localStorage.setItem(SEEN, stamp); } catch { /* ignore */ } return; }
+    if (seen === stamp) return;
+
+    try { localStorage.setItem(SEEN, stamp); } catch { /* ignore */ }
+    reloading = true;
+    location.reload();
+  };
+
+  check();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') check();
+  });
+
+  // A new service worker has taken over: this tab is running the old code.
+  navigator.serviceWorker?.addEventListener('message', (event) => {
+    if (event.data?.type === 'galeo-activated' && !reloading) {
+      reloading = true;
+      location.reload();
+    }
+  });
+}
+
+export { prefersReducedMotion };
