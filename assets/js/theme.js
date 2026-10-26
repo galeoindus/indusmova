@@ -63,6 +63,7 @@ export function initTheme() {
   });
 
   initProgress();
+  initGaleoindusLink();
 }
 
 function applyComfort(on) {
@@ -99,3 +100,41 @@ export function getTheme() {
 }
 
 export { prefersReducedMotion };
+
+/**
+ * Galeoindus — the chat page — in the site's own navigation.
+ *
+ * The chat lives at /chat/ as a page of its own. Rather than editing the
+ * markup of every page, the link is added once at boot to whichever
+ * navigation the current page has: the top bar and the side rail on the
+ * app, and nothing where there is no navigation. It is skipped if a link
+ * is already in the markup, so a page that carries one never gets two.
+ */
+function initGaleoindusLink() {
+  const HREF = '/chat/';
+
+  const top = document.querySelector('.topnav');
+  if (top && !top.querySelector(`a[href="${HREF}"]`)) {
+    const a = document.createElement('a');
+    a.href = HREF;
+    a.textContent = 'Galeoindus';
+    a.title = 'Galeoindus — chat';
+    const sep = top.querySelector('.nav-sep');
+    if (sep) top.insertBefore(a, sep);
+    else top.append(a);
+  }
+
+  const side = document.querySelector('.app-side');
+  if (side && !side.querySelector(`a[href="${HREF}"]`)) {
+    const a = document.createElement('a');
+    a.className = 'side-link';
+    a.href = HREF;
+    a.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" '
+      + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+      + '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"></path></svg>'
+      + '<span>Galeoindus</span>';
+    const ask = [...side.querySelectorAll('.side-link')].find((l) => l.getAttribute('href') === '#/ask');
+    if (ask && ask.nextSibling) side.insertBefore(a, ask.nextSibling);
+    else side.insertBefore(a, side.querySelector('.side-heading + .side-link') || side.firstChild);
+  }
+}
