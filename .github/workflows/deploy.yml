@@ -1,0 +1,63 @@
+# Deploy to Cloudflare Pages on every push to main.
+#
+# Cloudflare's own Git integration already builds on push when the project is
+# connected. This workflow is the belt to that braces: it publishes the same
+# commit through wrangler the moment it lands, so a deploy never waits on a
+# queue, and it can be re-run by hand from the Actions tab.
+#
+# It needs two repository secrets, both from the Cloudflare dashboard:
+#   CLOUDFLARE_API_TOKEN   — a token with the "Cloudflare Pages: Edit" permission
+#   CLOUDFLARE_ACCOUNT_ID  — the account id shown on the Workers & Pages page
+# If they are absent the job skips instead of failing, so the repo stays green
+# for anyone who has not set them up yet.
+
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  pages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Do we have Cloudflare credentials?
+        id: check
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Deploy skipped::Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID to deploy automatically."
+          fi
+
+      - name: Stamp the build
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          SHORT=$(git rev-parse --short HEAD)
+          VERSION=$(node -p "require('./package.json').version")
+          BUILT=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          printf '{\n  "version": "%s",\n  "commit": "%s",\n  "built": "%s"\n}\n' \
+            "$VERSION" "$SHORT" "$BUILT" > assets/version.json
+          cat assets/version.json
+
+      - name: Publish to Cloudflare Pages
+        if: steps.check.outputs.ready == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy . --project-name=indusmova --branch=main --commit-dirty=true
