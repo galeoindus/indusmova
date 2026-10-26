@@ -19,7 +19,6 @@ import { renderHome } from './views/home.js';
 import { renderSearch } from './views/search.js';
 import { renderAsk } from './views/ask.js';
 import { renderArticle } from './views/article.js';
-import { renderChat, toggleChatDock, closeChatDock } from './views/chat.js';
 import { renderLibrary, renderWork } from './views/library.js';
 import {
   renderExplore, renderToday, renderBookmarks, renderHistory,
@@ -113,7 +112,6 @@ const VIEWS = {
   home: (route) => renderHome(ctx, route),
   search: (route) => renderSearch(ctx, route),
   ask: (route) => renderAsk(ctx, route),
-  chat: () => renderChat(ctx),
   article: (route) => renderArticle(ctx, route),
   explore: () => renderExplore(ctx),
   today: (route) => renderToday(ctx, route),
@@ -171,7 +169,7 @@ function markNav(route) {
   const map = {
     home: '/', explore: '/explore', today: '/today', bookmarks: '/bookmarks',
     history: '/history', sources: '/sources', topics: '/topics', ask: '/ask',
-    chat: '/chat', library: '/library',
+    library: '/library',
   };
   const target = map[route.name] || null;
   document.querySelectorAll('.side-link, .topnav a, .bottom-nav a').forEach((a) => {
@@ -227,11 +225,6 @@ function wireHeader() {
     if (typeof ctx.toggleToc === 'function') ctx.toggleToc();
     else toast(t('noSectionsHere'));
   });
-
-  // The chat lives beside every page as a dock, and has its own route.
-  document.getElementById('chatBtn')?.addEventListener('click', () => toggleChatDock(ctx));
-  document.getElementById('chatFab')?.addEventListener('click', () => toggleChatDock(ctx));
-  router.onChange(() => closeChatDock());
 
   document.getElementById('langBtn')?.addEventListener('click', (event) => openMenu(event.currentTarget, CONTENT_LANGS, ctx.state.contentLang, (code) => ctx.setContentLang(code), t('wikiEdition')));
   document.getElementById('uiLangBtn')?.addEventListener('click', (event) => openMenu(event.currentTarget, UI_LANGS.map((l) => ({ code: l.code, label: l.label })), ctx.state.uiLang, (code) => ctx.setUiLang(code), t('uiLangTitle')));

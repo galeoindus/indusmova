@@ -15,7 +15,6 @@ import { slugify, unslug } from './meta.js';
 const ROUTES = [
   { name: 'home', pattern: /^\/?$/ },
   { name: 'ask', pattern: /^\/ask\/?$/ },
-  { name: 'chat', pattern: /^\/chat\/?$/ },
   { name: 'explore', pattern: /^\/explore\/?$/ },
   { name: 'today', pattern: /^\/today\/?$/ },
   { name: 'bookmarks', pattern: /^\/bookmarks\/?$/ },

@@ -5,7 +5,7 @@
  * and the app already has its own in-memory cache for that.
  */
 
-const VERSION = 'indusmova-v3.6.0';
+const VERSION = 'indusmova-v3.7.0';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 
@@ -15,7 +15,6 @@ const SHELL_ASSETS = [
   '/assets/v3/css/styles.css',
   '/assets/v3/css/app.css',
   '/assets/v3/js/app.js',
-  '/assets/v3/js/skills.js',
   '/assets/v3/js/config.js',
   '/assets/v3/js/ui.js',
   '/assets/v3/js/i18n.js',
@@ -36,7 +35,6 @@ const SHELL_ASSETS = [
   '/assets/v3/js/views/search.js',
   '/assets/v3/js/views/ask.js',
   '/assets/v3/js/views/article.js',
-  '/assets/v3/js/views/chat.js',
   '/assets/v3/js/views/pages.js',
   '/assets/v3/js/views/library.js',
   '/assets/img/favicon.svg',
