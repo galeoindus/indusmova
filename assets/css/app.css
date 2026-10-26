@@ -1917,3 +1917,190 @@ body.chat-dock-open .chat-fab { display: none; }
   .chat-new span { display: none; }
   .chat-new { padding: 9px 11px; }
 }
+
+/* ======================================================================
+   17 · AURA — the new look
+   ======================================================================
+   The reference is a dark glass workspace with colour blooming behind it:
+   deep charcoal, violet and pink and cyan light, panels that float, and
+   one loud gradient on the thing you are meant to press. This layer
+   repaints the whole site in that language — the tokens first, then the
+   surfaces, the controls and the chrome. Light mode is the same idea in
+   daylight: soft paper, the same colour, less weight. */
+
+:root {
+  --aura-1: #ff5f9e;
+  --aura-2: #7b6bff;
+  --aura-3: #4fd8ff;
+
+  /* light daylight version */
+  --bg: #f4f1fb;
+  --surface: #ffffff;
+  --surface-2: #f0ecfa;
+  --text: #1a1c26;
+  --muted: #5b6076;
+  --faint: #767c92;
+  --border: #e6e1f4;
+  --border-2: #d8d1ee;
+  --primary: #6b4dff;
+  --accent: #e0447f;
+  --accent-2: #2f9fd0;
+  --copper: #e0447f;
+  --copper-ink: #b52d63;
+  --copper-deep: #a02455;
+  --forest: #3a2f86;
+  --sage: #8fd6ef;
+  --on-primary: #ffffff;
+}
+
+[data-theme="dark"] {
+  --bg: #0a0c12;
+  --surface: #141926;
+  --surface-2: #1b2231;
+  --text: #eef2fb;
+  --muted: #a7b0c6;
+  --faint: #7c869e;
+  --border: #1f2738;
+  --border-2: #2b3448;
+  --primary: #b794ff;
+  --accent: #ff5f9e;
+  --accent-2: #5fd8ff;
+  --copper: #ff7ab0;
+  --copper-ink: #ffa6cb;
+  --copper-deep: #c93f78;
+  --forest: #7b6bff;
+  --sage: #9be7ff;
+  --on-primary: #0a0c12;
+
+  /* glass, recut for the dark room */
+  --glass-bg: color-mix(in srgb, #ffffff 7%, transparent);
+  --glass-bg-strong: color-mix(in srgb, #0d1018 82%, transparent);
+  --glass-line: color-mix(in srgb, #ffffff 14%, transparent);
+  --glass-hi: inset 0 1px 0 color-mix(in srgb, #ffffff 12%, transparent);
+  --glass-drop: 0 30px 60px -30px rgba(0, 0, 0, .85), 0 8px 22px -14px rgba(0, 0, 0, .7);
+
+  --clay-face: linear-gradient(160deg, color-mix(in srgb, #ffffff 6%, transparent), color-mix(in srgb, #ffffff 2%, transparent));
+  --clay-hi: inset 0 1px 0 color-mix(in srgb, #ffffff 12%, transparent);
+  --clay-lo: inset 0 -1px 0 color-mix(in srgb, #000000 40%, transparent);
+  --clay-drop: 0 26px 50px -28px rgba(0, 0, 0, .85);
+}
+
+/* The colour field: violet top-left, pink right, cyan bottom. */
+body::before {
+  background:
+    radial-gradient(46vw 38vw at 6% -8%, color-mix(in srgb, var(--aura-2) 62%, transparent), transparent 64%),
+    radial-gradient(40vw 34vw at 98% 4%, color-mix(in srgb, var(--aura-1) 52%, transparent), transparent 62%),
+    radial-gradient(54vw 42vw at 74% 104%, color-mix(in srgb, var(--aura-3) 42%, transparent), transparent 66%),
+    radial-gradient(40vw 30vw at 16% 92%, color-mix(in srgb, var(--aura-2) 34%, transparent), transparent 66%);
+  filter: blur(18px) saturate(1.2);
+}
+[data-theme="dark"] body::before { opacity: .78; }
+body::after { opacity: 0; }
+
+/* Surfaces: one glass sheet for every panel and card. */
+.panel, .answer-card, .sec:has(> .sec-head), .source-card, .page,
+.src-group, .topic-block, .factbox, .toc, .toc-jump, .rail-card,
+.howstep, .ask-note, .method-note, .langbar, .aotd, .evidence,
+.scope-note, .saved-item, .state, .error-box, .md-raw, .rail-actions,
+.card, .q-card, .cat-card, .dash-action, .topic-card, .dash-hero {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  backdrop-filter: blur(20px) saturate(1.5);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-hi), var(--glass-drop);
+}
+.panel::before, .answer-card::before, .sec:has(> .sec-head)::before,
+.src-group::before, .topic-block::before, .page::before {
+  background: linear-gradient(90deg, var(--aura-2), var(--aura-1) 52%, var(--aura-3));
+  opacity: .95;
+}
+.card:hover, .q-card:hover, .cat-card:hover, .dash-action:hover, .topic-card:hover {
+  border-color: color-mix(in srgb, var(--aura-1) 55%, transparent);
+  box-shadow: var(--glass-hi), 0 34px 60px -28px color-mix(in srgb, var(--aura-2) 60%, transparent);
+}
+
+/* Controls: the loud gradient belongs to the primary action only. */
+.btn {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-hi);
+}
+.btn-primary, .btn-primary:hover, [data-theme="dark"] .btn-primary, [data-theme="dark"] .btn-primary:hover {
+  background-image: linear-gradient(135deg, var(--aura-1), var(--aura-2) 78%),
+    linear-gradient(115deg, transparent 38%, color-mix(in srgb, #ffffff 30%, transparent) 50%, transparent 62%);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 22px 40px -22px color-mix(in srgb, var(--aura-1) 80%, transparent);
+}
+.chip, .pill, .depth-btn, .chip-btn, .example-prompts button, .badge, .saved-del, .btn-sm {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-hi);
+}
+.depth-btn.is-active, .chip-btn.is-active, .chip.is-active,
+.mode-btn.is-active, .tab[aria-selected="true"], .tab.is-active, .toc a.active,
+.dash-hero .depth-btn[aria-pressed="true"], .dash-hero .chip-btn.is-active {
+  background: linear-gradient(135deg, var(--aura-1), var(--aura-2));
+  color: #fff; border-color: transparent;
+  box-shadow: 0 14px 26px -16px color-mix(in srgb, var(--aura-1) 80%, transparent);
+}
+
+/* Fields are wells, not slabs. */
+.searchbar, .composer .searchbar, .select, .langbar select,
+form.panel .searchbar, form.panel .select, .feedback .fb-note textarea,
+.langbar-inner input#langSelect, .mode, .tabs {
+  background: color-mix(in srgb, #000000 18%, transparent);
+  border: 1px solid var(--glass-line);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 6%, transparent);
+}
+[data-theme="light"] .searchbar, [data-theme="light"] .composer .searchbar,
+[data-theme="light"] .select, [data-theme="light"] .mode, [data-theme="light"] .tabs {
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+}
+.searchbar:focus-within, .composer .searchbar:focus-within,
+.select:focus, form.panel .searchbar:focus-within {
+  border-color: color-mix(in srgb, var(--aura-2) 70%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--aura-2) 26%, transparent);
+}
+
+/* Chrome. */
+.topbar {
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(1.6);
+  backdrop-filter: blur(22px) saturate(1.6);
+  border-bottom: 1px solid var(--glass-line);
+  box-shadow: 0 14px 40px -30px rgba(0, 0, 0, .9);
+}
+.app-side { background: var(--glass-bg); border: 1px solid var(--glass-line); box-shadow: var(--glass-hi), var(--glass-drop); }
+.side-link[aria-current="page"], .topnav a[aria-current="page"] {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--aura-1) 26%, transparent), color-mix(in srgb, var(--aura-2) 30%, transparent));
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #ffffff 14%, transparent);
+}
+.bottom-nav, .bottom-nav.glass {
+  background: color-mix(in srgb, var(--bg) 84%, transparent);
+  border: 1px solid var(--glass-line);
+  box-shadow: 0 -10px 40px -24px rgba(0,0,0,.9);
+}
+.site-foot { background: color-mix(in srgb, var(--bg) 70%, transparent); border-top: 1px solid var(--glass-line); box-shadow: none; }
+
+/* Headline accent. */
+.dash-hero h1 .dash-grad, .site-intro h1 .grad,
+[data-theme="dark"] .dash-hero h1 .dash-grad, [data-theme="dark"] .site-intro h1 .grad {
+  background: linear-gradient(120deg, var(--aura-3), var(--aura-2) 45%, var(--aura-1));
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+}
+.dash-hero::before { background: radial-gradient(circle at 32% 28%, var(--aura-2), color-mix(in srgb, var(--aura-2) 40%, #000)); }
+.hero-clock, .kicker, .dash-hero-badge { background: var(--glass-bg); border: 1px solid var(--glass-line); box-shadow: var(--glass-hi); }
+
+/* The chat inherits the same material. */
+.chat-shell { background: var(--glass-bg); border: 1px solid var(--glass-line); box-shadow: var(--glass-hi), var(--glass-drop); }
+.chat-glow i:nth-child(1) { background: radial-gradient(circle, var(--aura-1), transparent 70%); }
+.chat-glow i:nth-child(2) { background: radial-gradient(circle, var(--aura-3), transparent 70%); }
+.chat-glow i:nth-child(3) { background: radial-gradient(circle, var(--aura-2), transparent 70%); }
+.chat-row.user .chat-bubble { background: linear-gradient(135deg, var(--aura-1), var(--aura-2)); color: #fff; }
+.chat-send { background: linear-gradient(135deg, var(--aura-1), var(--aura-2)); }
+.chat-rail-btn:first-child { background: linear-gradient(135deg, var(--aura-1), var(--aura-2)); }
+.chat-composer { background: color-mix(in srgb, #000000 16%, transparent); border: 1px solid var(--glass-line); }
+[data-theme="light"] .chat-composer { background: color-mix(in srgb, var(--surface) 90%, transparent); }
+.chat-dock { background: color-mix(in srgb, var(--bg) 88%, transparent); border-left: 1px solid var(--glass-line); }
