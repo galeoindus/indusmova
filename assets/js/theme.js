@@ -8,8 +8,8 @@
  * It also watches the build stamp — carefully. An earlier version reloaded on
  * the stamp changing AND again when the service worker took over, so a reader
  * could see the new page, then the old one, then the new one again. The rule
- * now: at most one reload per session, and never while a reload is already
- * under way.
+ * now: ask the worker to update, reload at most once per session, and never
+ * twice for the same build.
  */
 
 import { getPref, setPref } from './store.js';
@@ -145,24 +145,30 @@ function initGaleoindusLink() {
 }
 
 /**
- * Watch the build stamp — once.
+ * Watch the build stamp — once, and only once per build.
  *
- * /assets/version.json is rewritten on every push and is served no-store.
- * The page remembers the stamp it was loaded from and checks again when the
- * tab comes back into view. If the stamp has moved on, the page reloads
- * itself, but only once per session: `sessionStorage` records that a reload
- * already happened for that stamp, so a page that is still being served from
- * a slightly older copy cannot start a reload loop — which is exactly what
- * produced the new / old / new flicker.
+ * /assets/version.json is rewritten on every push and served no-store. The
+ * page remembers the stamp it was loaded from and checks again when the tab
+ * comes back into view. If the stamp has moved on, the page reloads itself,
+ * but `sessionStorage` records that a reload already happened for that build,
+ * so a page still being served from a slightly older copy cannot start a
+ * reload loop — which is what produced the new / old / new flicker.
  *
- * Nothing here listens to the service worker. The worker already takes over
- * immediately; asking the page to reload on top of that was the second
- * reload in the loop.
+ * The service worker is asked to check for its own update as well. It used to
+ * be that the worker kept serving the previous app until the browser decided
+ * to look, which is the other half of the stale-page problem.
  */
 function initBuildWatch() {
   const SEEN = 'indusmova:build';
   const RELOADED = 'indusmova:reloaded-for';
   let reloading = false;
+
+  // ask the worker to look for a new version now rather than in a day
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistration()
+      .then((reg) => reg?.update())
+      .catch(() => undefined);
+  }
 
   const check = async () => {
     if (reloading || document.visibilityState !== 'visible') return;
