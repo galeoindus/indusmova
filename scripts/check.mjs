@@ -165,9 +165,27 @@ for (const file of files) {
   if (/\bdebugger\b/.test(src)) problems.push(`leftover debugger: ${relative(ROOT, file)}`);
 }
 
+
+// 5. one version everywhere (the audit's F-01: this drifted before)
+{
+  const version = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
+  const sw = readFileSync(join(ROOT, 'sw.js'), 'utf8');
+  const swVersion = (sw.match(/const VERSION = 'indusmova-v([0-9.]+)'/) || [])[1];
+  if (!swVersion) problems.push('version: sw.js has no VERSION constant');
+  else if (swVersion !== version) problems.push(`version: sw.js says ${swVersion}, package.json says ${version}`);
+
+  const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
+  const queries = [...html.matchAll(/\?v=([0-9.]+)/g)].map((m) => m[1]);
+  const stale = [...new Set(queries)].filter((q) => q !== version);
+  if (stale.length) problems.push(`version: index.html asks for ?v=${stale.join(', ?v=')}, package.json says ${version}`);
+
+  const shown = (html.match(/id="appVersion">v([0-9.]+)</) || [])[1];
+  if (shown && shown !== version) problems.push(`version: the footer says v${shown}, package.json says ${version}`);
+}
+
 if (problems.length) {
   console.error(`check: ${problems.length} problem(s)\n`);
   for (const p of problems) console.error('  ' + p);
   process.exit(1);
 }
-console.log(`check: ${files.length} modules parsed, every import resolves, no leftover debug.`);
+console.log(`check: ${files.length} modules parsed, every import resolves, no leftover debug, one version everywhere.`);

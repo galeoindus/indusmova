@@ -32,10 +32,10 @@ function createWidget() {
   mount.innerHTML = `
     <button class="imw-launcher" type="button" data-imw="open" aria-expanded="false" aria-label="Open IndusMova source finder"><span class="imw-launcher-mark">${svg('search')}</span><span>Explore sources</span></button>
     <section class="imw-panel" role="dialog" aria-modal="false" aria-label="IndusMova source finder" hidden>
-      <header class="imw-header"><span class="imw-brand-mark">${svg('search')}</span><div class="imw-brand"><strong>indusmova<span>.</span></strong><small>PUBLIC-SOURCE FINDER</small></div><span class="imw-status"><i></i> No AI</span><button type="button" class="imw-icon" data-imw="close" aria-label="Close source finder">${svg('close')}</button></header>
-      <div class="imw-intro"><div class="imw-kicker">SEARCH · INSPECT · SAVE</div><h2>Find the source.<br><em>Read the evidence.</em></h2><p>Search Wikipedia articles and inspect original excerpts. This tool does not generate answers.</p></div>
+      <header class="imw-header"><span class="imw-brand-mark">${svg('search')}</span><div class="imw-brand"><strong>indusmova<span>.</span></strong><small>SOURCES</small></div><span class="imw-status"><i></i> Live</span><button type="button" class="imw-icon" data-imw="close" aria-label="Close source finder">${svg('close')}</button></header>
+      <div class="imw-intro"><div class="imw-kicker">SEARCH · INSPECT · SAVE</div><h2>Find the source.<br><em>Read the evidence.</em></h2><p>Search the articles, read the excerpt, open the original. The evidence stays the evidence.</p></div>
       <form class="imw-form"><label class="imw-searchbox">${svg('search')}<input name="query" maxlength="300" placeholder="Search a topic or question…" aria-label="Search Wikipedia" required><button type="button" data-imw="clear" aria-label="Clear query" hidden>×</button></label><div class="imw-controls"><label>Language<select name="language"><option value="en">English</option><option value="hi">हिन्दी</option><option value="bn">বাংলা</option><option value="ta">தமிழ்</option><option value="te">తెలుగు</option><option value="mr">मराठी</option><option value="gu">ગુજરાતી</option><option value="kn">ಕನ್ನಡ</option><option value="ml">മലയാളം</option><option value="pa">ਪੰਜਾਬੀ</option><option value="ur">اردو</option><option value="sa">संस्कृतम्</option></select></label><label>Results<select name="limit"><option value="3">3 sources</option><option value="5" selected>5 sources</option><option value="10">10 sources</option></select></label><button class="imw-submit" type="submit">Search ↗</button></div></form>
-      <div class="imw-state" data-imw-state><span class="imw-state-icon">${svg('search')}</span><strong>Ready to search</strong><p>Results come directly from Wikipedia's public API. No sign-in or API key required.</p></div>
+      <div class="imw-state" data-imw-state><span class="imw-state-icon">${svg('search')}</span><strong>Ready to search</strong><p>Type a topic or a question. Results open the original article.</p></div>
       <div class="imw-results" data-imw-results hidden></div>
       <footer class="imw-footer"><span>Query goes to Wikipedia</span><a href="https://indusmova.pages.dev/" target="_blank" rel="noopener noreferrer">Visit IndusMova ↗</a></footer>
     </section>`;
@@ -86,7 +86,7 @@ function createWidget() {
     const query = cleanText(input.value, 300);
     if (!query) return;
     controller?.abort(); controller = new AbortController();
-    status('Searching Wikipedia…', 'Retrieving article titles and source excerpts directly from the public API. No answer is being generated.', true);
+    status('Searching…', 'Looking for the articles that match your question.', true);
     try {
       const response = await searchPublicSources({ query, language: form.elements.language.value, limit: Number(form.elements.limit.value), signal: controller.signal });
       if (controller.signal.aborted) return;

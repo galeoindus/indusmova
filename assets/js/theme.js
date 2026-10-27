@@ -69,6 +69,7 @@ export function initTheme() {
   });
 
   initProgress();
+  stampBuild();
   initBuildWatch();
 }
 
@@ -105,6 +106,29 @@ export function getTheme() {
   return currentTheme;
 }
 
+
+/**
+ * Say which build this is, in the footer, quietly.
+ *
+ * /assets/version.json is written on every push. The footer carried a version
+ * string that had drifted two releases behind what was actually deployed, so
+ * it now reads the stamp instead of a hard-coded value.
+ */
+async function stampBuild() {
+  const versionEl = document.getElementById('appVersion');
+  const buildEl = document.getElementById('appBuild');
+  if (!versionEl && !buildEl) return;
+  try {
+    const res = await fetch(`/assets/version.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (versionEl && data.version) versionEl.textContent = `v${data.version}`;
+    if (buildEl && data.commit) {
+      buildEl.textContent = `· ${data.commit}`;
+      buildEl.title = data.built ? `Built ${data.built}` : '';
+    }
+  } catch { /* the footer keeps whatever the markup says */ }
+}
 
 /**
  * Watch the build stamp — once, and only once per build.
