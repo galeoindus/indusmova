@@ -5,8 +5,11 @@
  * Theme cycles auto -> light -> dark, stored per device. Comfort (opaque
  * surfaces) is a separate boolean. A reading-progress bar is updated on scroll.
  *
- * It also watches the build stamp, so a reader never sits on an old copy of
- * the site waiting to be told to hard-refresh.
+ * It also watches the build stamp — carefully. An earlier version reloaded on
+ * the stamp changing AND again when the service worker took over, so a reader
+ * could see the new page, then the old one, then the new one again. The rule
+ * now: at most one reload per session, and never while a reload is already
+ * under way.
  */
 
 import { getPref, setPref } from './store.js';
@@ -142,23 +145,28 @@ function initGaleoindusLink() {
 }
 
 /**
- * Watch the build stamp.
+ * Watch the build stamp — once.
  *
- * /assets/version.json is rewritten by the version workflow on every push,
- * and is served no-store. This page remembers the stamp it was loaded from
- * and re-checks when the tab comes back into view. If the stamp has moved
- * on, the page reloads itself once — the reader never has to know that a
- * hard refresh exists.
+ * /assets/version.json is rewritten on every push and is served no-store.
+ * The page remembers the stamp it was loaded from and checks again when the
+ * tab comes back into view. If the stamp has moved on, the page reloads
+ * itself, but only once per session: `sessionStorage` records that a reload
+ * already happened for that stamp, so a page that is still being served from
+ * a slightly older copy cannot start a reload loop — which is exactly what
+ * produced the new / old / new flicker.
  *
- * The first visit only records the stamp, so nobody is reloaded for nothing,
- * and the reload happens at most once per build.
+ * Nothing here listens to the service worker. The worker already takes over
+ * immediately; asking the page to reload on top of that was the second
+ * reload in the loop.
  */
 function initBuildWatch() {
   const SEEN = 'indusmova:build';
+  const RELOADED = 'indusmova:reloaded-for';
   let reloading = false;
 
   const check = async () => {
     if (reloading || document.visibilityState !== 'visible') return;
+
     let stamp = '';
     try {
       const res = await fetch(`/assets/version.json?t=${Date.now()}`, { cache: 'no-store' });
@@ -169,26 +177,33 @@ function initBuildWatch() {
     if (!stamp || stamp === '+') return;
 
     let seen = null;
-    try { seen = localStorage.getItem(SEEN); } catch { return; }
-    if (!seen) { try { localStorage.setItem(SEEN, stamp); } catch { /* ignore */ } return; }
+    let reloadedFor = null;
+    try {
+      seen = localStorage.getItem(SEEN);
+      reloadedFor = sessionStorage.getItem(RELOADED);
+    } catch { return; }
+
+    // first visit on this device: just remember the build
+    if (!seen) {
+      try { localStorage.setItem(SEEN, stamp); } catch { /* ignore */ }
+      return;
+    }
     if (seen === stamp) return;
 
+    // the build has moved on. Reload once, and only once, per session.
     try { localStorage.setItem(SEEN, stamp); } catch { /* ignore */ }
+    if (reloadedFor === stamp) return;
+    try { sessionStorage.setItem(RELOADED, stamp); } catch { /* ignore */ }
     reloading = true;
     location.reload();
   };
 
-  check();
+  // let the page finish painting before the first check
+  if (document.readyState === 'complete') setTimeout(check, 1200);
+  else window.addEventListener('load', () => setTimeout(check, 1200), { once: true });
+
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') check();
-  });
-
-  // A new service worker has taken over: this tab is running the old code.
-  navigator.serviceWorker?.addEventListener('message', (event) => {
-    if (event.data?.type === 'galeo-activated' && !reloading) {
-      reloading = true;
-      location.reload();
-    }
   });
 }
 
