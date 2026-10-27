@@ -1,0 +1,27 @@
+/* Galeoindus — the shape of an answer.
+ *
+ * An answer opens with the direct line, then the few points that carry it,
+ * then the rest of the article, quieter. This sheet only dresses those three
+ * parts; the base sheet keeps everything else.
+ */
+
+/* the direct answer, set a little larger than the rest */
+.answer-lead {
+  margin: 0 0 14px; font-size: 16px; line-height: 1.72; font-weight: 500; color: var(--ink);
+}
+
+/* the few points that carry it */
+.answer-points { display: grid; gap: 8px; margin: 0 0 14px; }
+.answer-point {
+  margin: 0; padding-left: 18px; text-indent: -18px;
+  font-size: 14.8px; line-height: 1.72; color: var(--ink-2);
+}
+.answer-point::first-letter { color: var(--accent); }
+
+/* the rest of the article, quieter */
+.answer .answer-body { color: var(--ink-2); font-size: 14.6px; }
+
+@media (max-width: 900px) {
+  .answer-lead { font-size: 15.4px; }
+  .answer-point { font-size: 14.2px; }
+}
