@@ -91,7 +91,7 @@ async function query(lang, params) {
   return Array.isArray(pages) ? pages : (pages ? Object.values(pages) : []);
 }
 
-async function search(lang, text, chars = 1400) {
+async function search(lang, text, chars = 2600) {
   const pages = await query(lang, {
     generator: 'search', gsrsearch: text, gsrlimit: '3',
     prop: 'extracts|info', inprop: 'url', exintro: '1', explaintext: '1',
@@ -169,7 +169,11 @@ function composeAnswer(extract, question) {
 
   const rest = sents.slice(take).map((text, i) => ({ text, i: i + take }));
   const ranked = [...rest].sort((a, b) => score(b.text, b.i) - score(a.text, a.i));
-  const points = ranked.slice(0, 4).map((x) => x.text).filter((t) => t.length > 40);
+  let points = ranked.slice(0, 4).map((x) => x.text).filter((t) => t.length > 30);
+  if (points.length < 2) {
+    // a short article: accept the shorter sentences too, rather than one bullet
+    points = rest.map((x) => x.text).filter((t) => t.length > 18).slice(0, 3);
+  }
 
   const used = new Set(points);
   const tail = rest.map((x) => x.text).filter((t) => !used.has(t)).join(' ');
@@ -438,7 +442,7 @@ function answerOf(msg, { last = false } = {}) {
   foot.append(copy);
 
   // the Markdown view, as a labelled button so it can be found
-  if (msg.body) {
+  if (msg.answer || (msg.points || []).length || msg.body) {
     const md = el('button', 'md-btn', 'Markdown');
     md.type = 'button';
     md.title = 'The same answer, broken into topics, with its sources and the research trail';
