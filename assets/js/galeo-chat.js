@@ -1,11 +1,13 @@
-/* Galeoindus 2 — the ask page.
+/* Galeoindus — the ask page.
  *
- * One question in, one answer document out: a headline, the answer with
- * numbered citations, the sources as cards you can open, actions, and
- * follow-ups. Two engines behind it — the model through /api/chat (which
- * holds the keys), and the encyclopedia read straight from Wikipedia.
+ * Wikipedia only. No model, no key, no API behind it: a question is searched
+ * against Wikipedia and Wikidata, the matching article is read, and the
+ * answer is quoted from it with the source attached. Nothing is generated,
+ * so nothing can be invented.
  *
- * The Amigo pack (./galeo-skills.js) shapes the reply. It is never listed.
+ * Every answer can also be read as Markdown: the same answer broken into its
+ * topics, each with the source it came from, plus the trail of where the
+ * research was done.
  */
 
 import { route, SHAPE_OF } from './galeo-skills.js';
@@ -19,7 +21,6 @@ const el = (tag, cls, html) => {
 };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const slug = (t) => String(t || '').trim().replace(/\s+/g, '_');
-const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 const dayOf = (ms) => new Date(ms).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -30,6 +31,7 @@ const I = {
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>',
   again: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>',
+  md: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v10M3 12l3-3 3 3M21 7v10M21 7l-3.5 4L14 7v10"/></svg>',
   search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
   book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 5.5V20.5"/></svg>',
   chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
@@ -68,38 +70,41 @@ function deleteThread(id) {
   write(); renderThreads(); renderStage();
 }
 
-/* ── engines ───────────────────────────────────────────────────────────── */
-async function askModel(history, mode) {
-  const messages = history.slice(-8).map((m) => ({
-    role: m.role === 'user' ? 'user' : 'assistant',
-    content: m.role === 'user' ? (m.text || '') : [m.head, m.body].filter(Boolean).join('\n\n'),
-  }));
-  try {
-    const res = await fetch('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ mode, messages }) });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const text = typeof data?.reply === 'string' ? data.reply.trim() : '';
-    return text ? { body: text, via: 'model' } : null;
-  } catch { return null; }
-}
+/* ── the encyclopedia ──────────────────────────────────────────────────── */
+const HOST = (lang) => `${lang}.wikipedia.org`;
 
 async function lookup(lang, query) {
   const params = new URLSearchParams({
     action: 'query', format: 'json', formatversion: '2', origin: '*', generator: 'search',
-    gsrsearch: query, gsrlimit: '3', prop: 'extracts|pageimages', exintro: '1',
-    explaintext: '1', exchars: '1100', piprop: 'thumbnail', pithumbsize: '400', redirects: '1',
+    gsrsearch: query, gsrlimit: '3', prop: 'extracts|pageimages|info', inprop: 'url',
+    exintro: '1', explaintext: '1', exchars: '1400', piprop: 'thumbnail', pithumbsize: '400', redirects: '1',
   });
-  const res = await fetch(`https://${lang}.wikipedia.org/w/api.php?${params}`, { headers: { accept: 'application/json' } });
+  const res = await fetch(`https://${HOST(lang)}/w/api.php?${params}`, { headers: { accept: 'application/json' } });
   if (!res.ok) throw new Error(String(res.status));
   const data = await res.json();
   const pages = data?.query?.pages;
   const list = Array.isArray(pages) ? pages : (pages ? Object.values(pages) : []);
   const ok = list.filter((p) => p && !p.missing && p.extract);
   if (!ok.length) return null;
-  return { title: ok[0].title, extract: ok[0].extract, more: ok.slice(1, 3).map((p) => p.title) };
+  const first = ok[0];
+  return {
+    query,
+    lang,
+    title: first.title,
+    extract: first.extract,
+    fullurl: first.fullurl || `https://${HOST(lang)}/wiki/${encodeURIComponent(slug(first.title))}`,
+    more: ok.slice(1, 3).map((p) => ({
+      title: p.title,
+      fullurl: p.fullurl || `https://${HOST(lang)}/wiki/${encodeURIComponent(slug(p.title))}`,
+    })),
+  };
 }
 
 const GREETING = /^(hi|hello|hey|namaste|namaskar|hii|hola|good (morning|evening|afternoon))\b/i;
+
+function sentencesOf(text) {
+  return String(text || '').split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter((s) => s.length > 30);
+}
 
 function articleReply(found, skill) {
   const shape = SHAPE_OF(skill?.mode || 'default');
@@ -108,34 +113,48 @@ function articleReply(found, skill) {
     lead: shape.lead,
     body: found.extract,
     via: 'article',
+    trail: {
+      query: found.query,
+      host: HOST(found.lang),
+      title: found.title,
+      fullurl: found.fullurl,
+      at: Date.now(),
+    },
     sources: [
-      { title: found.title, href: `/articles/${slug(found.title)}/`, domain: 'indusmova', note: found.extract.slice(0, 120) },
-      ...(found.more || []).map((t) => ({ title: t, href: `/articles/${slug(t)}/`, domain: 'indusmova', note: 'Related article' })),
+      { title: found.title, href: `/articles/${slug(found.title)}/`, external: found.fullurl, domain: HOST(found.lang), note: 'The article this answer is quoted from' },
+      ...found.more.map((p) => ({ title: p.title, href: `/articles/${slug(p.title)}/`, external: p.fullurl, domain: HOST(found.lang), note: 'Related article' })),
     ],
   };
 }
 
 function greeting() {
-  return { head: 'Hello', body: 'Ask me about a person, a place, an event or an idea, and I will bring back what the sources say — with the article attached so you can check it.', via: 'article' };
+  return { head: 'Hello', body: 'Ask me about a person, a place, an event or an idea, and I will read the published article and quote it back to you, with the source attached.', via: 'article' };
 }
 function care() {
   const s = SHAPE_OF('support');
-  return { head: 'I am here', lead: s.lead, body: 'I will not guess at how you feel. If there is a fact behind it — a person, a place, something that happened — I can look that up properly and show you where it comes from.', via: 'article' };
+  return { head: 'I am here', lead: s.lead, body: 'I will not guess at how you feel. If there is a fact behind it — a person, a place, something that happened — I can look it up in the sources and show you exactly where it comes from.', via: 'article' };
 }
-function missed(skill) {
+function missed(skill, query, lang) {
   const s = SHAPE_OF(skill?.mode || 'default');
-  return { head: 'Nothing found', lead: s.lead, body: 'I could not find a published article for that, and I would rather say so than make something up. Try a name, a place, an event or a thing.', via: 'article', retry: true };
+  return {
+    head: 'Nothing in the sources',
+    lead: s.lead,
+    body: `I searched ${HOST(lang)} for “${query}” and found no article to quote, so I will not invent one.`,
+    via: 'article',
+    retry: true,
+    trail: { query, host: HOST(lang), title: '', fullurl: '', at: Date.now() },
+  };
 }
 
 const FOLLOW = {
   study: ['Give me an example', 'What is the first step?', 'Test me on this'],
-  data: ['What would change your mind?', 'How do I measure it?', 'Show the breakdown'],
+  data: ['What would change your mind?', 'How do I measure it?'],
   critique: ['How would you fix it?', 'What is the weakest part?'],
   code: ['Show the patch', 'How do I test it?'],
   default: ['Tell me more', 'Where does that come from?', 'What else is related?'],
 };
 
-/* ── ask loop ──────────────────────────────────────────────────────────── */
+/* ── ask ───────────────────────────────────────────────────────────────── */
 async function ask(text) {
   const value = String(text || '').trim();
   if (!value || busy) return;
@@ -149,26 +168,23 @@ async function ask(text) {
 
   const skill = route(value);
   const thinking = showThinking();
-  let reply = null;
+  let reply;
 
   try {
-    if (skill?.mode !== 'support' && !GREETING.test(value)) reply = await askModel(thread.messages, skill?.mode || 'default');
-    if (!reply) {
-      if (GREETING.test(value.trim()) && value.trim().split(/\s+/).length <= 4) reply = greeting();
-      else if (skill?.mode === 'support') reply = care();
-      else {
-        const found = await lookup(prefs.lang, value);
-        reply = found ? articleReply(found, skill) : missed(skill);
-      }
+    if (GREETING.test(value.trim()) && value.trim().split(/\s+/).length <= 4) reply = greeting();
+    else if (skill?.mode === 'support') reply = care();
+    else {
+      const found = await lookup(prefs.lang, value);
+      reply = found ? articleReply(found, skill) : missed(skill, value, prefs.lang);
     }
   } catch {
-    reply = { head: 'Connection lost', body: 'The lookup did not come back, so I have nothing sourced to give you.', via: 'article', retry: true };
+    reply = { head: 'Connection lost', body: 'The search did not come back, so I have nothing sourced to give you.', via: 'article', retry: true };
   }
 
   thinking.remove();
   thread.messages.push({ role: 'bot', ...reply, at: Date.now() });
   write(); busy = false; setSend(false);
-  renderStage({ stream: reply.via === 'model' });
+  renderStage();
   renderThreads();
 }
 
@@ -181,6 +197,60 @@ function regenerate() {
   write();
   busy = false;
   ask(lastUser.text);
+}
+
+/* ── markdown ──────────────────────────────────────────────────────────── */
+
+/** The same answer, as Markdown: topics, each with the source it came from. */
+function markdownOf(msg) {
+  const out = [];
+  out.push(`# ${msg.head || 'Answer'}`);
+  out.push('');
+  const when = new Date(msg.at || Date.now()).toLocaleString();
+  out.push(`> Quoted from ${msg.trail?.host || 'wikipedia.org'} · ${(msg.sources || []).length} source${(msg.sources || []).length === 1 ? '' : 's'} · ${when}`);
+  out.push('');
+
+  const points = sentencesOf(msg.body);
+  if (msg.lead) { out.push('## Summary'); out.push(''); out.push(msg.lead); out.push(''); }
+
+  if (points.length) {
+    out.push('## What the source says');
+    out.push('');
+    points.forEach((p, i) => {
+      const n = Math.min(i + 1, (msg.sources || []).length || 1);
+      out.push(`- ${p} [${n}]`);
+    });
+    out.push('');
+  } else if (msg.body) {
+    out.push('## What the source says');
+    out.push('');
+    out.push(msg.body);
+    out.push('');
+  }
+
+  if (msg.sources?.length) {
+    out.push('## Sources');
+    out.push('');
+    msg.sources.forEach((s, i) => {
+      out.push(`${i + 1}. **${s.title}** — ${s.domain || 'indusmova'}`);
+      out.push(`   - read here: ${s.href}`);
+      if (s.external) out.push(`   - original: ${s.external}`);
+    });
+    out.push('');
+  }
+
+  if (msg.trail) {
+    out.push('## Research trail');
+    out.push('');
+    out.push(`- searched \`${msg.trail.host}\` for “${msg.trail.query}”`);
+    if (msg.trail.title) out.push(`- matched the article “${msg.trail.title}”`);
+    out.push('- read the article introduction, quoted above word for word');
+    out.push('');
+  }
+
+  out.push('---');
+  out.push('_Galeoindus · indusmova · answers are quoted from published sources, never generated_');
+  return out.join('\n');
 }
 
 /* ── rendering ─────────────────────────────────────────────────────────── */
@@ -212,7 +282,7 @@ function renderHero() {
   const box = el('div', 'hero');
   box.append(el('span', 'glyph', MARK));
   box.append(el('h2', null, 'What do you want to <em>understand</em>?'));
-  box.append(el('p', null, 'Ask in your own words. The answer comes with its sources, and you can open every one of them.'));
+  box.append(el('p', null, 'Ask in your own words. The answer is quoted from a published article, and you can open the source it came from.'));
   const grid = el('div', 'suggest');
   for (const s of SUGGEST) {
     const b = el('button', 'sg', `<span class="ic">${s.ic}</span><span><b>${esc(s.q)}</b><small>${esc(s.note)}</small></span>`);
@@ -226,23 +296,21 @@ function renderHero() {
 
 function citations(text, sources) {
   if (!sources?.length) return esc(text);
-  // put a small numbered marker after the first few sentence ends
   let n = 0;
   return esc(text).replace(/\.\s/g, (m) => {
     n += 1;
-    if (n > 3 || n > sources.length) return m;
+    if (n > 4 || n > sources.length) return m;
     const s = sources[n - 1];
     return `.<a class="cite" href="${esc(s.href)}" title="${esc(s.title)}">${n}</a> `;
   });
 }
 
-function answerOf(msg, { last = false, stream = false } = {}) {
+function answerOf(msg, { last = false } = {}) {
   const card = el('article', 'answer');
-
   const head = el('div', 'answer-head');
   head.append(el('span', 'glyph', MARK));
   head.append(el('b', null, 'Galeoindus'));
-  head.append(el('span', 'via', msg.via === 'model' ? 'model' : 'from the article'));
+  head.append(el('span', 'via', 'from the article'));
   head.append(el('span', 'when', clock(msg.at || Date.now())));
   card.append(head);
 
@@ -250,22 +318,8 @@ function answerOf(msg, { last = false, stream = false } = {}) {
   if (msg.lead) card.append(el('p', 'answer-body', `<strong>${esc(msg.lead)}</strong>`));
 
   const body = el('div', 'answer-body');
+  body.innerHTML = citations(msg.body || '', msg.sources);
   card.append(body);
-  const full = msg.body || '';
-  if (stream && !reduced() && full) {
-    const words = full.split(/(\s+)/);
-    let i = 0;
-    const tick = () => {
-      if (i >= words.length) return;
-      body.textContent += words.slice(i, i + 3).join('');
-      i += 3;
-      $('stage').scrollTop = $('stage').scrollHeight;
-      setTimeout(tick, 16);
-    };
-    tick();
-  } else {
-    body.innerHTML = citations(full, msg.sources);
-  }
 
   if (msg.sources?.length) {
     const src = el('div', 'sources');
@@ -280,14 +334,34 @@ function answerOf(msg, { last = false, stream = false } = {}) {
     card.append(src);
   }
 
+  // the markdown view, built on demand
+  const mdBox = el('pre', 'md');
+  mdBox.hidden = true;
+
   const foot = el('div', 'answer-foot');
   const copy = el('button', 'act', I.copy);
   copy.type = 'button'; copy.setAttribute('aria-label', 'Copy this answer');
   copy.addEventListener('click', async () => {
-    const text = [msg.head, msg.lead, msg.body].filter(Boolean).join('\n\n');
+    const text = mdBox.hidden ? [msg.head, msg.lead, msg.body].filter(Boolean).join('\n\n') : mdBox.textContent;
     try { await navigator.clipboard.writeText(text); copy.innerHTML = I.check; copy.classList.add('done'); setTimeout(() => { copy.innerHTML = I.copy; copy.classList.remove('done'); }, 1400); } catch { /* blocked */ }
   });
   foot.append(copy);
+
+  if (msg.body) {
+    const md = el('button', 'act', I.md);
+    md.type = 'button';
+    md.setAttribute('aria-label', 'Read as Markdown with sources');
+    md.title = 'Markdown: topics and sources';
+    md.addEventListener('click', () => {
+      mdBox.textContent = markdownOf(msg);
+      mdBox.hidden = !mdBox.hidden;
+      md.classList.toggle('done', !mdBox.hidden);
+      if (!mdBox.isConnected) card.insertBefore(mdBox, foot);
+      if (!mdBox.hidden) mdBox.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+    foot.append(md);
+  }
+
   if (last) {
     const again = el('button', 'act', I.again);
     again.type = 'button'; again.setAttribute('aria-label', 'Ask again');
@@ -304,27 +378,27 @@ function answerOf(msg, { last = false, stream = false } = {}) {
   return card;
 }
 
-function renderStage({ stream = false } = {}) {
+function renderStage() {
   const thread = current();
   const stage = $('stage');
   stage.innerHTML = '';
   $('chatTitle').textContent = thread?.title || 'New chat';
   $('chatSub').textContent = thread?.messages.length
     ? `${thread.messages.length} message${thread.messages.length === 1 ? '' : 's'} in this conversation`
-    : 'Ask in your own words — the answer comes with its sources.';
+    : 'Ask in your own words — the answer comes with its source.';
 
   if (!thread || !thread.messages.length) { stage.append(renderHero()); return; }
 
   let lastDay = '';
   thread.messages.forEach((m, i) => {
     const day = dayOf(m.at || Date.now());
-    if (day !== lastDay) { stage.append(el('div', 'side-label', esc(day))); lastDay = day; }
+    if (day !== lastDay) { stage.append(el('div', 'day', `<span>${esc(day)}</span>`)); lastDay = day; }
     if (m.role === 'user') {
       const row = el('div', 'ask-row');
       row.append(el('div', 'ask-pill', esc(m.text || '')));
       stage.append(row);
     } else {
-      stage.append(answerOf(m, { last: i === thread.messages.length - 1, stream: stream && i === thread.messages.length - 1 }));
+      stage.append(answerOf(m, { last: i === thread.messages.length - 1 }));
     }
   });
 
@@ -345,7 +419,7 @@ function renderStage({ stream = false } = {}) {
 function showThinking() {
   const card = el('article', 'answer');
   card.append(el('div', 'answer-head', `<span class="glyph">${MARK}</span><b>Galeoindus</b><span class="via">searching</span>`));
-  card.append(el('div', 'thinking', '<i></i><i></i><i></i><span>Reading the sources…</span>'));
+  card.append(el('div', 'thinking', '<i></i><i></i><i></i><span>Reading the article…</span>'));
   $('stage').append(card);
   $('stage').scrollTop = $('stage').scrollHeight;
   return card;
@@ -353,20 +427,13 @@ function showThinking() {
 
 function setSend(on) { const s = $('send'); if (s) s.disabled = on; }
 
-/* ── export ────────────────────────────────────────────────────────────── */
 function exportThread() {
   const t = current();
   if (!t || !t.messages.length) return;
   const lines = [`# ${t.title}`, '', `_Galeoindus — ${new Date().toLocaleString()}_`, ''];
   for (const m of t.messages) {
     if (m.role === 'user') lines.push(`**You:** ${m.text}`, '');
-    else {
-      if (m.head) lines.push(`### ${m.head}`);
-      if (m.lead) lines.push(`**${m.lead}**`);
-      if (m.body) lines.push(m.body);
-      if (m.sources?.length) lines.push('', ...m.sources.map((s, i) => `${i + 1}. ${s.title} — ${location.origin}${s.href}`));
-      lines.push('');
-    }
+    else lines.push(markdownOf(m), '');
   }
   const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
   const a = document.createElement('a');
@@ -396,12 +463,11 @@ function wire() {
   $('menuBtn').addEventListener('click', () => $('app').classList.toggle('side-open'));
   $('find').addEventListener('input', renderThreads);
 
-  // mode chips prefix the next question
   document.querySelectorAll('.mode').forEach((b) => {
     b.addEventListener('click', () => {
       pendingMode = b.dataset.mode || '';
-      document.querySelectorAll('.mode').forEach((x) => x.style.borderColor = '');
-      if (pendingMode) b.style.borderColor = 'rgba(123,92,255,.6)';
+      document.querySelectorAll('.mode').forEach((x) => x.classList.remove('on'));
+      if (pendingMode) b.classList.add('on');
       $('input').focus();
     });
   });
