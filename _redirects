@@ -10,9 +10,10 @@
 /sources        /#/sources        302
 /about          /#/about          302
 
-# Galeoindus, the chat page, under a short clean address as well.
-/galeoindus     /chat/            301
-/chat           /chat/            301
+# Galeoindus is replaced by the Research Desk. Old addresses keep working.
+/galeoindus     /research/        301
+/chat           /research/        301
+/chat/*         /research/        301
 
 # A real article path. Pages rewrites it to the app shell, which reads the
 # slug out of the address bar, so the URL stays clean and shareable.

@@ -1,0 +1,169 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Research Desk — the morphism pass
+   ══════════════════════════════════════════════════════════════════════════
+   Loaded after the desk's own sheet, this does not change a single class or
+   a single behaviour. It only re-cuts the surfaces so the desk belongs to
+   the same family as the rest of the site:
+
+     · a warm ground with one soft bloom instead of a flat grey page
+     · clay panels — a light inside the top-left edge, a shadow inside the
+       bottom-right, so every card reads as a raised lump rather than a box
+     · glass on the bar that stays with you
+     · neumorphic wells for the fields you type in
+     · the gradient kept for the two things you actually press
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg: #f2ece3;
+  --panel: #fbf7f1;
+  --panel-soft: #f6f1e9;
+  --line: #e4dbcd;
+  --line-strong: #d6cab8;
+  --text: #2a231c;
+  --muted: #6d6357;
+  --muted-2: #948a7c;
+  --accent: #b4613a;
+  --accent-deep: #98492a;
+  --accent-soft: #f6e7dd;
+  --teal: #1c8a7f;
+  --green: #1f7d5c;
+  --green-soft: #e6f4ee;
+  --violet-soft: #efe9fb;
+  --orange-soft: #fbeadb;
+  --shadow: 0 18px 40px -26px rgba(90, 70, 48, .55), 0 2px 6px -3px rgba(90, 70, 48, .18);
+  --lift: 6px 6px 14px rgba(150, 122, 92, .22), -6px -6px 14px rgba(255, 253, 248, .9);
+  --lift-sm: 4px 4px 10px rgba(150, 122, 92, .18), -4px -4px 10px rgba(255, 253, 248, .85);
+  --press: inset 4px 4px 9px rgba(150, 122, 92, .26), inset -4px -4px 9px rgba(255, 253, 248, .9);
+  --grad: linear-gradient(135deg, #d98a5f, #b4613a 55%, #a8456a);
+}
+
+.app-shell[data-theme=dark] {
+  --bg: #1a1613;
+  --panel: #241f1a;
+  --panel-soft: #201b16;
+  --line: #332b23;
+  --line-strong: #443a30;
+  --text: #f4ece1;
+  --muted: #b3a696;
+  --muted-2: #8b7f71;
+  --accent: #e79a6c;
+  --accent-deep: #f0b189;
+  --accent-soft: #33251d;
+  --teal: #6fd3c6;
+  --green: #6fd0a6;
+  --green-soft: #1e332b;
+  --violet-soft: #2c2537;
+  --orange-soft: #3a2a1e;
+  --shadow: 0 22px 46px -28px rgba(0, 0, 0, .85), 0 2px 8px -4px rgba(0, 0, 0, .6);
+  --lift: 6px 6px 14px rgba(0, 0, 0, .5), -5px -5px 12px rgba(255, 245, 230, .045);
+  --lift-sm: 4px 4px 10px rgba(0, 0, 0, .45), -4px -4px 10px rgba(255, 245, 230, .04);
+  --press: inset 5px 5px 11px rgba(0, 0, 0, .55), inset -4px -4px 9px rgba(255, 245, 230, .05);
+  --grad: linear-gradient(135deg, #f0a06b, #d0714a 55%, #c26383);
+}
+
+/* the ground: warm, with one bloom behind the hero */
+body {
+  background:
+    radial-gradient(52vw 44vw at 8% -10%, rgba(217, 138, 95, .22), transparent 66%),
+    radial-gradient(46vw 40vw at 96% 2%, rgba(168, 69, 106, .16), transparent 64%),
+    radial-gradient(60vw 48vw at 60% 108%, rgba(28, 138, 127, .12), transparent 68%),
+    var(--bg);
+  background-attachment: fixed;
+}
+.app-shell { background: transparent; }
+
+/* the bar that stays with you is glass */
+.topbar {
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 0;
+}
+.brand-mark { background: var(--grad); box-shadow: 0 10px 22px -14px rgba(180, 97, 58, .9); }
+.brand-copy strong > span { color: var(--accent); }
+
+/* rails and panels are clay */
+.left-rail, .right-rail { background: var(--panel); border-color: var(--line); }
+.main-footer { background: var(--panel); border-top: 1px solid var(--line); }
+
+.primary-new, .search-submit {
+  background: var(--grad);
+  box-shadow: 4px 4px 12px rgba(150, 90, 60, .35), inset 0 1px 0 rgba(255, 255, 255, .3);
+}
+.primary-new:hover, .search-submit:hover { filter: brightness(1.05); background: var(--grad); }
+.primary-new:active, .search-submit:active { box-shadow: var(--press); transform: translateY(1px); }
+
+/* fields are wells you press into */
+.search-box {
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  box-shadow: var(--press);
+  border-radius: 18px;
+}
+.search-box:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: var(--press), 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.search-box input { font-size: 14px; }
+.select-wrap select, .sort-label select, .library-filter, .segmented-options, .search-options-inline select, .results-mobile-controls select {
+  background: var(--panel-soft); border: 1px solid var(--line); box-shadow: var(--lift-sm);
+}
+
+/* cards are raised lumps */
+.suggestion-card, .source-card, .query-summary, .honesty-note, .content-option,
+.selected-item, .privacy-mini, .right-info-card, .history-row, .no-results, .library-empty {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--lift-sm);
+}
+.suggestion-card { border-radius: 18px; }
+.suggestion-card:hover { transform: translateY(-3px); box-shadow: var(--lift); border-color: var(--line-strong); }
+.source-card { border-radius: 18px; }
+.source-card:hover { box-shadow: var(--lift); border-color: var(--line-strong); }
+.source-card.is-selected { border-color: color-mix(in srgb, var(--accent) 55%, transparent); box-shadow: var(--lift), 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent); }
+
+/* the small markers take the gradient */
+.source-number, .query-symbol, .selected-item .selected-num, .history-row-icon, .kicker-icon, .suggestion-icon {
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+  color: var(--accent);
+}
+.source-number { background: var(--grad); color: #fff; }
+.source-verified { background: var(--green-soft); }
+
+/* the icon buttons lift and press */
+.icon-button { background: var(--panel); border: 1px solid var(--line); box-shadow: var(--lift-sm); }
+.icon-button:hover { background: var(--panel-soft); }
+.icon-button:active { box-shadow: var(--press); }
+.site-link { background: color-mix(in srgb, var(--accent) 12%, var(--panel)); color: var(--accent); box-shadow: var(--lift-sm); }
+.rail-link.is-active { background: color-mix(in srgb, var(--accent) 12%, var(--panel)); color: var(--accent); box-shadow: var(--press); }
+.outline-button { background: var(--panel); box-shadow: var(--lift-sm); }
+
+/* the hero, a little warmer and tighter on small screens */
+.welcome-block h1 span { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.welcome-kicker { color: var(--accent); }
+
+/* ── mobile: bigger targets, calmer spacing ─────────────────────────────── */
+@media (max-width: 700px) {
+  .topbar { padding: 0 12px; }
+  .main-scroll { padding: 0 14px 22px; }
+  .welcome-block { padding-top: 34px; }
+  .welcome-block h1 { font-size: clamp(30px, 8.6vw, 40px); letter-spacing: -1.4px; margin: 18px 0 12px; }
+  .welcome-subtitle { font-size: 13px; line-height: 1.75; }
+  .search-box { min-height: 56px; border-radius: 16px; }
+  .search-box input { font-size: 13px; }
+  .search-submit { padding: 12px 14px; border-radius: 12px; }
+  .suggestion-card { padding: 13px 12px; border-radius: 16px; }
+  .suggestion-card strong { font-size: 12px; }
+  .suggestion-card small { font-size: 10.5px; }
+  .source-card { border-radius: 16px; padding: 14px 12px; }
+  .source-title { font-size: 13.5px; }
+  .source-excerpt { font-size: 11.5px; }
+  .icon-button { width: 38px; height: 38px; }
+  .primary-new { padding: 13px; }
+  .rail-link { padding: 12px 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .suggestion-card:hover, .source-card:hover { transform: none; }
+}
