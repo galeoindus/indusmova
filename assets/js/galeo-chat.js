@@ -140,13 +140,51 @@ function sourcesOf(found) {
   ];
 }
 
-function articleReply(found, skill, { lead = '', about = '' } = {}) {
-  const shape = SHAPE_OF(skill?.mode || 'default');
+/* An AI-style answer is not a wall of text: it opens with the direct answer,
+   then the few points that carry it, then the rest. All of it is still the
+   article's own sentences — chosen and ordered, never rewritten. */
+const WHEN_Q = /\b(when|what year|which year|how old|in what year|date)\b/i;
+const NUM_Q = /\b(how many|how much|how long|population|cost|price|number of|largest|biggest)\b/i;
+const HOW_Q = /\b(how does|how do|how did|how is|how are|process|works|work)\b/i;
+
+function composeAnswer(extract, question) {
+  const sents = sentencesOf(extract);
+  if (!sents.length) return { answer: String(extract || '').trim(), points: [], rest: '' };
+
+  const q = String(question || '');
+  // the direct answer: the opening sentence, plus the second if the first is short
+  let take = 1;
+  if (sents[0].length < 130 && sents[1]) take = 2;
+  const answer = sents.slice(0, take).join(' ');
+
+  const score = (text, index) => {
+    let n = 0;
+    if (WHEN_Q.test(q) && /\b(1[0-9]{3}|20[0-9]{2})\b/.test(text)) n += 3;
+    if (NUM_Q.test(q) && /\d/.test(text)) n += 2;
+    if (HOW_Q.test(q) && /(by|through|using|process|begins|works|allows|enables)/i.test(text)) n += 2;
+    if (/\b(is|was|are|were|has|had)\b/.test(text)) n += 1;
+    n += Math.min(2, text.length / 180);
+    return n - index * 0.01;                 // earlier sentences win ties
+  };
+
+  const rest = sents.slice(take).map((text, i) => ({ text, i: i + take }));
+  const ranked = [...rest].sort((a, b) => score(b.text, b.i) - score(a.text, a.i));
+  const points = ranked.slice(0, 4).map((x) => x.text).filter((t) => t.length > 40);
+
+  const used = new Set(points);
+  const tail = rest.map((x) => x.text).filter((t) => !used.has(t)).join(' ');
+
+  return { answer, points, rest: tail.slice(0, 1200) };
+}
+
+function articleReply(found, skill, { about = '', question = '' } = {}) {
+  const parts = composeAnswer(found.extract, question || found.query || found.title);
   return {
     head: found.title,
-    lead: lead || shape.lead,
     about,
-    body: found.extract,
+    answer: parts.answer,
+    points: parts.points,
+    body: parts.rest,
     via: 'article',
     trail: { query: found.query || found.title, host: HOST(found.lang || prefs.lang), title: found.title, fullurl: found.fullurl, at: Date.now() },
     sources: sourcesOf(found),
@@ -192,9 +230,12 @@ async function ask(text) {
           const key = value.toLowerCase().replace(/[^a-z\s]/g, ' ').split(/\s+/).filter((w) => w.length > 4);
           const lines = sentencesOf(deeper.extract);
           const hits = lines.filter((s) => key.some((w) => s.toLowerCase().includes(w))).slice(0, 3);
+          const fuParts = composeAnswer(hits.length ? hits.join(' ') : deeper.extract, value);
           reply = {
             head: deeper.title,
-            lead: 'Still the same article — ' + deeper.title + '.',
+            answer: fuParts.answer,
+            points: fuParts.points,
+            body: fuParts.rest,
             about: hits.length
               ? 'These are the lines in it closest to your question.'
               : 'The article does not address that directly, so here is the rest of what it does say. I will not make up an answer it does not contain.',
@@ -208,7 +249,7 @@ async function ask(text) {
 
       if (!reply) {
         const found = await search(prefs.lang, value);
-        if (found) { thread.topic = found.title; reply = articleReply(found, skill); }
+        if (found) { thread.topic = found.title; reply = articleReply(found, skill, { question: value }); }
         else {
           const s = SHAPE_OF(skill?.mode || 'default');
           reply = { head: 'Nothing in the sources', lead: s.lead, body: `I searched ${HOST(prefs.lang)} for “${value}” and found no article to quote, so I will not invent one.`, via: 'article', retry: true, trail: { query: value, host: HOST(prefs.lang), title: '', fullurl: '', at: Date.now() } };
@@ -248,15 +289,24 @@ function markdownOf(msg) {
   const when = new Date(msg.at || Date.now()).toLocaleString();
   out.push(`> Quoted from ${msg.trail?.host || 'wikipedia.org'} · ${(msg.sources || []).length} source${(msg.sources || []).length === 1 ? '' : 's'} · ${when}`);
   out.push('');
-  if (msg.lead) { out.push('## Summary'); out.push(''); out.push(msg.lead); out.push(''); }
   if (msg.about) { out.push('_' + msg.about + '_'); out.push(''); }
 
-  const points = sentencesOf(msg.body);
-  out.push('## What the source says');
-  out.push('');
-  if (points.length) points.forEach((p, i) => out.push(`- ${p} [${Math.min(i + 1, (msg.sources || []).length || 1)}]`));
-  else out.push(msg.body || '');
-  out.push('');
+  if (msg.answer) { out.push('## Answer'); out.push(''); out.push(msg.answer); out.push(''); }
+
+  const points = msg.points || [];
+  if (points.length) {
+    out.push('## Key points');
+    out.push('');
+    points.forEach((p, i) => out.push(`- ${p} [${Math.min(i + 1, (msg.sources || []).length || 1)}]`));
+    out.push('');
+  }
+
+  if (msg.body) {
+    out.push('## More from the article');
+    out.push('');
+    sentencesOf(msg.body).forEach((p, i) => out.push(`- ${p} [${Math.min(i + 1, (msg.sources || []).length || 1)}]`));
+    out.push('');
+  }
 
   if (msg.sources?.length) {
     out.push('## Sources');
@@ -343,12 +393,24 @@ function answerOf(msg, { last = false } = {}) {
   card.append(head);
 
   if (msg.head) card.append(el('h3', null, esc(msg.head)));
-  if (msg.lead) card.append(el('p', 'answer-body', `<strong>${esc(msg.lead)}</strong>`));
   if (msg.about) card.append(el('p', 'answer-note', esc(msg.about)));
 
-  const body = el('div', 'answer-body');
-  body.innerHTML = citations(msg.body || '', msg.sources);
-  card.append(body);
+  // the direct answer first
+  if (msg.answer) card.append(el('p', 'answer-lead', esc(msg.answer)));
+
+  // then the few points that carry it
+  if (msg.points && msg.points.length) {
+    const list = el('div', 'answer-points');
+    msg.points.forEach((pt) => list.append(el('p', 'answer-point', '• ' + esc(pt))));
+    card.append(list);
+  }
+
+  // then the rest of what the article says
+  if (msg.body) {
+    const body = el('div', 'answer-body');
+    body.innerHTML = citations(msg.body, msg.sources);
+    card.append(body);
+  }
 
   if (msg.sources?.length) {
     const src = el('div', 'sources');
@@ -370,7 +432,7 @@ function answerOf(msg, { last = false } = {}) {
   const copy = el('button', 'act', I.copy);
   copy.type = 'button'; copy.setAttribute('aria-label', 'Copy this answer');
   copy.addEventListener('click', async () => {
-    const text = mdBox.hidden ? [msg.head, msg.lead, msg.body].filter(Boolean).join('\n\n') : mdBox.textContent;
+    const text = mdBox.hidden ? [msg.head, msg.answer, ...(msg.points || []), msg.body].filter(Boolean).join('\n\n') : mdBox.textContent;
     try { await navigator.clipboard.writeText(text); copy.innerHTML = I.check; copy.classList.add('done'); setTimeout(() => { copy.innerHTML = I.copy; copy.classList.remove('done'); }, 1400); } catch { /* blocked */ }
   });
   foot.append(copy);
