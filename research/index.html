@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8fc">
+  <meta name="description" content="IndusMova Research Desk — search public knowledge articles, inspect source excerpts, save references, and compare original sources. No AI-generated answers or backend API.">
+  <title>Research Desk — indusmova</title>
+  <link rel="preconnect" href="https://en.wikipedia.org">
+  <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="canonical" href="https://indusmova.pages.dev/research/">
+  <link rel="stylesheet" href="/assets/css/research-desk.css?v=1.0.0">
+  <script type="module" src="/assets/js/research-desk.js?v=1.0.0"></script>
+</head>
+<body>
+  <div class="app-shell" id="research-app" data-theme="light">
+    <header class="topbar">
+      <div class="brand-lockup">
+        <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        <div class="brand-copy"><strong>indusmova<span>.</span></strong><small>RESEARCH DESK</small></div>
+      </div>
+      <div class="topbar-center"><span class="status-dot"></span><span>Public-source search</span><span class="topbar-separator">·</span><span>No AI generation</span></div>
+      <div class="topbar-actions">
+        <button class="icon-button" data-action="shortcuts" type="button" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h.01M10 9h.01M13 9h.01M16 9h.01M7 12h.01M10 12h.01M13 12h.01M16 12h.01M9 15h6"/></svg></button>
+        <button class="icon-button" data-action="theme" type="button" aria-label="Switch theme" title="Toggle light/dark mode"><svg data-theme-icon viewBox="0 0 24 24"><path d="M20.5 15.4A8.5 8.5 0 0 1 8.6 3.5 8.5 8.5 0 1 0 20.5 15.4Z"/></svg></button>
+        <a class="site-link" href="/">Main site <span>↗</span></a>
+      </div>
+    </header>
+
+    <div class="workspace" id="workspace">
+      <aside class="left-rail" aria-label="Research navigation">
+        <button class="primary-new" type="button" data-action="new-search"><span class="plus-mark">+</span><span>New search</span><kbd>⌘ K</kbd></button>
+        <div class="rail-nav" role="navigation" aria-label="Views">
+          <button class="rail-link is-active" data-view="search" type="button"><span class="rail-icon"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg></span><span>Search desk</span><span class="nav-pill">⌕</span></button>
+          <button class="rail-link" data-view="saved" type="button"><span class="rail-icon"><svg viewBox="0 0 24 24"><path d="M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-3.7L6 21Z"/></svg></span><span>Reading list</span><span class="count-pill" data-saved-count>0</span></button>
+          <button class="rail-link" data-view="history" type="button"><span class="rail-icon"><svg viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.4-5.9L3.5 8.5"/><path d="M3.5 3.5v5h5M12 7v5l3.5 2"/></svg></span><span>Recent searches</span></button>
+        </div>
+        <div class="rail-divider"></div>
+        <div class="rail-section-title"><span data-left-list-title>RECENT TOPICS</span><button class="text-icon-button" data-action="clear-history" type="button" title="Clear search history" aria-label="Clear search history">···</button></div>
+        <div class="rail-topic-list" data-left-list><div class="rail-empty">Your searches will appear here.</div></div>
+        <div class="rail-spacer"></div>
+        <div class="privacy-mini"><span class="privacy-lock"><svg viewBox="0 0 24 24"><rect x="4.5" y="10" width="15" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span><div><strong>Private by default</strong><small>History stays in this browser.</small></div></div>
+        <div class="rail-footer"><span class="footer-orb"></span><span>Knowledge, with receipts.</span></div>
+      </aside>
+
+      <main class="main-column">
+        <div class="mobile-heading"><button class="icon-button mobile-menu-button" data-action="mobile-menu" type="button" aria-label="Open navigation"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><span>Research desk</span><button class="icon-button" data-action="mobile-saved" type="button" aria-label="Open reading list"><svg viewBox="0 0 24 24"><path d="M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-3.7L6 21Z"/></svg></button></div>
+        <div class="main-scroll" data-main-scroll>
+          <section class="welcome-block" data-welcome>
+            <div class="welcome-kicker"><span class="kicker-icon"><svg viewBox="0 0 24 24"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7Z"/><path d="m19 16 .8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8Z"/></svg></span> Evidence-first knowledge discovery</div>
+            <h1>Good questions deserve<br><span>great sources.</span></h1>
+            <p class="welcome-subtitle">Search public Wikipedia articles, inspect the original excerpts, and keep the sources worth returning to. No AI-written summaries. No account. No API key.</p>
+            <form class="search-box" data-search-form role="search">
+              <span class="search-box-icon"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg></span>
+              <input type="search" data-query-input autocomplete="off" spellcheck="false" maxlength="300" aria-label="Search public knowledge articles" placeholder="Search a topic, person, place, or question…">
+              <button class="clear-query" data-action="clear-query" type="button" aria-label="Clear search" hidden>×</button>
+              <button class="search-submit" type="submit"><span>Search</span><span class="submit-arrow">↗</span></button>
+            </form>
+            <div class="search-options-inline" aria-label="Search options for small screens">
+              <label>Language <select data-language-mobile><option value="en">English</option><option value="hi">हिन्दी</option><option value="bn">বাংলা</option><option value="ta">தமிழ்</option><option value="te">తెలుగు</option><option value="mr">मराठी</option><option value="gu">ગુજરાતી</option><option value="kn">ಕನ್ನಡ</option><option value="ml">മലയാളം</option><option value="pa">ਪੰਜਾਬੀ</option><option value="ur">اردو</option><option value="sa">संस्कृतम्</option></select></label>
+              <label>Sources <select data-limit-mobile><option value="3">3 sources</option><option value="5">5 sources</option><option value="10">10 sources</option></select></label>
+            </div>
+            <div class="search-footnote"><span><svg viewBox="0 0 24 24"><path d="M12 3 19 6v5c0 4.5-3 7.8-7 10-4-2.2-7-5.5-7-10V6Z"/><path d="m9 12 2 2 4-4"/></svg> Direct from public sources</span><span class="footnote-dot">·</span><span>Queries go to Wikipedia</span><span class="footnote-dot">·</span><span>Nothing generated</span></div>
+            <div class="suggestion-block"><div class="suggestion-label">TRY A SEARCH</div><div class="suggestion-grid">
+              <button class="suggestion-card" type="button" data-query="Chandrayaan-3"><span class="suggestion-icon icon-violet"><svg viewBox="0 0 24 24"><path d="M4 17 9 7l4 7 2-4 5 7Z"/><circle cx="17" cy="5" r="1.5"/></svg></span><span><strong>Space & science</strong><small>Chandrayaan-3</small></span><span class="suggestion-arrow">↗</span></button>
+              <button class="suggestion-card" type="button" data-query="Indian independence movement"><span class="suggestion-icon icon-saffron"><svg viewBox="0 0 24 24"><path d="M12 3v18M4 7h16M6 7v10M18 7v10M3 17h6M15 17h6"/><circle cx="12" cy="12" r="2.5"/></svg></span><span><strong>History & culture</strong><small>Indian independence</small></span><span class="suggestion-arrow">↗</span></button>
+              <button class="suggestion-card" type="button" data-query="Quantum computing"><span class="suggestion-icon icon-cyan"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="9" ry="3.8"/><ellipse cx="12" cy="12" rx="9" ry="3.8" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9" ry="3.8" transform="rotate(120 12 12)"/></svg></span><span><strong>Concepts & ideas</strong><small>Quantum computing</small></span><span class="suggestion-arrow">↗</span></button>
+              <button class="suggestion-card" type="button" data-query="Patna"><span class="suggestion-icon icon-green"><svg viewBox="0 0 24 24"><path d="M20 10.2c0 5-8 11-8 11s-8-6-8-11a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.4"/></svg></span><span><strong>Places & people</strong><small>Patna</small></span><span class="suggestion-arrow">↗</span></button>
+            </div></div>
+            <div class="honesty-note"><span class="note-mark">i</span><p><strong>Built for finding evidence, not inventing answers.</strong> Search results and excerpts are fetched from Wikipedia in your browser. Read the original article before relying on a claim.</p></div>
+          </section>
+
+          <section class="results-view" data-results-view hidden>
+            <div class="results-title-row"><div><div class="eyebrow">SOURCE EXPLORER</div><h1 data-results-heading>Search results</h1><p data-results-subtitle>Public articles matching your query.</p></div><button class="outline-button" type="button" data-action="new-search"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New search</button></div>
+            <div class="query-summary"><span class="query-symbol"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg></span><strong data-current-query></strong><span class="summary-separator">·</span><span data-results-count>0 sources</span><span class="source-verified"><span></span> Public source</span></div>
+            <div class="results-mobile-controls" aria-label="Change search options"><label>Article language <select data-language-results><option value="en">English</option><option value="hi">हिन्दी</option><option value="bn">বাংলা</option><option value="ta">தமிழ்</option><option value="te">తెలుగు</option><option value="mr">मराठी</option><option value="gu">ગુજરાતી</option><option value="kn">ಕನ್ನಡ</option><option value="ml">മലയാളം</option><option value="pa">ਪੰਜਾਬੀ</option><option value="ur">اردو</option><option value="sa">संस्कृतम्</option></select></label><label>Results <select data-limit-results><option value="3">3 sources</option><option value="5">5 sources</option><option value="10">10 sources</option></select></label></div>
+            <div class="result-toolbar"><div class="view-switcher"><button class="view-switch is-active" data-result-view="cards" type="button">Cards</button><button class="view-switch" data-result-view="compact" type="button">Compact</button></div><div class="toolbar-right"><label class="sort-label">Sort <select data-sort><option value="relevance">Relevance</option><option value="title">Title A–Z</option><option value="longest">Longest article</option><option value="recent">Recently updated</option></select></label></div></div>
+            <div class="selection-toolbar" data-selection-toolbar hidden><span><strong data-selected-count>0</strong> selected</span><div><button type="button" data-action="compare">Compare excerpts</button><button type="button" data-action="export-selected">Export selected</button><button type="button" data-action="clear-selection">Clear</button></div></div>
+            <div class="results-list" data-results-list aria-live="polite"></div>
+            <div class="results-bottom-note"><span class="note-mark small">i</span><span>Snippets are excerpts from source pages, not a generated summary. Search relevance is from Wikipedia; other sort options are applied locally.</span></div>
+          </section>
+
+          <section class="library-view" data-library-view hidden>
+            <div class="results-title-row"><div><div class="eyebrow" data-library-kicker>YOUR REFERENCE LIBRARY</div><h1 data-library-heading>Reading list</h1><p data-library-description>Sources saved in this browser for later.</p></div><button class="outline-button" type="button" data-action="new-search"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New search</button></div>
+            <div class="library-tools"><label class="library-filter"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg><input data-library-filter type="search" placeholder="Filter saved sources…" aria-label="Filter saved sources"></label><button class="outline-button" data-action="export-library" type="button">Export library ↗</button></div>
+            <div class="results-list" data-library-list></div>
+          </section>
+
+          <section class="history-view" data-history-view hidden>
+            <div class="results-title-row"><div><div class="eyebrow">ON THIS DEVICE</div><h1>Recent searches</h1><p>Your last searches, stored locally in this browser.</p></div><button class="outline-button" type="button" data-action="clear-history">Clear history</button></div>
+            <div class="history-full-list" data-history-full></div>
+          </section>
+        </div>
+        <footer class="main-footer"><span>IndusMova Research Desk <span class="footer-dot">•</span> client-side only</span><span><a href="https://www.mediawiki.org/wiki/API:REST_API/Get_started" target="_blank" rel="noopener noreferrer">API documentation ↗</a><span class="footer-dot">•</span><a href="https://en.wikipedia.org/wiki/Wikipedia:Copyrights" target="_blank" rel="noopener noreferrer">Content attribution ↗</a></span></footer>
+      </main>
+
+      <aside class="right-rail" aria-label="Search controls and selected sources">
+        <div class="right-rail-head"><div><div class="eyebrow">SEARCH SETTINGS</div><h2>Fine-tune</h2></div><span class="settings-orb"><svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></span></div>
+        <div class="control-section"><label class="control-label" for="search-language">Article language</label><div class="select-wrap"><select id="search-language" data-language><option value="en">English</option><option value="hi">हिन्दी</option><option value="bn">বাংলা</option><option value="ta">தமிழ்</option><option value="te">తెలుగు</option><option value="mr">मराठी</option><option value="gu">ગુજરાતી</option><option value="kn">ಕನ್ನಡ</option><option value="ml">മലയാളം</option><option value="pa">ਪੰਜਾਬੀ</option><option value="ur">اردو</option><option value="sa">संस्कृतम्</option></select><svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg></div><p class="control-help">Searches that language's Wikipedia. It does not translate results.</p></div>
+        <div class="control-section"><div class="control-label">Number of results</div><div class="segmented-options" role="group" aria-label="Number of results"><button type="button" data-limit="3">3</button><button type="button" class="is-active" data-limit="5">5</button><button type="button" data-limit="10">10</button></div><p class="control-help">More results can help with broad topics.</p></div>
+        <div class="control-section"><div class="control-label">Result content</div><div class="content-option"><span class="option-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg></span><span><strong>Article excerpt</strong><small>Search snippet and lead text</small></span><span class="option-check">✓</span></div><p class="control-help">Text is shown from its source; nothing is rewritten by AI.</p></div>
+        <div class="rail-divider"></div>
+        <div class="right-rail-head selected-head"><div><div class="eyebrow">WORKSPACE</div><h2>Selected sources <span data-selected-panel-count>0</span></h2></div></div>
+        <p class="panel-description">Select two or more results to compare the excerpts side by side. Selection stays temporary for this session.</p>
+        <div class="selected-source-list" data-selected-list><div class="selected-empty"><span class="selected-empty-icon"><svg viewBox="0 0 24 24"><path d="M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-3.7L6 21Z"/></svg></span><strong>No sources selected</strong><small>Use the checkbox on a result to add it here.</small></div></div>
+        <div class="compare-bottom"><button class="compare-button" data-action="compare" type="button" disabled><svg viewBox="0 0 24 24"><path d="M4 4h6v16H4zM14 4h6v16h-6zM10 8h4M10 16h4"/></svg><span>Compare excerpts</span><span class="button-arrow">↗</span></button><button class="clear-selected-button" data-action="clear-selection" type="button" hidden>Clear selection</button></div>
+        <div class="right-info-card"><span class="info-card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></svg></span><div><strong>Transparent by design</strong><p>This tool searches public articles only. It does not call a generative AI service or create answers. Always verify important details in the original source.</p></div></div>
+      </aside>
+    </div>
+
+    <div class="toast" data-toast role="status" aria-live="polite" hidden></div>
+    <div class="scrim" data-scrim hidden></div>
+    <div class="modal-backdrop" data-modal-backdrop hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" data-modal>
+        <div class="modal-head"><div><div class="eyebrow" data-modal-kicker>SELECTED SOURCES</div><h2 id="modal-title" data-modal-title>Compare excerpts</h2></div><button class="icon-button" type="button" data-action="close-modal" aria-label="Close dialog"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+        <div class="modal-body" data-modal-body></div>
+        <div class="modal-foot"><span data-modal-footnote>Source excerpts are quoted, not synthesized.</span><button class="search-submit" type="button" data-action="close-modal">Done <span class="submit-arrow">✓</span></button></div>
+      </section>
+    </div>
+  </div>
+</body>
+</html>
