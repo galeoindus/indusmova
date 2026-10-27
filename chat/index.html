@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Galeoindus — ask anything</title>
-  <meta name="description" content="Galeoindus is the conversation side of indusmova: ask a question in your own words and get a direct answer with the sources behind it — from Wikipedia, Wikidata and the model when it is connected.">
+  <meta name="description" content="Galeoindus is the reading side of indusmova: ask a question in your own words and get the answer quoted from a published article, with the source and the research trail attached.">
   <link rel="canonical" href="https://indusmova.pages.dev/chat/">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="theme-color" content="#0b0d13" media="(prefers-color-scheme: dark)">
@@ -12,13 +12,14 @@
   <meta name="color-scheme" content="light dark">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Galeoindus — ask anything">
-  <meta property="og:description" content="A question becomes a sourced answer. Ask in your own words.">
+  <meta property="og:description" content="A question becomes a sourced answer, quoted from the article.">
   <meta property="og:url" content="https://indusmova.pages.dev/chat/">
   <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
-  <link rel="stylesheet" href="/assets/css/galeo.css?v=2.0.0">
+  <link rel="stylesheet" href="/assets/css/galeo.css?v=2.1.0">
+  <link rel="stylesheet" href="/assets/css/galeo-fix.css?v=2.1.0">
 </head>
 <body>
   <div class="sky" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>
@@ -29,7 +30,7 @@
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 40 40"><defs><linearGradient id="gm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4285f4"></stop><stop offset=".5" stop-color="#9b72ff"></stop><stop offset="1" stop-color="#ff5f9e"></stop></linearGradient></defs><rect width="40" height="40" rx="13" fill="url(#gm)"></rect><path d="M11.6 12.4h16.8a3.4 3.4 0 0 1 3.4 3.4v7.2a3.4 3.4 0 0 1-3.4 3.4h-7.6L15.4 30.2v-3.8h-3.8a3.4 3.4 0 0 1-3.4-3.4v-7.2a3.4 3.4 0 0 1 3.4-3.4Z" fill="none" stroke="#fff" stroke-width="2.1" stroke-linejoin="round"></path><g fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"><path d="M14.6 17.4c1.8-2.1 3.6-2.1 5.4 0s3.6 2.1 5.4 0"></path><path d="M14.6 21.9c1.8-2.1 3.6-2.1 5.4 0s3.6 2.1 5.4 0" stroke-opacity=".72"></path></g></svg>
         </span>
-        <span class="brand-text"><b>Galeoindus</b><small>ask anything, get sources</small></span>
+        <span class="brand-text"><b>Galeoindus</b><small>answers with sources</small></span>
       </a>
 
       <button class="new-chat" id="newChat" type="button">
@@ -64,7 +65,7 @@
         </button>
         <div class="titles">
           <h1 id="chatTitle">New chat</h1>
-          <p id="chatSub">Ask in your own words — the answer comes with its sources.</p>
+          <p id="chatSub">Ask in your own words — the answer comes with its source.</p>
         </div>
         <button class="pill-btn" id="langPill" type="button" title="Answer language">EN</button>
         <button class="icon-btn" id="exportBtn" type="button" aria-label="Download this conversation" title="Download as Markdown">
@@ -102,6 +103,6 @@
     </main>
   </div>
 
-  <script type="module" src="/assets/js/galeo-chat.js?v=2.0.0"></script>
+  <script type="module" src="/assets/js/galeo-chat.js?v=2.1.0"></script>
 </body>
 </html>
