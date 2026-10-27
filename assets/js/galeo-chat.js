@@ -102,8 +102,19 @@ async function lookup(lang, query) {
 
 const GREETING = /^(hi|hello|hey|namaste|namaskar|hii|hola|good (morning|evening|afternoon))\b/i;
 
+/* A full stop ends a sentence — unless it belongs to an abbreviation, which is
+   why "c. 304 – 232 BCE" must not become its own topic. */
+const ABBR = /(?:^|\s)(?:c|ca|approx|e\.g|i\.e|etc|vs|dr|mr|mrs|ms|st|no|vol|pp|p|fig|al|cf|ed|trans)\.$/i;
+
 function sentencesOf(text) {
-  return String(text || '').split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter((s) => s.length > 30);
+  const pieces = String(text || '').split(/(?<=[.!?])\s+/);
+  const merged = [];
+  for (const piece of pieces) {
+    const last = merged[merged.length - 1];
+    if (last && ABBR.test(last)) merged[merged.length - 1] = `${last} ${piece}`;
+    else merged.push(piece);
+  }
+  return merged.map((s) => s.trim()).filter((s) => s.length > 30);
 }
 
 function articleReply(found, skill) {
