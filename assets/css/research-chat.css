@@ -1,0 +1,296 @@
+/* Research Desk conversational skin. Loads AFTER research-desk.css, its existing
+   morph layer, and multimorphism-overlay.css. It does not replace the data model,
+   search API, source cards, history, comparison or keyboard controls. */
+
+#research-app {
+  --bg: #f4efe6;
+  --panel: #fbf8f2;
+  --panel-soft: #f3eee5;
+  --line: #e4dbcd;
+  --line-strong: #d2c5b2;
+  --text: #242824;
+  --muted: #5c6259;
+  --muted-2: #81877d;
+  --accent: #a85f3d;
+  --accent-deep: #81462d;
+  --accent-soft: #f2e2d7;
+  --teal: #44705f;
+  --green: #1f6a50;
+  --green-soft: #e4f1e9;
+  --shadow: 0 18px 44px -26px rgba(23, 59, 50, .35), 0 2px 8px rgba(23, 59, 50, .06);
+  --rc-glass: color-mix(in srgb, var(--panel) 82%, transparent);
+  --rc-raised: 7px 8px 20px rgba(23, 59, 50, .09), -4px -4px 13px rgba(255, 255, 255, .74);
+  --rc-inset: inset 4px 4px 9px rgba(23, 59, 50, .085), inset -4px -4px 9px rgba(255, 255, 255, .72);
+  color: var(--text);
+  background: transparent;
+}
+
+#research-app[data-theme="dark"] {
+  --bg: #141a17;
+  --panel: #1c2621;
+  --panel-soft: #202d26;
+  --line: #2b3b31;
+  --line-strong: #405447;
+  --text: #edf1e9;
+  --muted: #b4beb3;
+  --muted-2: #8f9b8f;
+  --accent: #d0926c;
+  --accent-deep: #e0a783;
+  --accent-soft: #38281f;
+  --teal: #8cc7ae;
+  --green: #86d1aa;
+  --green-soft: #233c30;
+  --shadow: 0 20px 44px -26px rgba(0, 0, 0, .72), 0 2px 8px rgba(0, 0, 0, .25);
+  --rc-glass: color-mix(in srgb, var(--panel) 84%, transparent);
+  --rc-raised: 7px 8px 20px rgba(0, 0, 0, .29), -3px -3px 10px rgba(255, 255, 255, .025);
+  --rc-inset: inset 4px 4px 9px rgba(0, 0, 0, .28), inset -4px -4px 9px rgba(255, 255, 255, .025);
+}
+
+#research-app .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--rc-glass);
+  border-bottom: 1px solid var(--line);
+  -webkit-backdrop-filter: saturate(140%) blur(18px);
+  backdrop-filter: saturate(140%) blur(18px);
+  box-shadow: 0 4px 24px rgba(23, 59, 50, .035);
+}
+
+#research-app .brand-mark {
+  background: linear-gradient(145deg, #173b32, #a85f3d);
+  border-radius: 13px;
+  box-shadow: 0 8px 19px rgba(23, 59, 50, .18), inset 0 1px 0 rgba(255, 255, 255, .24);
+}
+#research-app .brand-copy strong { letter-spacing: -.045em; }
+#research-app .brand-copy strong > span { color: var(--accent); }
+#research-app .topbar-center { color: var(--muted); }
+#research-app .status-dot { background: var(--green); box-shadow: 0 0 0 4px var(--green-soft); }
+#research-app .site-link { background: var(--accent-soft); color: var(--accent-deep); border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent); box-shadow: none; }
+
+#research-app .workspace {
+  grid-template-columns: 252px minmax(0, 1fr) 292px;
+  min-height: calc(100vh - 74px);
+  max-width: 1920px;
+  background: transparent;
+}
+#research-app .left-rail,
+#research-app .right-rail {
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  border-color: var(--line);
+  -webkit-backdrop-filter: saturate(120%) blur(13px);
+  backdrop-filter: saturate(120%) blur(13px);
+}
+#research-app .left-rail { padding-top: 20px; }
+#research-app .right-rail { padding-top: 22px; }
+#research-app .primary-new {
+  border-radius: 13px;
+  background: linear-gradient(135deg, #173b32, #2f6551 68%, #a85f3d);
+  box-shadow: 0 8px 18px rgba(23, 59, 50, .17), inset 0 1px 0 rgba(255, 255, 255, .22);
+}
+#research-app .rail-link { border-radius: 11px; }
+#research-app .rail-link.is-active {
+  background: color-mix(in srgb, var(--accent-soft) 80%, var(--panel));
+  color: var(--accent-deep);
+  box-shadow: inset 2px 2px 5px color-mix(in srgb, var(--accent) 11%, transparent), inset -1px -1px 3px rgba(255, 255, 255, .22);
+}
+#research-app .rail-topic { border-radius: 9px; }
+#research-app .privacy-mini,
+#research-app .right-info-card,
+#research-app .selected-item,
+#research-app .history-row,
+#research-app .library-empty,
+#research-app .no-results {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--rc-raised);
+  border-radius: 16px;
+}
+
+/* Welcome state becomes a calm chat empty-state, not a marketing landing page. */
+#research-app .main-scroll {
+  min-height: 0;
+  padding: 0 clamp(22px, 4vw, 58px) 30px;
+  scroll-padding-bottom: 24px;
+}
+#research-app .welcome-block {
+  max-width: 790px;
+  padding-top: clamp(46px, 8vh, 88px);
+  padding-bottom: 30px;
+}
+#research-app .welcome-kicker { letter-spacing: 1.15px; }
+#research-app .kicker-icon { border-radius: 10px; box-shadow: var(--rc-raised); }
+#research-app .welcome-block h1 {
+  font-size: clamp(34px, 4.1vw, 51px);
+  line-height: 1.12;
+  letter-spacing: -.055em;
+  max-width: 650px;
+  margin-top: 23px;
+}
+#research-app .welcome-block h1 span {
+  background: linear-gradient(100deg, #173b32 5%, #44705f 52%, #a85f3d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+#research-app[data-theme="dark"] .welcome-block h1 span {
+  background-image: linear-gradient(100deg, #d0e2d5 5%, #8cc7ae 52%, #d0926c 100%);
+}
+#research-app .welcome-subtitle { max-width: 620px; font-size: 14px; line-height: 1.8; }
+
+/* The existing search form is moved here by the enhancement script. */
+#research-app .rc-composer-dock {
+  position: relative;
+  z-index: 20;
+  padding: 12px clamp(18px, 3.4vw, 46px) 16px;
+  border-top: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 72%, transparent), var(--rc-glass) 28%);
+  -webkit-backdrop-filter: saturate(135%) blur(17px);
+  backdrop-filter: saturate(135%) blur(17px);
+}
+#research-app .rc-composer-label {
+  max-width: 850px;
+  margin: 0 auto 7px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: .01em;
+}
+#research-app .rc-composer-dock .search-box {
+  max-width: 850px;
+  min-height: 62px;
+  margin: 0 auto;
+  border-radius: 21px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel-soft);
+  box-shadow: var(--rc-inset), 0 10px 25px rgba(23, 59, 50, .055);
+  padding: 8px 9px 8px 17px;
+}
+#research-app .rc-composer-dock .search-box:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 64%, var(--line));
+  box-shadow: var(--rc-inset), 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent), 0 10px 25px rgba(23, 59, 50, .055);
+}
+#research-app .rc-composer-dock .search-box input { font-size: 14px; }
+#research-app .rc-composer-dock .search-submit {
+  min-height: 44px;
+  border-radius: 14px;
+  padding: 0 15px;
+  background: linear-gradient(135deg, #173b32, #2f6551 70%, #a85f3d);
+  box-shadow: 0 5px 13px rgba(23, 59, 50, .18), inset 0 1px 0 rgba(255, 255, 255, .22);
+}
+#research-app .rc-composer-hint {
+  max-width: 850px;
+  margin: 7px auto 0;
+  color: var(--muted-2);
+  font-size: 10px;
+  text-align: center;
+}
+#research-app .main-footer { background: var(--rc-glass); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+
+/* Conversation transcript is inserted into the existing results view. */
+#research-app .rc-chat-thread {
+  display: grid;
+  gap: 23px;
+  max-width: 850px;
+  margin: 13px auto 24px;
+}
+#research-app .rc-user-turn { display: flex; justify-content: flex-end; gap: 12px; }
+#research-app .rc-user-bubble {
+  max-width: min(80%, 690px);
+  padding: 13px 17px;
+  border: 1px solid color-mix(in srgb, var(--accent) 15%, var(--line));
+  border-radius: 20px 20px 6px 20px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent-soft) 73%, var(--panel));
+  box-shadow: 3px 4px 11px rgba(23, 59, 50, .045);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+#research-app .rc-assistant-turn { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; align-items: start; }
+#research-app .rc-assistant-mark {
+  width: 34px; height: 34px; border-radius: 12px; display: grid; place-items: center;
+  color: #fff; background: linear-gradient(145deg, #173b32, #44705f 72%, #a85f3d);
+  box-shadow: 0 5px 12px rgba(23, 59, 50, .15);
+}
+#research-app .rc-assistant-mark svg { width: 18px; height: 18px; }
+#research-app .rc-assistant-copy { min-width: 0; padding-top: 2px; }
+#research-app .rc-assistant-label { font-size: 12px; font-weight: 750; margin-bottom: 6px; color: var(--text); }
+#research-app .rc-assistant-status { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
+#research-app .rc-assistant-status.is-pending::after { content: ""; display: inline-block; width: 5px; height: 5px; margin-left: 7px; border-radius: 50%; background: var(--accent); animation: rc-pulse 1s ease-in-out infinite; vertical-align: middle; }
+@keyframes rc-pulse { 0%,100% { opacity: .35; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.15); } }
+
+#research-app .results-title-row { max-width: 850px; margin: 38px auto 14px; align-items: flex-end; }
+#research-app .results-title-row h1 { font-size: clamp(24px, 3vw, 32px); letter-spacing: -.045em; }
+#research-app .results-title-row p { line-height: 1.65; }
+#research-app .results-title-row .eyebrow { color: var(--accent-deep); }
+#research-app .results-title-row .outline-button { border-radius: 12px; }
+#research-app .query-summary { display: none !important; }
+#research-app .results-list { max-width: 850px; margin: 0 auto; gap: 13px; }
+#research-app .result-toolbar,
+#research-app .selection-toolbar,
+#research-app .results-mobile-controls { max-width: 850px; margin-left: auto; margin-right: auto; }
+#research-app .result-toolbar { margin-top: 18px; padding-bottom: 10px; border-bottom-color: var(--line); }
+#research-app .source-card {
+  background: color-mix(in srgb, var(--panel) 94%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px 18px 15px;
+  box-shadow: var(--rc-raised);
+  transition: transform 170ms ease, box-shadow 170ms ease, border-color 170ms ease;
+}
+#research-app .source-card:hover { transform: translateY(-2px); box-shadow: 9px 12px 23px rgba(23, 59, 50, .11), -3px -3px 9px rgba(255,255,255,.4); border-color: var(--line-strong); }
+#research-app .source-card.is-selected { border-color: color-mix(in srgb, var(--accent) 58%, var(--line)); box-shadow: var(--rc-raised), 0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent); }
+#research-app .source-number { background: linear-gradient(145deg, #173b32, #44705f 75%, #a85f3d); color: #fff; border-radius: 10px; }
+#research-app .source-title { letter-spacing: -.015em; line-height: 1.45; }
+#research-app .source-domain { color: var(--muted-2); }
+#research-app .source-excerpt { color: var(--muted); line-height: 1.75; }
+#research-app .source-intro { border-radius: 12px; border-color: var(--line); background: var(--panel-soft); }
+#research-app .result-action,
+#research-app .selection-toolbar button,
+#research-app .view-switch,
+#research-app .sort-label select,
+#research-app .select-wrap select,
+#research-app .library-filter {
+  border-radius: 10px;
+}
+#research-app .source-verified { background: var(--green-soft); color: var(--green); }
+#research-app .results-bottom-note { display: none; }
+#research-app .search-footnote { color: var(--muted-2); }
+#research-app .suggestion-card { border-radius: 16px; box-shadow: var(--rc-raised); }
+#research-app .suggestion-card:hover { transform: translateY(-2px); box-shadow: 9px 10px 20px rgba(23, 59, 50, .10); }
+#research-app .honesty-note { border-radius: 14px; box-shadow: none; background: color-mix(in srgb, var(--green-soft) 52%, var(--panel)); }
+#research-app .right-info-card { padding: 14px; }
+#research-app .icon-button { border-radius: 12px; box-shadow: var(--rc-raised); }
+#research-app :where(button, a, input, select, textarea):focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+#research-app .toast { border-radius: 14px; box-shadow: var(--rc-raised); }
+#research-app .modal { border-radius: 22px; box-shadow: 0 26px 70px rgba(0,0,0,.2); }
+#research-app .modal-backdrop { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+
+@media (max-width: 1180px) {
+  #research-app .workspace { grid-template-columns: 235px minmax(0, 1fr); }
+  #research-app .right-rail { display: none; }
+}
+@media (max-width: 700px) {
+  #research-app .workspace { display: block; min-height: calc(100vh - 60px); }
+  #research-app .left-rail { padding-top: 14px; }
+  #research-app .main-scroll { padding: 0 15px 22px; max-height: none; }
+  #research-app .welcome-block { padding-top: 36px; }
+  #research-app .welcome-block h1 { font-size: clamp(32px, 9vw, 40px); line-height: 1.14; letter-spacing: -.045em; }
+  #research-app .welcome-subtitle { font-size: 13px; }
+  #research-app .rc-composer-dock { position: sticky; bottom: 0; padding: 10px 12px calc(12px + env(safe-area-inset-bottom)); }
+  #research-app .rc-composer-dock .search-box { min-height: 56px; border-radius: 17px; gap: 8px; padding-left: 12px; }
+  #research-app .rc-composer-dock .search-box input { font-size: 13px; }
+  #research-app .rc-composer-dock .search-submit { min-height: 42px; padding: 0 12px; }
+  #research-app .rc-composer-label { margin-bottom: 6px; }
+  #research-app .rc-composer-hint { display: none; }
+  #research-app .results-title-row { margin-top: 24px; align-items: flex-start; }
+  #research-app .results-title-row .outline-button { padding: 9px 10px; font-size: 11px; }
+  #research-app .rc-user-bubble { max-width: 90%; padding: 11px 13px; }
+  #research-app .source-card { padding: 14px 12px; border-radius: 15px; }
+  #research-app .source-card-bottom { flex-wrap: wrap; }
+  #research-app .result-actions { width: 100%; }
+  #research-app .main-footer { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #research-app .source-card:hover, #research-app .suggestion-card:hover { transform: none; }
+  #research-app .rc-assistant-status.is-pending::after { animation: none; }
+}

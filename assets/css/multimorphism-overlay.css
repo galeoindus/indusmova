@@ -1,0 +1,213 @@
+/*
+ * IndusMova Multi-Morphism Overlay v1.0.0
+ * VISUAL-ONLY enhancement for the existing IndusMova structure.
+ * No grid, navigation, route, content or component behaviour is redefined here.
+ * Material language: glass / liquid-glass-inspired chrome, restrained clay
+ * surfaces, inset neumorphic fields, tactile pressed controls and soft aurora.
+ */
+
+:root {
+  --im-glass-light: color-mix(in srgb, var(--surface, #fbf8f1) 80%, transparent);
+  --im-glass-border: color-mix(in srgb, var(--border, #e0d6c4) 78%, transparent);
+  --im-clay-raised: 5px 5px 14px rgba(23, 59, 50, .075), -4px -4px 12px rgba(255, 255, 255, .72);
+  --im-clay-hover: 8px 9px 20px rgba(23, 59, 50, .12), -5px -5px 13px rgba(255, 255, 255, .78);
+  --im-inset: inset 3px 3px 8px rgba(23, 59, 50, .075), inset -3px -3px 8px rgba(255, 255, 255, .68);
+  --im-focus-ring: 0 0 0 3px color-mix(in srgb, var(--focus, #2b6de9) 23%, transparent);
+  --im-glass-blur: saturate(135%) blur(16px);
+}
+
+[data-theme="dark"] {
+  --im-glass-light: color-mix(in srgb, var(--surface, #1a2620) 82%, transparent);
+  --im-glass-border: color-mix(in srgb, var(--border, #2a382f) 85%, transparent);
+  --im-clay-raised: 5px 6px 15px rgba(0, 0, 0, .26), -3px -3px 10px rgba(255, 255, 255, .025);
+  --im-clay-hover: 8px 9px 20px rgba(0, 0, 0, .32), -4px -4px 12px rgba(255, 255, 255, .035);
+  --im-inset: inset 3px 3px 8px rgba(0, 0, 0, .28), inset -3px -3px 8px rgba(255, 255, 255, .025);
+}
+
+/* One restrained aurora wash: it sits behind existing content and never
+   creates a new layout layer or intercepts interactions. */
+body {
+  background-color: var(--bg, #f5f0e6);
+  background-image:
+    radial-gradient(54rem 32rem at -8% -10%, color-mix(in srgb, var(--accent, #b46a45) 9%, transparent), transparent 70%),
+    radial-gradient(46rem 28rem at 104% 5%, color-mix(in srgb, var(--accent-2, #44705f) 8%, transparent), transparent 70%);
+  background-attachment: fixed;
+}
+
+/* Glass belongs to navigation/chrome, not to long-form reading surfaces. */
+.topbar {
+  background: var(--im-glass-light, rgba(251, 248, 241, .86));
+  border-color: var(--im-glass-border, rgba(224, 214, 196, .8));
+  -webkit-backdrop-filter: var(--im-glass-blur, saturate(135%) blur(16px));
+  backdrop-filter: var(--im-glass-blur, saturate(135%) blur(16px));
+}
+
+/* Soft clay depth on existing UI cards only. The site hierarchy stays intact. */
+.card,
+.panel,
+.dash-action,
+.q-card,
+.cat-card,
+.category-card,
+.question-card,
+.saved-card,
+.library-card,
+.answer-card,
+.topic-block,
+.factbox,
+.src-group,
+.work-card,
+.search-result-card,
+.article-panel,
+.article-toc,
+.related-card,
+.notice-card {
+  border-color: color-mix(in srgb, var(--border, #e0d6c4) 88%, transparent);
+  box-shadow: var(--im-clay-raised);
+  transition: box-shadow 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.card:hover,
+.dash-action:hover,
+.q-card:hover,
+.cat-card:hover,
+.category-card:hover,
+.question-card:hover,
+.saved-card:hover,
+.library-card:hover,
+.related-card:hover {
+  box-shadow: var(--im-clay-hover);
+  border-color: var(--border-2, #cfc3ac);
+}
+
+/* Inset wells communicate editable controls; text stays on an opaque enough surface. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+textarea,
+select,
+.composer,
+.composer-box,
+.search-field,
+.search-input-wrap {
+  border-color: var(--border, #e0d6c4);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+textarea:focus,
+select:focus,
+.composer:focus-within,
+.composer-box:focus-within,
+.search-field:focus-within,
+.search-input-wrap:focus-within {
+  outline: none;
+  border-color: var(--accent-2, #44705f);
+  box-shadow: var(--im-inset), var(--im-focus-ring);
+}
+
+/* Tactile interaction: raised at rest, compressed on press. */
+.btn,
+button.btn,
+.primary-button,
+.send-button,
+.composer-submit,
+.action-button,
+.icon-button,
+.bottom-nav a,
+.bottom-nav button {
+  transition: box-shadow 150ms ease, transform 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+
+.btn:active,
+.primary-button:active,
+.send-button:active,
+.composer-submit:active,
+.action-button:active,
+.icon-button:active,
+.bottom-nav a:active,
+.bottom-nav button:active {
+  transform: translateY(1px);
+  box-shadow: inset 2px 2px 5px rgba(23, 59, 50, .13);
+}
+
+/* Gradient is a semantic accent, not a wallpaper: only already-primary actions. */
+.btn-primary,
+.primary-button,
+.send-button,
+.composer-submit,
+#askSubmit,
+#searchSubmit {
+  background-image: linear-gradient(135deg, var(--forest, #173b32), color-mix(in srgb, var(--copper, #b46a45) 70%, var(--forest, #173b32)));
+  box-shadow: 0 7px 17px rgba(23, 59, 50, .16), inset 0 1px 0 rgba(255, 255, 255, .18);
+}
+
+/* Popovers/dialogs float above the same material stack. */
+.modal,
+.dialog,
+.popover,
+.menu,
+.lang-menu,
+.command-menu,
+.search-suggestions,
+.dropdown-menu {
+  background: color-mix(in srgb, var(--surface, #fbf8f1) 91%, transparent);
+  border-color: var(--im-glass-border);
+  box-shadow: 0 22px 56px rgba(23, 59, 50, .18), inset 0 1px 0 rgba(255, 255, 255, .38);
+  -webkit-backdrop-filter: saturate(135%) blur(20px);
+  backdrop-filter: saturate(135%) blur(20px);
+}
+
+/* Content-bearing surfaces remain readable and mostly solid. */
+.prose,
+.article-body,
+.article-content,
+.answer-body,
+.qa-answer,
+.topic-content,
+.source-content {
+  text-rendering: optimizeLegibility;
+  overflow-wrap: anywhere;
+}
+
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus, #2b6de9);
+  outline-offset: 3px;
+  box-shadow: var(--im-focus-ring);
+}
+
+/* Keep the signature modest on narrow screens and data-light browsers. */
+@media (max-width: 700px) {
+  :root { --im-glass-blur: saturate(120%) blur(10px); }
+  .card,
+  .panel,
+  .dash-action,
+  .q-card,
+  .cat-card,
+  .category-card,
+  .question-card,
+  .saved-card,
+  .library-card,
+  .answer-card,
+  .topic-block,
+  .factbox,
+  .src-group,
+  .work-card,
+  .article-panel,
+  .article-toc,
+  .related-card,
+  .notice-card { box-shadow: 0 4px 12px rgba(23, 59, 50, .07); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@supports not ((backdrop-filter: blur(2px))) {
+  .topbar { background: var(--surface, #fbf8f1); }
+  .modal, .dialog, .popover, .menu, .lang-menu, .command-menu, .search-suggestions, .dropdown-menu {
+    background: var(--surface, #fbf8f1);
+  }
+}
