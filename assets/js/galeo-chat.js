@@ -227,6 +227,20 @@ function build() {
     if (e.key === 'Escape' && !shell.hidden) shut();
   });
 
+  // The front-door search asks the chat, instead of navigating away. Captured
+  // before the app's own handler so the page never leaves the reader.
+  document.addEventListener('submit', (e) => {
+    const hero = e.target.closest?.('#dashHero, .dash-hero');
+    if (!hero) return;
+    const field = hero.querySelector('input[type="search"], input[type="text"], textarea');
+    const q = (field?.value || '').trim();
+    if (!q) return;
+    e.preventDefault();
+    e.stopPropagation();
+    open();
+    ask(q);
+  }, true);
+
   // any "Research" / "Ask" entry point opens the chat instead of leaving the page
   document.addEventListener('click', (e) => {
     const trigger = e.target.closest('[data-open-chat], a[href="/research/"]');

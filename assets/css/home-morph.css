@@ -1,0 +1,162 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   indusmova — the front door
+   ══════════════════════════════════════════════════════════════════════════
+   One sheet for the home page only. The rest of the site keeps its own
+   rhythm; the first screen gets a different one, because it is the screen
+   that has to say what this is in a single breath.
+
+   Material: the hero is a single clay slab that floats over the ground, the
+   search field is a well pressed into it, and the only gradient in sight is
+   the one on the button you are meant to press.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --hm-clay: var(--surface);
+  --hm-clay-2: var(--surface-2);
+  --hm-lift: 7px 7px 18px rgba(23, 59, 50, .10), -6px -6px 16px rgba(255, 255, 255, .75);
+  --hm-lift-sm: 4px 4px 11px rgba(23, 59, 50, .09), -4px -4px 10px rgba(255, 255, 255, .7);
+  --hm-press: inset 4px 4px 10px rgba(23, 59, 50, .10), inset -4px -4px 10px rgba(255, 255, 255, .75);
+  --hm-grad: linear-gradient(135deg, var(--copper), #9a4f33 55%, var(--forest));
+}
+
+[data-theme="dark"] {
+  --hm-lift: 7px 7px 18px rgba(0, 0, 0, .55), -5px -5px 14px rgba(255, 245, 230, .035);
+  --hm-lift-sm: 4px 4px 11px rgba(0, 0, 0, .5), -4px -4px 10px rgba(255, 245, 230, .03);
+  --hm-press: inset 5px 5px 11px rgba(0, 0, 0, .6), inset -4px -4px 9px rgba(255, 245, 230, .035);
+  --hm-grad: linear-gradient(135deg, #d08a62, #a35f45 55%, #7fb3a0);
+}
+
+/* the slab the first screen sits on */
+.dash-hero {
+  position: relative;
+  margin: clamp(14px, 3vw, 34px) auto 0;
+  padding: clamp(26px, 4.6vw, 54px) clamp(20px, 4vw, 52px) clamp(24px, 4vw, 44px);
+  max-width: var(--card-w);
+  border: 1px solid var(--border);
+  border-radius: 30px;
+  background: var(--hm-clay);
+  box-shadow: var(--hm-lift);
+  overflow: hidden;
+  isolation: isolate;
+}
+/* one soft bloom inside the slab, so the surface is not dead flat */
+.dash-hero::before {
+  content: "";
+  position: absolute;
+  inset: -40% -10% auto -30%;
+  height: 130%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 60% at 18% 8%, color-mix(in srgb, var(--copper) 16%, transparent), transparent 70%),
+    radial-gradient(42% 64% at 88% 0%, color-mix(in srgb, var(--sage) 26%, transparent), transparent 72%);
+  opacity: .9;
+}
+
+.dash-hero h1 {
+  margin: 0 0 12px;
+  font-family: var(--font-head);
+  font-size: clamp(30px, 4.4vw, 52px);
+  line-height: 1.06;
+  letter-spacing: -.035em;
+  max-width: 18ch;
+}
+.dash-hero h1 .dash-grad {
+  background-image: var(--hm-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.dash-hero > p {
+  margin: 0 0 24px;
+  max-width: 52ch;
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.dash-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--hm-clay-2);
+  box-shadow: var(--hm-lift-sm);
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: .02em;
+  color: var(--muted);
+}
+.dash-hero-badge svg { width: 14px; height: 14px; color: var(--accent-2); }
+
+/* the search field: a well pressed into the slab */
+.dash-hero-ask { margin: 0 0 14px; }
+.dash-hero .composer,
+.dash-hero .searchbar,
+.dash-hero form {
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--hm-clay-2);
+  box-shadow: var(--hm-press);
+  padding: 8px 8px 8px 18px;
+  transition: box-shadow .18s ease, border-color .18s ease;
+}
+.dash-hero .composer:focus-within,
+.dash-hero form:focus-within {
+  border-color: var(--accent-2);
+  box-shadow: var(--hm-press), 0 0 0 3px color-mix(in srgb, var(--accent-2) 18%, transparent);
+}
+.dash-hero input[type="search"],
+.dash-hero input[type="text"],
+.dash-hero textarea {
+  font-size: 15.5px;
+  background: transparent;
+  border: 0;
+}
+.dash-hero button[type="submit"],
+.dash-hero .send-button,
+.dash-hero .composer-submit {
+  border-radius: 14px;
+  background-image: var(--hm-grad);
+  color: #fff;
+  box-shadow: 0 10px 20px -14px color-mix(in srgb, var(--copper) 90%, transparent);
+  transition: transform .16s ease, filter .16s ease;
+}
+.dash-hero button[type="submit"]:hover,
+.dash-hero .send-button:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.dash-hero button[type="submit"]:active { transform: translateY(1px); }
+
+/* the quick entries under the field: clay chips, not cards */
+.dash-hero .chip-row,
+.dash-hero .quick-row { gap: 8px; margin-top: 14px; }
+.dash-hero .chip,
+.dash-hero .quick-chip {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--hm-clay);
+  box-shadow: var(--hm-lift-sm);
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.dash-hero .chip:hover,
+.dash-hero .quick-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--hm-lift);
+  border-color: var(--accent-2);
+}
+.dash-hero .chip:active,
+.dash-hero .quick-chip:active { transform: none; box-shadow: var(--hm-press); }
+
+@media (max-width: 700px) {
+  .dash-hero { border-radius: 22px; padding: 24px 16px 20px; margin-top: 10px; }
+  .dash-hero h1 { font-size: clamp(26px, 8.4vw, 34px); letter-spacing: -.02em; }
+  .dash-hero > p { font-size: 14px; margin-bottom: 18px; }
+  .dash-hero .composer, .dash-hero form { padding: 6px 6px 6px 14px; border-radius: 17px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-hero .chip:hover, .dash-hero .quick-chip:hover { transform: none; }
+}

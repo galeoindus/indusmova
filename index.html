@@ -49,6 +49,7 @@
 
   <link rel="stylesheet" href="/assets/css/styles.css?v=4.0.0">
   <link rel="stylesheet" href="/assets/css/app.css?v=4.0.0">
+  <link rel="stylesheet" href="/assets/css/home-morph.css?v=4.0.0">
 
   <!-- The modules the first screen needs, fetched in parallel rather than
        discovered one after another. Everything else loads on demand. -->
@@ -128,7 +129,6 @@
       </a>
 
       <nav class="topnav" aria-label="Primary">
-        <a href="#/ask" data-i18n="navAsk">Ask</a>
         <a href="/research/" data-open-chat>Chat</a>
         <a href="#/explore" data-i18n="explore">Explore</a>
         <a href="/topics/" data-i18n="topics">Topics</a>
@@ -158,10 +158,6 @@
       <a class="side-link" href="#/">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5M6 10v9h12v-9"></path></svg>
         <span data-i18n="home">Home</span>
-      </a>
-      <a class="side-link" href="#/ask">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20a8 8 0 1 0-7.5-10.7M12 20v-5m0-2.5V9"></path></svg>
-        <span data-i18n="ask">Ask</span>
       </a>
       <a class="side-link" href="/research/">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
@@ -313,7 +309,7 @@
   </footer>
 
   <nav class="bottom-nav glass" aria-label="Primary">
-    <a href="#/ask" data-nav="/ask">
+    <a href="/research/" data-open-chat data-nav="/ask">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"></path></svg>
       <span data-i18n="navAsk">Ask</span>
     </a>
