@@ -7,7 +7,7 @@
 
 export const SITE = {
   name: 'indusmova',
-  title: 'indusmova — सवाल से समझ तक',
+  title: 'indusmova — From question to understanding',
   tagline: 'From question to understanding',
   version: '3.0.2',
   // The canonical origin. Everything that has to be an absolute URL — canonical
