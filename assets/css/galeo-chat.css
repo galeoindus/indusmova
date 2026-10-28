@@ -8,33 +8,33 @@
    ══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --gc-clay: #fbf8f1;
-  --gc-clay-2: #f3ece1;
-  --gc-line: #e4dbcd;
-  --gc-ink: #242824;
-  --gc-muted: #5c6259;
-  --gc-accent: #b4613a;
-  --gc-accent-2: #44705f;
-  --gc-grad: linear-gradient(135deg, #c9764a, #b4613a 52%, #8f4a63);
-  --gc-lift: 6px 6px 16px rgba(150, 122, 92, .22), -6px -6px 16px rgba(255, 253, 248, .85);
-  --gc-lift-sm: 4px 4px 10px rgba(150, 122, 92, .18), -4px -4px 10px rgba(255, 253, 248, .8);
-  --gc-press: inset 4px 4px 9px rgba(150, 122, 92, .24), inset -4px -4px 9px rgba(255, 253, 248, .85);
-  --gc-glass: color-mix(in srgb, #fbf8f1 84%, transparent);
+  --gc-clay: #fdfbf7;
+  --gc-clay-2: #f5f0e7;
+  --gc-line: #e7dfd2;
+  --gc-ink: #1d211e;
+  --gc-muted: #666d64;
+  --gc-accent: #b4632f;
+  --gc-accent-2: #2f6b5c;
+  --gc-grad: linear-gradient(135deg, #d98545, #b4632f 55%, #8a4560);
+  --gc-lift: 0 1px 2px rgba(29, 33, 30, .05), 0 14px 30px -18px rgba(29, 33, 30, .35);
+  --gc-lift-sm: 0 1px 2px rgba(29, 33, 30, .05), 0 8px 18px -14px rgba(29, 33, 30, .3);
+  --gc-press: inset 0 1px 3px rgba(29, 33, 30, .10);
+  --gc-glass: color-mix(in srgb, #fdfbf7 86%, transparent);
 }
 
 [data-theme="dark"] {
-  --gc-clay: #241f1a;
-  --gc-clay-2: #1d1915;
-  --gc-line: #352c24;
-  --gc-ink: #f2ebe0;
-  --gc-muted: #b0a496;
-  --gc-accent: #e79a6c;
-  --gc-accent-2: #7fb3a0;
-  --gc-grad: linear-gradient(135deg, #e79a6c, #c9764a 52%, #a35d78);
-  --gc-lift: 6px 6px 16px rgba(0, 0, 0, .5), -5px -5px 12px rgba(255, 245, 230, .04);
-  --gc-lift-sm: 4px 4px 10px rgba(0, 0, 0, .45), -4px -4px 9px rgba(255, 245, 230, .035);
-  --gc-press: inset 5px 5px 11px rgba(0, 0, 0, .55), inset -4px -4px 9px rgba(255, 245, 230, .04);
-  --gc-glass: color-mix(in srgb, #1a1613 86%, transparent);
+  --gc-clay: #14181a;
+  --gc-clay-2: #1b2023;
+  --gc-line: #2a3134;
+  --gc-ink: #f0f3f1;
+  --gc-muted: #9aa5a1;
+  --gc-accent: #eda06a;
+  --gc-accent-2: #6fbfa6;
+  --gc-grad: linear-gradient(135deg, #eda06a, #c97a4a 55%, #b06a86);
+  --gc-lift: 0 1px 2px rgba(0, 0, 0, .4), 0 18px 36px -20px rgba(0, 0, 0, .8);
+  --gc-lift-sm: 0 1px 2px rgba(0, 0, 0, .35), 0 10px 22px -16px rgba(0, 0, 0, .7);
+  --gc-press: inset 0 1px 3px rgba(0, 0, 0, .45);
+  --gc-glass: color-mix(in srgb, #14181a 88%, transparent);
 }
 
 /* ── the launcher ─────────────────────────────────────────────────────── */
@@ -287,4 +287,14 @@
 @media (max-width: 760px) {
   .gc-more { gap: 6px; }
   .gc-more .gc-sg { padding: 8px 12px; font-size: 11.5px; }
+}
+
+/* the header actions sit as a pair, not two floating squares */
+.gc-head .gc-x + .gc-x { margin-left: 2px; }
+.gc-head [data-new]:hover { color: var(--gc-accent); border-color: var(--gc-accent); }
+
+/* on a wide screen the head and dock keep the same 820px column as the thread */
+@media (min-width: 900px) {
+  .gc-head { padding-inline: max(20px, calc((100vw - 820px) / 2)); }
+  .gc-dock { padding-inline: max(16px, calc((100vw - 820px) / 2)); }
 }

@@ -144,6 +144,7 @@ const ICON = {
   chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.6a8.4 8.4 0 0 1-9 8.4 9.2 9.2 0 0 1-3.4-.7L3 21l1.6-4.6A8.2 8.2 0 0 1 3.6 11 8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.6Z"/></svg>',
   close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>',
   send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12 20 4l-4.5 16-4-6.5L4 12Z"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"/></svg>',
 };
 
@@ -157,6 +158,7 @@ const SUGGESTIONS = [
 /* The chat is one conversation, kept for the session only. Nothing is sent
    anywhere except the encyclopaedia, and nothing is written to disk. */
 const turns = [];
+let lastQuestion = '';
 let topic = '';
 let busy = false;
 
@@ -185,7 +187,8 @@ function build() {
       <header class="gc-head">
         <span class="gc-mark">${ICON.chat}</span>
         <div class="gc-titles"><b>Galeoindus</b><small>Answers taken from the source entry</small></div>
-        <button class="gc-x" type="button" aria-label="Close chat">${ICON.close}</button>
+        <button class="gc-x" type="button" data-new aria-label="Start a new chat" title="New chat">${ICON.plus}</button>
+        <button class="gc-x" type="button" aria-label="Close chat" title="Close (Esc)">${ICON.close}</button>
       </header>
       <div class="gc-thread" role="log" aria-live="polite"></div>
       <div class="gc-dock">
@@ -204,7 +207,8 @@ function build() {
   const form = shell.querySelector('.gc-form');
   const input = form.querySelector('textarea');
   const send = form.querySelector('.gc-send');
-  const close = shell.querySelector('.gc-x');
+  const close = shell.querySelector('.gc-x:not([data-new])');
+  const fresh = shell.querySelector('[data-new]');
 
   const open = () => {
     shell.hidden = false;
@@ -222,6 +226,7 @@ function build() {
 
   launcher.addEventListener('click', open);
   close.addEventListener('click', shut);
+  fresh.addEventListener('click', () => { turns.length = 0; topic = ''; hello(); input.focus(); });
   shell.addEventListener('click', (e) => { if (e.target === shell) shut(); });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !shell.hidden) shut();
@@ -365,6 +370,11 @@ function build() {
       } catch { /* clipboard blocked */ }
     });
     foot.append(copy);
+
+    const again = el('button', 'gc-btn', 'Ask again');
+    again.type = 'button';
+    again.addEventListener('click', () => { if (lastQuestion) ask(lastQuestion); });
+    foot.append(again);
     card.append(foot);
 
     if (a.source?.url) {
@@ -407,6 +417,7 @@ function build() {
   async function ask(raw) {
     const question = String(raw || '').trim();
     if (!question || busy) return;
+    lastQuestion = question;
     busy = true;
     send.disabled = true;
     helloDone();
