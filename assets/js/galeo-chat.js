@@ -57,20 +57,34 @@ async function searchEntries(query, lang = 'en', limit = 3) {
   const list = Array.isArray(pages) ? pages : (pages ? Object.values(pages) : []);
   return list.filter((p) => p && !p.missing && p.extract).map((p) => ({
     title: p.title,
-    extract: p.extract,
+    extract: tidy(p.extract),
     url: p.fullurl || `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(String(p.title).replace(/ /g, '_'))}`,
     language: lang,
   }));
 }
 
 function textOf(html) {
-  return clean(String(html || '')
+  return tidy(String(html || '')
     .replace(/<sup[^>]*>[\s\S]*?<\/sup>/g, ' ')
     .replace(/<style[\s\S]*?<\/style>/g, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\[ edit \]/g, ' ')
-    .replace(/&#91;\s*\d+\s*&#93;/g, ' ')
-    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;/g, "'"));
+    .replace(/<[^>]+>/g, ' '));
+}
+
+/** Strip the marks a wiki leaves in its own text — edit links, citation
+    numbers, bracketed notes — so the reader gets prose, not scaffolding. */
+function tidy(value) {
+  return clean(String(value || '')
+    .replace(/\[\s*(edit|edit source|citation needed|clarification needed)\s*\]/gi, ' ')
+    .replace(/&#91;\s*(edit|edit source)[^&]*&#93;/gi, ' ')
+    .replace(/\[\s*\d+[a-z]?\s*\]/g, ' ')
+    .replace(/&#91;\s*\d+[a-z]?\s*&#93;/g, ' ')
+    .replace(/\s*\|\s*(edit|edit source)\b/gi, ' ')
+    .replace(/\(\s*listen\s*\)/gi, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/\s{2,}/g, ' '));
 }
 
 async function entrySections(lang, title) {
@@ -90,8 +104,8 @@ async function entrySections(lang, title) {
       const d = await getJson(u.href);
       const text = textOf(d?.parse?.text);
       const parts = sentences(text);
-      if (parts.length) out.push({ heading: sec.line, line: parts[0].slice(0, 420) });
-      else if (text) out.push({ heading: sec.line, line: text.slice(0, 240) });
+      if (parts.length) out.push({ heading: sec.line, line: tidy(parts[0]).slice(0, 230) });
+      else if (text) out.push({ heading: sec.line, line: tidy(text).slice(0, 230) });
     } catch { /* a section that will not read is simply skipped */ }
   }
   return out;
@@ -296,7 +310,7 @@ function build() {
 
   function thinking() {
     const card = el('div', 'gc-answer');
-    const line = el('div', 'gc-thinking', '<i></i><i></i><i></i><span>Finding the entry…</span>');
+    const line = el('div', 'gc-thinking', '<span class="gc-orb" aria-hidden="true"></span><span>Finding the entry…</span>');
     card.append(line);
     thread.append(card);
     thread.scrollTop = thread.scrollHeight;

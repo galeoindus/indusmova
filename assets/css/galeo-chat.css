@@ -298,3 +298,46 @@
   .gc-head { padding-inline: max(20px, calc((100vw - 820px) / 2)); }
   .gc-dock { padding-inline: max(16px, calc((100vw - 820px) / 2)); }
 }
+
+/* ── the orb ──────────────────────────────────────────────────────────────
+   The loading state is a small ring of light that turns and breathes, rather
+   than a thin line or three dots. It reads as something thinking, not as a
+   progress bar. */
+.gc-thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--gc-muted);
+  font-size: 13px;
+}
+.gc-orb {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    transparent 0deg,
+    color-mix(in srgb, var(--gc-accent) 70%, transparent) 90deg,
+    var(--gc-accent) 200deg,
+    transparent 300deg);
+  animation: gc-spin 1.15s linear infinite;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--gc-accent) 55%, transparent));
+}
+.gc-orb::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: var(--gc-clay);
+  box-shadow: inset 0 0 6px color-mix(in srgb, var(--gc-accent) 30%, transparent);
+}
+@keyframes gc-spin { to { transform: rotate(360deg); } }
+.gc-orb { animation: gc-spin 1.15s linear infinite, gc-breathe 2.2s ease-in-out infinite; }
+@keyframes gc-breathe {
+  0%, 100% { opacity: .85; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gc-orb { animation: none; opacity: 1; }
+}

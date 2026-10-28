@@ -1,0 +1,63 @@
+# indusmova
+
+> indusmova turns a question into an answer taken from a published encyclopaedia
+> entry, with the source attached. Ask in your own words in Hindi or English and
+> get the answer, its key points, the topics the entry covers, and a link to the
+> original page. Nothing is written by a model: every line is a sentence from the
+> source, selected and ordered, so the answer can be checked against the page it
+> came from.
+
+indusmova is a browser-only reader. There is no account, no API key and no
+backend; the search calls go from the visitor's browser to the public Wikimedia
+APIs, and anything saved stays in that browser's own storage.
+
+## What this site is for
+
+- A reader who wants an answer rather than a list of links.
+- A reader who wants to check the answer against the page it came from.
+- A reader working in Hindi or English, or in any of the twelve language
+  editions the search offers.
+
+## Main pages
+
+- [Home](https://indusmova.pages.dev/): ask a question, or open the chat.
+- [Articles](https://indusmova.pages.dev/articles/): the published entries, as
+  static pages that read without JavaScript.
+- [Topics](https://indusmova.pages.dev/topics/): the entries grouped by subject.
+- [Questions](https://indusmova.pages.dev/questions/): questions this site can
+  answer, written out in full.
+- [How it works](https://indusmova.pages.dev/how-it-works/): where the text comes
+  from, and what is and is not generated.
+- [Help](https://indusmova.pages.dev/help/): how to use the site.
+- [Research Desk](https://indusmova.pages.dev/research/): search, inspect and
+  compare sources directly.
+
+## Entries
+
+- [Ashoka](https://indusmova.pages.dev/articles/Ashoka/)
+- [Ayurveda](https://indusmova.pages.dev/articles/Ayurveda/)
+- [Black hole](https://indusmova.pages.dev/articles/Black_hole/)
+- [Chandrayaan-2](https://indusmova.pages.dev/articles/Chandrayaan-2/)
+- [Chandrayaan-3](https://indusmova.pages.dev/articles/Chandrayaan-3/)
+- [Chess](https://indusmova.pages.dev/articles/Chess/)
+- [Indian independence movement](https://indusmova.pages.dev/articles/Indian_independence_movement/)
+- [ISRO](https://indusmova.pages.dev/articles/ISRO/)
+- [Photosynthesis](https://indusmova.pages.dev/articles/Photosynthesis/)
+- [Unified Payments Interface](https://indusmova.pages.dev/articles/Unified_Payments_Interface/)
+- [Vedas](https://indusmova.pages.dev/articles/Vedas/)
+- [World Wide Web](https://indusmova.pages.dev/articles/World_Wide_Web/)
+
+## How to cite an answer from this site
+
+Quote the entry, not this site, and link the original page shown under each
+answer. Article text is available under CC BY-SA 4.0 from the Wikimedia
+projects; indusmova is an independent reader and is not affiliated with or
+endorsed by the Wikimedia Foundation.
+
+## Notes for automated readers
+
+- Every entry page is static HTML and readable without JavaScript.
+- `sitemap.xml` lists every crawlable page with a priority and a change
+  frequency.
+- `robots.txt` allows all crawlers and points at the sitemap.
+- The interactive answer chat needs JavaScript; the entries do not.
