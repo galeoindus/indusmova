@@ -341,3 +341,44 @@
 @media (prefers-reduced-motion: reduce) {
   .gc-orb { animation: none; opacity: 1; }
 }
+
+/* ── the answer, in its new shape ───────────────────────────────────────── */
+.gc-from {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--gc-muted);
+  font-weight: 700;
+}
+.gc-from b { color: var(--gc-accent); font-weight: 800; text-transform: none; letter-spacing: 0; }
+
+/* the topics fold away, so the answer stays short and the depth is one tap */
+.gc-fold {
+  margin: 12px 0 0;
+  border-top: 1px solid var(--gc-line);
+  padding-top: 10px;
+}
+.gc-fold summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gc-accent-2);
+  padding: 4px 0;
+}
+.gc-fold summary::-webkit-details-marker { display: none; }
+.gc-fold summary::before {
+  content: "+";
+  width: 18px; height: 18px;
+  display: grid; place-items: center;
+  border-radius: 6px;
+  background: var(--gc-clay-2);
+  font-size: 13px; font-weight: 400;
+  color: var(--gc-muted);
+}
+.gc-fold[open] summary::before { content: "−"; }
+.gc-fold[open] .gc-topics { margin-top: 10px; }

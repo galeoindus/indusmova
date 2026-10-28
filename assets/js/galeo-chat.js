@@ -324,6 +324,7 @@ function build() {
 
   function renderAnswer(a) {
     const card = el('article', 'gc-answer');
+    card.append(el('p', 'gc-from', `Answer from the entry on <b>${esc(a.title)}</b>`));
     card.append(el('h3', null, esc(a.title)));
     if (a.answer) {
       const lead = el('p', 'gc-lead');
@@ -350,14 +351,18 @@ function build() {
       card.append(ul);
     }
     if (a.topics?.length) {
+      const fold = el('details', 'gc-fold');
+      const sum = el('summary', null, `What this entry covers · ${a.topics.length} topics`);
+      fold.append(sum);
       const box = el('div', 'gc-topics');
       a.topics.forEach((t) => {
-        const s = el('section');
-        s.append(el('h4', null, esc(t.heading)));
-        s.append(el('p', null, esc(t.line)));
-        box.append(s);
+        const sec = el('section');
+        sec.append(el('h4', null, esc(t.heading)));
+        sec.append(el('p', null, esc(t.line)));
+        box.append(sec);
       });
-      card.append(box);
+      fold.append(box);
+      card.append(fold);
     }
 
     const foot = el('div', 'gc-foot');
