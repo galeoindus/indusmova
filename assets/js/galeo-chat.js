@@ -291,16 +291,39 @@ function build() {
 
   function thinking() {
     const card = el('div', 'gc-answer');
-    card.append(el('div', 'gc-thinking', '<i></i><i></i><i></i><span>Reading the entry…</span>'));
+    const line = el('div', 'gc-thinking', '<i></i><i></i><i></i><span>Finding the entry…</span>');
+    card.append(line);
     thread.append(card);
     thread.scrollTop = thread.scrollHeight;
+    // it says what it is doing, and then it says the next thing
+    setTimeout(() => {
+      const label = line.querySelector('span');
+      if (label) label.textContent = 'Reading it, and taking the answer out…';
+    }, 900);
     return card;
   }
 
   function renderAnswer(a) {
     const card = el('article', 'gc-answer');
     card.append(el('h3', null, esc(a.title)));
-    if (a.answer) card.append(el('p', 'gc-lead', esc(a.answer)));
+    if (a.answer) {
+      const lead = el('p', 'gc-lead');
+      card.append(lead);
+      const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (calm) lead.textContent = a.answer;
+      else {
+        const words = String(a.answer).split(/(\s+)/);
+        let i = 0;
+        const tick = () => {
+          if (i >= words.length) return;
+          lead.textContent += words.slice(i, i + 2).join('');
+          i += 2;
+          thread.scrollTop = thread.scrollHeight;
+          setTimeout(tick, 18);
+        };
+        tick();
+      }
+    }
 
     if (a.points?.length) {
       const ul = el('ul', 'gc-points');
@@ -355,6 +378,17 @@ function build() {
     }
 
     thread.append(card);
+    thread.scrollTop = thread.scrollHeight;
+
+    // what a reader usually wants next
+    const more = el('div', 'gc-more');
+    for (const q of ['Tell me more', 'Where does that come from?', 'What else is related?']) {
+      const chip = el('button', 'gc-sg', q);
+      chip.type = 'button';
+      chip.addEventListener('click', () => ask(q));
+      more.append(chip);
+    }
+    thread.append(more);
     thread.scrollTop = thread.scrollHeight;
   }
 
