@@ -31,7 +31,9 @@ body {
   background-image:
     radial-gradient(54rem 32rem at -8% -10%, color-mix(in srgb, var(--accent, #b46a45) 9%, transparent), transparent 70%),
     radial-gradient(46rem 28rem at 104% 5%, color-mix(in srgb, var(--accent-2, #44705f) 8%, transparent), transparent 70%);
-  background-attachment: fixed;
+  /* no background-attachment: fixed — it repaints the whole page on every
+     scroll frame, which is the classic source of jank on a phone */
+  background-repeat: no-repeat;
 }
 
 /* Glass belongs to navigation/chrome, not to long-form reading surfaces. */

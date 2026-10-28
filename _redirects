@@ -24,6 +24,3 @@
 /how-it-works   /how-it-works/    301
 /help           /help/            301
 
-# The CDN held the old CSS and JS under the plain /assets/ path, so a query
-# string did not bust it. A fresh path does.
-/assets/v3/*    /assets/:splat    200

@@ -68,7 +68,7 @@ body {
     radial-gradient(46vw 40vw at 96% 2%, rgba(168, 69, 106, .16), transparent 64%),
     radial-gradient(60vw 48vw at 60% 108%, rgba(28, 138, 127, .12), transparent 68%),
     var(--bg);
-  background-attachment: fixed;
+  background-repeat: no-repeat;
 }
 .app-shell { background: transparent; }
 
