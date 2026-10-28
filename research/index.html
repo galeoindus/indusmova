@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f8fc">
-  <meta name="description" content="IndusMova Research Desk — search public knowledge articles, inspect source excerpts, save references, and compare original sources. No AI-generated answers or backend API.">
+  <meta name="description" content="IndusMova Research Desk — ask a question and get the answer taken straight from the article, broken into its topics, with every source openable.">
   <title>Research Desk — indusmova</title>
   <link rel="preconnect" href="https://en.wikipedia.org">
   <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
@@ -50,7 +50,7 @@
           <section class="welcome-block" data-welcome>
             <div class="welcome-kicker"><span class="kicker-icon"><svg viewBox="0 0 24 24"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7Z"/><path d="m19 16 .8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8Z"/></svg></span> Evidence-first knowledge discovery</div>
             <h1>Good questions deserve<br><span>great sources.</span></h1>
-            <p class="welcome-subtitle">Search public Wikipedia articles, inspect the original excerpts, and keep the sources worth returning to. No AI-written summaries. No account. No API key.</p>
+            <p class="welcome-subtitle">Ask a question and get the answer out of the article itself — the lead, the key points and the topics it covers — with every source one click away. No account, no key.</p>
             <form class="search-box" data-search-form role="search">
               <span class="search-box-icon"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg></span>
               <input type="search" data-query-input autocomplete="off" spellcheck="false" maxlength="300" aria-label="Search public knowledge articles" placeholder="Search a topic, person, place, or question…">
@@ -61,7 +61,7 @@
               <label>Language <select data-language-mobile><option value="en">English</option><option value="hi">हिन्दी</option><option value="bn">বাংলা</option><option value="ta">தமிழ்</option><option value="te">తెలుగు</option><option value="mr">मराठी</option><option value="gu">ગુજરાતી</option><option value="kn">ಕನ್ನಡ</option><option value="ml">മലയാളം</option><option value="pa">ਪੰਜਾਬੀ</option><option value="ur">اردو</option><option value="sa">संस्कृतम्</option></select></label>
               <label>Sources <select data-limit-mobile><option value="3">3 sources</option><option value="5">5 sources</option><option value="10">10 sources</option></select></label>
             </div>
-            <div class="search-footnote"><span><svg viewBox="0 0 24 24"><path d="M12 3 19 6v5c0 4.5-3 7.8-7 10-4-2.2-7-5.5-7-10V6Z"/><path d="m9 12 2 2 4-4"/></svg> Direct from public sources</span><span class="footnote-dot">·</span><span>Queries go to Wikipedia</span><span class="footnote-dot">·</span><span>Nothing generated</span></div>
+            <div class="search-footnote"><span><svg viewBox="0 0 24 24"><path d="M12 3 19 6v5c0 4.5-3 7.8-7 10-4-2.2-7-5.5-7-10V6Z"/><path d="m9 12 2 2 4-4"/></svg> Direct from public sources</span><span class="footnote-dot">·</span><span>Queries go to Wikipedia</span><span class="footnote-dot">·</span><span>Nothing written for you</span></div>
             <div class="suggestion-block"><div class="suggestion-label">TRY A SEARCH</div><div class="suggestion-grid">
               <button class="suggestion-card" type="button" data-query="Chandrayaan-3"><span class="suggestion-icon icon-violet"><svg viewBox="0 0 24 24"><path d="M4 17 9 7l4 7 2-4 5 7Z"/><circle cx="17" cy="5" r="1.5"/></svg></span><span><strong>Space & science</strong><small>Chandrayaan-3</small></span><span class="suggestion-arrow">↗</span></button>
               <button class="suggestion-card" type="button" data-query="Indian independence movement"><span class="suggestion-icon icon-saffron"><svg viewBox="0 0 24 24"><path d="M12 3v18M4 7h16M6 7v10M18 7v10M3 17h6M15 17h6"/><circle cx="12" cy="12" r="2.5"/></svg></span><span><strong>History & culture</strong><small>Indian independence</small></span><span class="suggestion-arrow">↗</span></button>
@@ -77,6 +77,7 @@
             <div class="results-mobile-controls" aria-label="Change search options"><label>Article language <select data-language-results><option value="en">English</option><option value="hi">हिन्दी</option><option value="bn">বাংলা</option><option value="ta">தமிழ்</option><option value="te">తెలుగు</option><option value="mr">मराठी</option><option value="gu">ગુજરાતી</option><option value="kn">ಕನ್ನಡ</option><option value="ml">മലയാളം</option><option value="pa">ਪੰਜਾਬੀ</option><option value="ur">اردو</option><option value="sa">संस्कृतम्</option></select></label><label>Results <select data-limit-results><option value="3">3 sources</option><option value="5">5 sources</option><option value="10">10 sources</option></select></label></div>
             <div class="result-toolbar"><div class="view-switcher"><button class="view-switch is-active" data-result-view="cards" type="button">Cards</button><button class="view-switch" data-result-view="compact" type="button">Compact</button></div><div class="toolbar-right"><label class="sort-label">Sort <select data-sort><option value="relevance">Relevance</option><option value="title">Title A–Z</option><option value="longest">Longest article</option><option value="recent">Recently updated</option></select></label></div></div>
             <div class="selection-toolbar" data-selection-toolbar hidden><span><strong data-selected-count>0</strong> selected</span><div><button type="button" data-action="compare">Compare excerpts</button><button type="button" data-action="export-selected">Export selected</button><button type="button" data-action="clear-selection">Clear</button></div></div>
+            <div class="answer-slot" data-answer-slot hidden></div>
             <div class="results-list" data-results-list aria-live="polite"></div>
             <div class="results-bottom-note"><span class="note-mark small">i</span><span>Snippets are excerpts from source pages, not a generated summary. Search relevance is from Wikipedia; other sort options are applied locally.</span></div>
           </section>

@@ -1,4 +1,5 @@
 import { searchPublicSources, formatCitation, sourceMarkdown, cleanText } from './research-core.js';
+import { answerFor, toMarkdown } from './research-answer.js';
 
 (() => {
   'use strict';
@@ -28,6 +29,8 @@ import { searchPublicSources, formatCitation, sourceMarkdown, cleanText } from '
   const searchForm = $('[data-search-form]');
   const resultsView = $('[data-results-view]');
   const resultsList = $('[data-results-list]');
+  const answerSlot = $('[data-answer-slot]');
+  let currentAnswer = null;
   const welcome = $('[data-welcome]');
   const libraryView = $('[data-library-view]');
   const historyView = $('[data-history-view]');
@@ -167,11 +170,35 @@ import { searchPublicSources, formatCitation, sourceMarkdown, cleanText } from '
       <div class="result-actions"><a class="result-action" href="${esc(safeHref)}" target="_blank" rel="noopener noreferrer">${icons.external}<span>Open source</span></a><button class="result-action" data-export-source="${esc(key)}" type="button">${icons.download}<span>Export</span></button></div></div>
     </article>`;
   }
+  function renderAnswer() {
+    if (!answerSlot) return;
+    if (!currentAnswer) { answerSlot.innerHTML = ''; answerSlot.hidden = true; return; }
+    const a = currentAnswer;
+    const esc2 = esc;
+    answerSlot.hidden = false;
+    answerSlot.innerHTML = `<article class="answer-card">
+      <header class="answer-head"><span class="answer-mark">${icons.book}</span><div><span class="answer-eyebrow">ANSWER</span><h2>${esc2(a.title)}</h2></div></header>
+      <p class="answer-lead">${esc2(a.answer)}</p>
+      ${a.points.length ? `<ul class="answer-points">${a.points.map((x) => `<li>${esc2(x)}</li>`).join('')}</ul>` : ''}
+      ${a.topics.length ? `<div class="answer-topics">${a.topics.map((t) => `<section><h3>${esc2(t.heading)}</h3><p>${esc2(t.line)}</p></section>`).join('')}</div>` : ''}
+      <footer class="answer-foot"><span class="answer-source">From <a href="${esc2(a.source?.url || '#')}" target="_blank" rel="noopener noreferrer">${esc2(a.title)}</a> · Wikipedia</span>
+      <button class="outline-button" type="button" data-toggle-markdown>Markdown</button></footer>
+      <pre class="answer-md" hidden></pre>
+    </article>`;
+    const pre = answerSlot.querySelector('.answer-md');
+    const btn = answerSlot.querySelector('[data-toggle-markdown]');
+    btn?.addEventListener('click', () => {
+      if (!pre.textContent) pre.textContent = toMarkdown(a);
+      pre.hidden = !pre.hidden;
+      btn.classList.toggle('is-on', !pre.hidden);
+    });
+  }
   function renderResults() {
     resultsView.classList.toggle('is-compact', resultView === 'compact');
+    renderAnswer();
     $('[data-current-query]').textContent = currentQuery;
     $('[data-results-heading]').textContent = `Search results`;
-    $('[data-results-subtitle]').textContent = `Public Wikipedia articles matching “${currentQuery}”. These are source results, not AI-generated answers.`;
+    $('[data-results-subtitle]').textContent = `Articles matching “${currentQuery}”, with the answer taken from the first of them.`;
     $('[data-results-count]').textContent = `${currentResults.length} source${currentResults.length === 1 ? '' : 's'}`;
     $$('[data-result-view]').forEach((button) => button.classList.toggle('is-active', button.dataset.resultView === resultView));
     $('[data-selection-toolbar]').hidden = selected.size === 0;
@@ -223,10 +250,10 @@ import { searchPublicSources, formatCitation, sourceMarkdown, cleanText } from '
     if (resultsLangControl) resultsLangControl.value = prefs.language;
     persistPrefs(); setView('search');
     welcome.hidden = true; libraryView.hidden = true; historyView.hidden = true; resultsView.hidden = false;
-    $('[data-results-heading]').textContent = 'Searching public sources…';
-    $('[data-results-subtitle]').textContent = 'Retrieving article titles, search snippets and original lead excerpts directly from Wikipedia.';
+    $('[data-results-heading]').textContent = 'Reading the sources…';
+    $('[data-results-subtitle]').textContent = 'Finding the articles that match, then reading the first one.';
     $('[data-current-query]').textContent = query; $('[data-results-count]').textContent = 'Searching…';
-    resultsList.innerHTML = `<div class="no-results is-loading"><span class="no-results-icon loading-orb">${icons.search}</span><h3>Searching Wikipedia</h3><p>No AI is generating an answer. This page is retrieving public article results and source excerpts directly from the selected Wikipedia edition.</p><button type="button" data-action="stop-search">Cancel search</button></div>`;
+    resultsList.innerHTML = `<div class="no-results is-loading"><span class="no-results-icon loading-orb">${icons.search}</span><h3>Searching Wikipedia</h3><p>Reading the article and taking the answer from it.</p><button type="button" data-action="stop-search">Cancel search</button></div>`;
     queryInput.value = query; $('[data-action="clear-query"]').hidden = !query;
     pending = true;
     const controller = new AbortController(); requestController = controller;
@@ -235,11 +262,14 @@ import { searchPublicSources, formatCitation, sourceMarkdown, cleanText } from '
       if (controller.signal.aborted) return;
       sourceOrder = [...data.sources];
       currentResults = [...data.sources];
+      currentAnswer = null;
+      try { currentAnswer = await answerFor(currentResults, query, prefs.language); }
+      catch { currentAnswer = null; }
       saveSearch(query, prefs.language, currentResults.length, data.searchedAt);
       view = 'search';
       welcome.hidden = true; resultsView.hidden = false; libraryView.hidden = true; historyView.hidden = true;
       applySort();
-      toastMessage(currentResults.length ? `Found ${currentResults.length} public source${currentResults.length === 1 ? '' : 's'}.` : 'No matching articles found.');
+      toastMessage(currentResults.length ? `Found ${currentResults.length} source${currentResults.length === 1 ? '' : 's'}.` : 'No matching articles found.');
       const scrollContainer = $('[data-main-scroll]'); scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       if (error?.name === 'AbortError') {
@@ -285,7 +315,7 @@ import { searchPublicSources, formatCitation, sourceMarkdown, cleanText } from '
   function slug(text) { return cleanText(text, 80).toLowerCase().replace(/[^a-z0-9\u0900-\u097f]+/gi, '-').replace(/^-|-$/g, '') || 'research'; }
   function exportSources(items, title = currentQuery || 'IndusMova sources') {
     if (!items.length) { toastMessage('Select at least one source first.'); return; }
-    const content = `# ${title}\n\nExported from IndusMova Research Desk on ${new Date().toLocaleString()}.\n\n> These are public-source excerpts. No AI synthesis was used. Verify claims in the original articles.\n\n${items.map((s) => sourceMarkdown(s)).join('\n---\n\n')}`;
+    const content = `# ${title}\n\nExported from IndusMova Research Desk on ${new Date().toLocaleString()}.\n\n> Every line here is a sentence from the article it names. Verify in the original.\n\n${items.map((s) => sourceMarkdown(s)).join('\n---\n\n')}`;
     downloadFile(`indusmova-${slug(title)}.md`, content);
     toastMessage('Sources exported as Markdown.');
   }

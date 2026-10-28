@@ -167,3 +167,68 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .suggestion-card:hover, .source-card:hover { transform: none; }
 }
+
+/* ── the answer card ────────────────────────────────────────────────────── */
+/* the answer sits above the source list and reads as a document, not a card
+   in a grid — so it takes the raised clay, the widest radius, and air */
+.answer-slot { margin: 22px 0 6px; }
+.answer-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: var(--lift);
+  padding: 22px 24px 18px;
+}
+.answer-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.answer-mark {
+  width: 34px; height: 34px; flex: none; border-radius: 12px;
+  display: grid; place-items: center;
+  background: var(--grad); color: #fff;
+  box-shadow: 0 10px 20px -14px rgba(180, 97, 58, .9);
+}
+.answer-mark svg { width: 17px; height: 17px; }
+.answer-eyebrow { display: block; font-size: 9px; letter-spacing: 1.4px; font-weight: 800; color: var(--muted-2); }
+.answer-head h2 {
+  margin: 4px 0 0; font-family: var(--display); font-size: 22px;
+  letter-spacing: -.6px; line-height: 1.25; overflow-wrap: anywhere;
+}
+.answer-lead { margin: 0 0 14px; font-size: 15px; line-height: 1.75; color: var(--text); }
+.answer-points { margin: 0 0 16px; padding: 0; list-style: none; display: grid; gap: 9px; }
+.answer-points li {
+  position: relative; padding-left: 20px;
+  font-size: 13.5px; line-height: 1.7; color: var(--muted);
+}
+.answer-points li::before {
+  content: ""; position: absolute; left: 4px; top: 9px;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+}
+.answer-topics { display: grid; gap: 14px; margin: 0 0 16px; }
+.answer-topics section { border-left: 2px solid var(--line); padding-left: 14px; }
+.answer-topics h3 {
+  margin: 0 0 5px; font-size: 11px; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--accent); font-weight: 800;
+}
+.answer-topics p { margin: 0; font-size: 13px; line-height: 1.72; color: var(--muted); }
+.answer-foot {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding-top: 14px; border-top: 1px solid var(--line);
+}
+.answer-source { font-size: 11px; color: var(--muted-2); flex: 1; min-width: 160px; }
+.answer-source a { color: var(--accent); text-decoration: none; font-weight: 700; }
+.answer-source a:hover { text-decoration: underline; }
+.answer-foot .outline-button { box-shadow: var(--lift-sm); }
+.answer-foot .outline-button.is-on { background: var(--grad); color: #fff; border-color: transparent; }
+.answer-md {
+  margin: 14px 0 0; padding: 16px 18px; border-radius: 14px;
+  background: var(--panel-soft); box-shadow: var(--press);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px; line-height: 1.7; white-space: pre-wrap; word-break: break-word;
+  max-height: 380px; overflow: auto; color: var(--text);
+}
+
+@media (max-width: 700px) {
+  .answer-card { padding: 17px 15px 14px; border-radius: 18px; }
+  .answer-head h2 { font-size: 18px; }
+  .answer-lead { font-size: 14px; }
+  .answer-points li, .answer-topics p { font-size: 12.5px; }
+}
