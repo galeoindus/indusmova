@@ -1,0 +1,316 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Galeoindus — the floating assistant
+   ══════════════════════════════════════════════════════════════════════════
+   A round button in the corner. Pressed, a chat opens over the page: full
+   screen on a phone, a tall window on a desktop. Nothing is on screen until
+   it is pressed.
+
+   The surface is quiet on purpose — a deep canvas, one warm accent, thin
+   lines and no shadows fighting each other — so the answer is the only thing
+   with weight on the page.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --gx-canvas: #fcfaf6;
+  --gx-panel: #ffffff;
+  --gx-soft: #f4efe7;
+  --gx-line: #e6ded1;
+  --gx-ink: #1c201d;
+  --gx-muted: #6b726a;
+  --gx-accent: #b4552d;
+  --gx-accent-2: #2f6b5c;
+  --gx-grad: linear-gradient(135deg, #d97a3f, #b4552d 55%, #8a3f5a);
+  --gx-shadow: 0 24px 60px -30px rgba(28, 32, 29, .45), 0 2px 8px -4px rgba(28, 32, 29, .12);
+}
+
+[data-theme="dark"] {
+  --gx-canvas: #0e1113;
+  --gx-panel: #14181a;
+  --gx-soft: #1b2023;
+  --gx-line: #262d30;
+  --gx-ink: #eef2ef;
+  --gx-muted: #98a29d;
+  --gx-accent: #ef9a63;
+  --gx-accent-2: #6fc0a6;
+  --gx-grad: linear-gradient(135deg, #ef9a63, #c9713f 55%, #a95f7c);
+  --gx-shadow: 0 26px 70px -30px rgba(0, 0, 0, .9), 0 2px 10px -4px rgba(0, 0, 0, .6);
+}
+
+/* ── the launcher ─────────────────────────────────────────────────────── */
+.gx-launch {
+  position: fixed;
+  right: 20px;
+  bottom: 86px;
+  z-index: 70;
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #fff;
+  background: var(--gx-grad);
+  box-shadow: 0 16px 34px -14px rgba(180, 85, 45, .85), inset 0 1px 0 rgba(255, 255, 255, .3);
+  transition: transform .18s cubic-bezier(.22, .68, .3, 1), box-shadow .18s ease;
+}
+.gx-launch:hover { transform: translateY(-2px) scale(1.03); }
+.gx-launch:active { transform: scale(.96); }
+.gx-launch svg { width: 24px; height: 24px; }
+.gx-launch[hidden] { display: none; }
+
+/* ── the window ───────────────────────────────────────────────────────── */
+.gx-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: color-mix(in srgb, #0b0d0e 46%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.gx-shell[hidden] { display: none; }
+
+.gx-window {
+  width: min(860px, 100%);
+  height: min(760px, 100%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 24px;
+  border: 1px solid var(--gx-line);
+  background: var(--gx-canvas);
+  box-shadow: var(--gx-shadow);
+  color: var(--gx-ink);
+}
+
+.gx-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--gx-line);
+  background: var(--gx-panel);
+}
+.gx-dot {
+  width: 34px; height: 34px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 11px;
+  background: var(--gx-grad);
+  color: #fff;
+}
+.gx-dot svg { width: 18px; height: 18px; }
+.gx-title { min-width: 0; flex: 1; }
+.gx-title b { display: block; font-size: 14.5px; letter-spacing: -.01em; }
+.gx-title small { display: block; font-size: 11px; color: var(--gx-muted); }
+.gx-btn {
+  width: 34px; height: 34px; flex: none;
+  display: grid; place-items: center;
+  border: 1px solid var(--gx-line);
+  border-radius: 10px;
+  background: var(--gx-panel);
+  color: var(--gx-muted);
+  cursor: pointer;
+}
+.gx-btn:hover { color: var(--gx-ink); border-color: var(--gx-accent); }
+.gx-btn svg { width: 15px; height: 15px; }
+
+/* ── the thread ───────────────────────────────────────────────────────── */
+.gx-thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 16px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.gx-thread > * { width: 100%; max-width: 700px; margin-inline: auto; }
+
+.gx-hello { padding-top: 6vh; text-align: center; }
+.gx-hello h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-head, 'Lora', Georgia, serif);
+  font-size: clamp(22px, 3.4vw, 30px);
+  line-height: 1.2;
+  letter-spacing: -.03em;
+}
+.gx-hello h2 em {
+  font-style: normal;
+  background: var(--gx-grad);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.gx-hello p { margin: 0 auto 20px; max-width: 40ch; font-size: 13px; color: var(--gx-muted); }
+.gx-sugg { display: grid; gap: 8px; }
+.gx-sugg button {
+  padding: 11px 14px;
+  border: 1px solid var(--gx-line);
+  border-radius: 12px;
+  background: var(--gx-panel);
+  color: var(--gx-ink);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.gx-sugg button:hover { border-color: var(--gx-accent); }
+
+.gx-ask { display: flex; justify-content: flex-end; }
+.gx-ask span {
+  max-width: 84%;
+  padding: 10px 15px;
+  border-radius: 16px 16px 5px 16px;
+  background: var(--gx-grad);
+  color: #fff;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.gx-answer {
+  border: 1px solid var(--gx-line);
+  border-radius: 16px;
+  background: var(--gx-panel);
+  padding: 16px 17px 13px;
+}
+.gx-src-line {
+  margin: 0 0 8px;
+  font-size: 10.5px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--gx-muted);
+  font-weight: 700;
+}
+.gx-src-line b { color: var(--gx-accent); text-transform: none; letter-spacing: 0; }
+.gx-answer h3 {
+  margin: 0 0 9px;
+  font-family: var(--font-head, 'Lora', Georgia, serif);
+  font-size: 18px;
+  line-height: 1.3;
+  letter-spacing: -.02em;
+}
+.gx-lead { margin: 0 0 12px; font-size: 14.5px; line-height: 1.72; }
+.gx-points { margin: 0 0 12px; padding: 0; list-style: none; display: grid; gap: 7px; }
+.gx-points li { position: relative; padding-left: 16px; font-size: 13.2px; line-height: 1.68; color: var(--gx-muted); }
+.gx-points li::before {
+  content: ""; position: absolute; left: 2px; top: 8px;
+  width: 5px; height: 5px; border-radius: 50%; background: var(--gx-accent);
+}
+.gx-topics { display: grid; gap: 11px; margin: 0 0 12px; }
+.gx-topics section { border-left: 2px solid var(--gx-line); padding-left: 12px; }
+.gx-topics h4 {
+  margin: 0 0 3px; font-size: 10px; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--gx-accent-2); font-weight: 800;
+}
+.gx-topics p { margin: 0; font-size: 12.6px; line-height: 1.66; color: var(--gx-muted); }
+
+.gx-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-top: 11px; border-top: 1px solid var(--gx-line); }
+.gx-chip {
+  padding: 6px 11px;
+  border: 1px solid var(--gx-line);
+  border-radius: 9px;
+  background: var(--gx-soft);
+  color: var(--gx-muted);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.gx-chip:hover { color: var(--gx-ink); }
+.gx-link {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--gx-accent);
+  text-decoration: none;
+  font-weight: 650;
+}
+.gx-link:hover { text-decoration: underline; }
+.gx-link svg { width: 12px; height: 12px; }
+
+/* ── the steps, while it works ────────────────────────────────────────── */
+.gx-steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.gx-step {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 12.5px; color: var(--gx-muted); opacity: .5;
+}
+.gx-step-dot {
+  width: 15px; height: 15px; flex: none; border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--gx-muted) 45%, transparent);
+  position: relative;
+}
+.gx-step.on { opacity: 1; color: var(--gx-ink); }
+.gx-step.on .gx-step-dot { border-color: var(--gx-accent); }
+.gx-step.on .gx-step-dot::after {
+  content: ""; position: absolute; inset: 3px; border-radius: 50%;
+  background: var(--gx-accent);
+  animation: gx-pulse 1.1s ease-in-out infinite;
+}
+.gx-step.done { opacity: .8; }
+.gx-step.done .gx-step-dot { border-color: var(--gx-accent-2); background: color-mix(in srgb, var(--gx-accent-2) 15%, transparent); }
+.gx-step.done .gx-step-dot::after {
+  content: ""; position: absolute; left: 4px; top: 1px;
+  width: 4px; height: 8px;
+  border-right: 2px solid var(--gx-accent-2);
+  border-bottom: 2px solid var(--gx-accent-2);
+  transform: rotate(40deg);
+}
+@keyframes gx-pulse { 0%, 100% { opacity: .5; transform: scale(.85); } 50% { opacity: 1; transform: scale(1); } }
+
+.gx-error {
+  border: 1px solid color-mix(in srgb, #b4453a 40%, var(--gx-line));
+  background: color-mix(in srgb, #b4453a 7%, var(--gx-panel));
+  border-radius: 14px; padding: 13px 14px; font-size: 12.5px;
+}
+.gx-error b { display: block; margin-bottom: 4px; }
+.gx-error button {
+  margin-top: 9px; padding: 6px 12px; border-radius: 8px;
+  border: 1px solid var(--gx-line); background: var(--gx-panel);
+  color: var(--gx-ink); font: inherit; font-size: 11.5px; cursor: pointer;
+}
+
+/* ── the composer ─────────────────────────────────────────────────────── */
+.gx-dock { padding: 10px 16px 14px; border-top: 1px solid var(--gx-line); background: var(--gx-panel); }
+.gx-form {
+  display: flex; align-items: flex-end; gap: 8px;
+  max-width: 700px; margin: 0 auto;
+  padding: 7px 7px 7px 15px;
+  border: 1px solid var(--gx-line);
+  border-radius: 18px;
+  background: var(--gx-canvas);
+}
+.gx-form:focus-within { border-color: var(--gx-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gx-accent) 14%, transparent); }
+.gx-form textarea {
+  flex: 1; min-height: 24px; max-height: 120px; padding: 8px 0;
+  border: 0; background: transparent; color: var(--gx-ink);
+  font: inherit; font-size: 14px; line-height: 1.5; resize: none;
+}
+.gx-form textarea:focus { outline: none; }
+.gx-form textarea::placeholder { color: var(--gx-muted); }
+.gx-send {
+  width: 38px; height: 38px; flex: none;
+  display: grid; place-items: center;
+  border: 0; border-radius: 12px;
+  color: #fff; background: var(--gx-grad); cursor: pointer;
+}
+.gx-send:disabled { opacity: .45; cursor: progress; }
+.gx-send svg { width: 17px; height: 17px; }
+.gx-hint { max-width: 700px; margin: 7px auto 0; font-size: 10px; color: var(--gx-muted); text-align: center; }
+
+/* ── phones: the chat is the screen ───────────────────────────────────── */
+@media (max-width: 760px) {
+  .gx-launch { right: 14px; bottom: 80px; width: 52px; height: 52px; }
+  .gx-shell { padding: 0; background: var(--gx-canvas); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .gx-window { width: 100%; height: 100dvh; border-radius: 0; border: 0; box-shadow: none; }
+  .gx-thread { padding: 14px 12px 4px; }
+  .gx-dock { padding: 8px 12px calc(12px + env(safe-area-inset-bottom)); }
+  .gx-hello { padding-top: 4vh; }
+  .gx-ask span { max-width: 88%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gx-step.on .gx-step-dot::after { animation: none; }
+  .gx-launch:hover { transform: none; }
+}

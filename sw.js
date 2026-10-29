@@ -10,7 +10,7 @@
  *   · the Wikimedia APIs and the model endpoint are never cached at all.
  */
 
-const VERSION = 'indusmova-v4.0.0';
+const VERSION = 'indusmova-v4.1.0';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 
