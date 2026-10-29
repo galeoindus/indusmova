@@ -149,13 +149,6 @@ function initBuildWatch() {
   const RELOADED = 'indusmova:reloaded-for';
   let reloading = false;
 
-  // ask the worker to look for a new version now rather than in a day
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistration()
-      .then((reg) => reg?.update())
-      .catch(() => undefined);
-  }
-
   const check = async () => {
     if (reloading || document.visibilityState !== 'visible') return;
 

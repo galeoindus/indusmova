@@ -398,10 +398,17 @@ function boot() {
   router.start();
   fillRail();
 
-  // Register the service worker for offline use, but never block on it.
-  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  // The service worker is gone. Caching is done by _headers now — HTML
+  // revalidates, versioned assets are immutable — and a worker on top of
+  // that only ever did one thing here: keep an old build alive on a device
+  // that had already visited. Old registrations are cleared below, once.
+  if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
+      navigator.serviceWorker.getRegistrations()
+        .then((regs) => Promise.all(regs.map((r) => r.unregister())))
+        .then(() => (window.caches ? caches.keys() : Promise.resolve([])))
+        .then((keys) => Promise.all((keys || []).map((k) => caches.delete(k))))
+        .catch(() => undefined);
     });
   }
 

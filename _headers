@@ -12,8 +12,7 @@
 #             URL. Those can be cached for a year with `immutable`, because
 #             the URL itself is the version. A new release means a new URL,
 #             so nothing stale can ever be served from that cache.
-#   · the service worker and the build stamp — never stored, or they would
-#             keep the old app alive.
+#   · the build stamp — never stored, or it would keep the old app alive.
 
 /*
   X-Content-Type-Options: nosniff
@@ -87,10 +86,6 @@
 # ══════════════════════════════════════════════════════════════════════════
 # Never stored: the worker, the build stamp, the API
 # ══════════════════════════════════════════════════════════════════════════
-/sw.js
-  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
-  CDN-Cache-Control: no-store
-
 /assets/version.json
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
   CDN-Cache-Control: no-store

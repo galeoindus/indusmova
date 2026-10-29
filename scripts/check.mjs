@@ -7,7 +7,7 @@
  * browser as "does not provide an export named…" and blanks the page.
  */
 
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, dirname, normalize, relative } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
@@ -25,7 +25,8 @@ function walk(dir) {
 }
 
 const files = walk(join(ROOT, 'assets/js'));
-files.push(join(ROOT, 'sw.js'));
+// the service worker is gone; only add it back if it ever returns
+if (existsSync(join(ROOT, 'sw.js'))) files.push(join(ROOT, 'sw.js'));
 
 // 1. syntax
 for (const file of files) {
@@ -169,18 +170,26 @@ for (const file of files) {
 // 5. one version everywhere (the audit's F-01: this drifted before)
 {
   const version = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
-  const sw = readFileSync(join(ROOT, 'sw.js'), 'utf8');
-  const swVersion = (sw.match(/const VERSION = 'indusmova-v([0-9.]+)'/) || [])[1];
-  if (!swVersion) problems.push('version: sw.js has no VERSION constant');
-  else if (swVersion !== version) problems.push(`version: sw.js says ${swVersion}, package.json says ${version}`);
 
-  const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
-  const queries = [...html.matchAll(/\?v=([0-9.]+)/g)].map((m) => m[1]);
-  const stale = [...new Set(queries)].filter((q) => q !== version);
-  if (stale.length) problems.push(`version: index.html asks for ?v=${stale.join(', ?v=')}, package.json says ${version}`);
+  // the service worker is gone; if one is ever added back, it must carry the
+  // same version in its cache name as the package does.
+  if (existsSync(join(ROOT, 'sw.js'))) {
+    const sw = readFileSync(join(ROOT, 'sw.js'), 'utf8');
+    const swVersion = (sw.match(/const VERSION = 'indusmova-v([0-9.]+)'/) || [])[1];
+    if (!swVersion) problems.push('version: sw.js has no VERSION constant');
+    else if (swVersion !== version) problems.push(`version: sw.js says ${swVersion}, package.json says ${version}`);
+  }
 
-  const shown = (html.match(/id="appVersion">v([0-9.]+)</) || [])[1];
-  if (shown && shown !== version) problems.push(`version: the footer says v${shown}, package.json says ${version}`);
+  for (const page of ['index.html', 'chat/index.html', 'research/index.html']) {
+    if (!existsSync(join(ROOT, page))) continue;
+    const html = readFileSync(join(ROOT, page), 'utf8');
+    const queries = [...html.matchAll(/\?v=([0-9.]+)/g)].map((m) => m[1]);
+    const stale = [...new Set(queries)].filter((q) => q !== version);
+    if (stale.length) problems.push(`version: ${page} asks for ?v=${stale.join(', ?v=')}, package.json says ${version}`);
+
+    const shown = (html.match(/id="appVersion">v([0-9.]+)</) || [])[1];
+    if (shown && shown !== version) problems.push(`version: the footer says v${shown}, package.json says ${version}`);
+  }
 }
 
 if (problems.length) {
