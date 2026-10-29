@@ -143,10 +143,12 @@ function answerMarkdown(a) {
   return out.join('\n');
 }
 
-async function answerQuestion(question) {
+async function answerQuestion(question, onStep = () => {}) {
+  onStep(1);
   const results = await searchEntries(question, 'en', 3);
   if (!results.length) return null;
   const top = results[0];
+  onStep(2);
   let topics = [];
   try { topics = await entrySections('en', top.title); } catch { topics = []; }
   return composeAnswer(top, question, topics);
@@ -308,17 +310,33 @@ function build() {
     thread.scrollTop = thread.scrollHeight;
   }
 
+  /** The waiting state: three steps that tick, in the order they happen.
+   *  No ring, no rotation — the reader watches the work, which is both
+   *  calmer and more honest than a spinner. */
   function thinking() {
-    const card = el('div', 'gc-answer');
-    const line = el('div', 'gc-thinking', '<span class="gc-orb" aria-hidden="true"></span><span>Finding the entry…</span>');
-    card.append(line);
+    const card = el('div', 'gc-answer gc-steps');
+    const list = el('ol', 'gc-steplist');
+    const items = ['Reading your question', 'Finding the entry', 'Taking the answer out'].map((text, i) => {
+      const li = el('li', `gc-step${i === 0 ? ' is-active' : ''}`);
+      li.append(el('span', 'gc-step-dot'));
+      li.append(el('span', null, text));
+      list.append(li);
+      return li;
+    });
+    card.append(list);
     thread.append(card);
     thread.scrollTop = thread.scrollHeight;
-    // it says what it is doing, and then it says the next thing
-    setTimeout(() => {
-      const label = line.querySelector('span');
-      if (label) label.textContent = 'Reading it, and taking the answer out…';
-    }, 900);
+
+    let at = 0;
+    const advance = (to) => {
+      while (at < to && at < items.length) {
+        items[at].classList.remove('is-active');
+        items[at].classList.add('is-done');
+        at += 1;
+        if (items[at]) items[at].classList.add('is-active');
+      }
+    };
+    card._advance = advance;
     return card;
   }
 
@@ -465,7 +483,7 @@ function build() {
     const query = isFollow ? `${topic} ${question}`.slice(0, 300) : question;
 
     try {
-      const a = await answerQuestion(query);
+      const a = await answerQuestion(query, (to) => card._advance?.(to));
       if (!a) {
         card.remove();
         renderError('No entry matched that. Try a name, a place, an event or a thing.', () => ask(question));
