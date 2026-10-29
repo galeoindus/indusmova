@@ -9,3 +9,13 @@
 name = "indusmova"
 compatibility_date = "2026-01-01"
 pages_build_output_dir = "."
+
+# ── Workers AI ────────────────────────────────────────────────────────────
+# The /api/ask function reads this binding. It is free-tier friendly and
+# needs no key: Cloudflare runs the model.
+#
+# If the binding is added in the dashboard instead (Pages → Settings →
+# Functions → Bindings → Workers AI, variable name AI), this block is
+# redundant but harmless — the name must match.
+[ai]
+binding = "AI"
