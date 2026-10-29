@@ -143,15 +143,88 @@ function answerMarkdown(a) {
   return out.join('\n');
 }
 
-async function answerQuestion(question, onStep = () => {}) {
+async function answerQuestion(question, onStep = () => {}, lang = 'en') {
   onStep(1);
-  const results = await searchEntries(question, 'en', 3);
+
+  // search the reader's own language first
+  let results = await searchEntries(question, lang, 3);
+  let sourceLang = lang;
+
+  // nothing written in it: fall back to English and say so
+  if (!results.length && lang !== 'en') {
+    results = await searchEntries(question, 'en', 3);
+    sourceLang = 'en';
+  }
   if (!results.length) return null;
+
   const top = results[0];
   onStep(2);
   let topics = [];
-  try { topics = await entrySections('en', top.title); } catch { topics = []; }
-  return composeAnswer(top, question, topics);
+  try { topics = await entrySections(sourceLang, top.title); } catch { topics = []; }
+
+  const composed = composeAnswer(top, question, topics);
+  composed.sourceLang = sourceLang;
+  composed.translated = sourceLang !== lang;
+
+  if (composed.translated) {
+    onStep(3);
+    return translateAnswer(composed, lang);
+  }
+  return composed;
+}
+
+
+/* ── translation ──────────────────────────────────────────────────────────
+   Some things are only written in English. Rather than tell a Hindi reader
+   "not available", the answer is translated here, in the browser, and the
+   page says so — the original stays one tap away. Two public endpoints, no
+   key, no account; if both refuse, the English text is returned unchanged
+   and the note still tells the truth. */
+const TRANSLATE_HOSTS = [
+  (text, to) => `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${to}&dt=t&q=${encodeURIComponent(text)}`,
+  (text, to) => `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 480))}&langpair=en|${to}`,
+];
+
+async function translateText(text, to = 'hi') {
+  const value = String(text || '').trim();
+  if (!value || to === 'en') return value;
+
+  // Google's public endpoint returns [[["translated","source",...],...],...]
+  try {
+    const res = await fetch(TRANSLATE_HOSTS[0](value, to));
+    if (res.ok) {
+      const data = await res.json();
+      const out = (data?.[0] || []).map((part) => part?.[0] || '').join('').trim();
+      if (out) return out;
+    }
+  } catch { /* try the next one */ }
+
+  // MyMemory answers with a plain object
+  try {
+    const res = await fetch(TRANSLATE_HOSTS[1](value, to));
+    if (res.ok) {
+      const data = await res.json();
+      const out = String(data?.responseData?.translatedText || '').trim();
+      if (out && !/^MYMEMORY WARNING/i.test(out)) return out;
+    }
+  } catch { /* fall through */ }
+
+  return value;
+}
+
+/** Translate a whole composed answer, in parallel, keeping its shape. */
+async function translateAnswer(answer, to) {
+  if (!answer || to === 'en') return answer;
+  const [head, lead, points, topics] = await Promise.all([
+    translateText(answer.title, to),
+    translateText(answer.answer, to),
+    Promise.all((answer.points || []).map((x) => translateText(x, to))),
+    Promise.all((answer.topics || []).map(async (t) => ({
+      heading: await translateText(t.heading, to),
+      line: await translateText(t.line, to),
+    }))),
+  ]);
+  return { ...answer, title: head, answer: lead, points, topics };
 }
 
 const LAUNCHER_LABEL = 'Ask Galeoindus';
@@ -174,6 +247,8 @@ const SUGGESTIONS = [
 /* The chat is one conversation, kept for the session only. Nothing is sent
    anywhere except the encyclopaedia, and nothing is written to disk. */
 const turns = [];
+let lang = 'en';
+try { lang = localStorage.getItem('galeo:lang') || 'en'; } catch { lang = 'en'; }
 let lastQuestion = '';
 let topic = '';
 let busy = false;
@@ -203,6 +278,7 @@ function build() {
       <header class="gc-head">
         <span class="gc-mark">${ICON.chat}</span>
         <div class="gc-titles"><b>Galeoindus</b><small>Answers taken from the source entry</small></div>
+        <button class="gc-lang" type="button" data-lang aria-label="Answer language" title="Answer language">EN</button>
         <button class="gc-x" type="button" data-new aria-label="Start a new chat" title="New chat">${ICON.plus}</button>
         <button class="gc-x" type="button" aria-label="Close chat" title="Close (Esc)">${ICON.close}</button>
       </header>
@@ -225,6 +301,7 @@ function build() {
   const send = form.querySelector('.gc-send');
   const close = shell.querySelector('.gc-x:not([data-new])');
   const fresh = shell.querySelector('[data-new]');
+  const langBtn = shell.querySelector('[data-lang]');
 
   const open = () => {
     shell.hidden = false;
@@ -243,6 +320,21 @@ function build() {
   launcher.addEventListener('click', open);
   close.addEventListener('click', shut);
   fresh.addEventListener('click', () => { turns.length = 0; topic = ''; hello(); input.focus(); });
+
+  // the switch changes what is searched and what is spoken back
+  const paintLang = () => {
+    langBtn.textContent = lang === 'hi' ? 'हिं' : 'EN';
+    langBtn.title = lang === 'hi' ? 'Answers in Hindi' : 'Answers in English';
+    langBtn.setAttribute('aria-label', langBtn.title);
+    input.placeholder = lang === 'hi' ? 'कुछ भी पूछिए…' : 'Ask anything…';
+  };
+  paintLang();
+  langBtn.addEventListener('click', () => {
+    lang = lang === 'en' ? 'hi' : 'en';
+    try { localStorage.setItem('galeo:lang', lang); } catch { /* private mode */ }
+    paintLang();
+    input.focus();
+  });
   shell.addEventListener('click', (e) => { if (e.target === shell) shut(); });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !shell.hidden) shut();
@@ -343,6 +435,9 @@ function build() {
   function renderAnswer(a) {
     const card = el('article', 'gc-answer');
     card.append(el('p', 'gc-from', `Answer from the entry on <b>${esc(a.title)}</b>`));
+    if (a.translated) {
+      card.append(el('p', 'gc-note', `Written in English, shown here in Hindi. The original is linked below.`));
+    }
     card.append(el('h3', null, esc(a.title)));
     if (a.answer) {
       const lead = el('p', 'gc-lead');
@@ -483,7 +578,7 @@ function build() {
     const query = isFollow ? `${topic} ${question}`.slice(0, 300) : question;
 
     try {
-      const a = await answerQuestion(query, (to) => card._advance?.(to));
+      const a = await answerQuestion(query, (to) => card._advance?.(to), lang);
       if (!a) {
         card.remove();
         renderError('No entry matched that. Try a name, a place, an event or a thing.', () => ask(question));
