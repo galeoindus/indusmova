@@ -299,47 +299,39 @@
   .gc-dock { padding-inline: max(16px, calc((100vw - 820px) / 2)); }
 }
 
-/* ── the orb ──────────────────────────────────────────────────────────────
-   The loading state is a small ring of light that turns and breathes, rather
-   than a thin line or three dots. It reads as something thinking, not as a
-   progress bar. */
+/* ── the waiting state ────────────────────────────────────────────────────
+   A ring that turns. Nothing else moves: no rotated text, no second
+   animation, no transform anywhere near the label. The previous version
+   rotated a conic gradient inside the same box as the text and the two
+   collided on a phone, which is what produced the overlapping diagonal
+   words in the screenshot. */
 .gc-thinking {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 10px;
   color: var(--gc-muted);
   font-size: 13px;
+  line-height: 1.4;
+  transform: none;
+  white-space: normal;
+}
+.gc-thinking > span:last-child {
+  display: block;
+  transform: none;
+  writing-mode: horizontal-tb;
 }
 .gc-orb {
-  position: relative;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   flex: none;
   border-radius: 50%;
-  background: conic-gradient(from 0deg,
-    transparent 0deg,
-    color-mix(in srgb, var(--gc-accent) 70%, transparent) 90deg,
-    var(--gc-accent) 200deg,
-    transparent 300deg);
-  animation: gc-spin 1.15s linear infinite;
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--gc-accent) 55%, transparent));
-}
-.gc-orb::after {
-  content: "";
-  position: absolute;
-  inset: 4px;
-  border-radius: 50%;
-  background: var(--gc-clay);
-  box-shadow: inset 0 0 6px color-mix(in srgb, var(--gc-accent) 30%, transparent);
+  border: 2px solid color-mix(in srgb, var(--gc-accent) 26%, transparent);
+  border-top-color: var(--gc-accent);
+  animation: gc-spin .85s linear infinite;
 }
 @keyframes gc-spin { to { transform: rotate(360deg); } }
-.gc-orb { animation: gc-spin 1.15s linear infinite, gc-breathe 2.2s ease-in-out infinite; }
-@keyframes gc-breathe {
-  0%, 100% { opacity: .85; }
-  50% { opacity: 1; }
-}
 @media (prefers-reduced-motion: reduce) {
-  .gc-orb { animation: none; opacity: 1; }
+  .gc-orb { animation: none; border-top-color: var(--gc-accent); }
 }
 
 /* ── the answer, in its new shape ───────────────────────────────────────── */
@@ -382,3 +374,31 @@
 }
 .gc-fold[open] summary::before { content: "−"; }
 .gc-fold[open] .gc-topics { margin-top: 10px; }
+
+/* ── the tabs: one card, two faces ──────────────────────────────────────── */
+.gc-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 14px 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--gc-line);
+}
+.gc-tab {
+  padding: 7px 13px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--gc-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background-color .16s ease, color .16s ease;
+}
+.gc-tab:hover { color: var(--gc-ink); background: var(--gc-clay-2); }
+.gc-tab.on {
+  color: #fff;
+  background: var(--gc-grad);
+  box-shadow: 0 8px 16px -12px color-mix(in srgb, var(--gc-accent) 90%, transparent);
+}
+.gc-topics[hidden] { display: none; }

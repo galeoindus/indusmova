@@ -350,19 +350,36 @@ function build() {
       a.points.forEach((p) => ul.append(el('li', null, esc(p))));
       card.append(ul);
     }
+    // the answer morphs: one card, two faces — the summary and the topics
     if (a.topics?.length) {
-      const fold = el('details', 'gc-fold');
-      const sum = el('summary', null, `What this entry covers · ${a.topics.length} topics`);
-      fold.append(sum);
-      const box = el('div', 'gc-topics');
+      const tabs = el('div', 'gc-tabs');
+      const summaryBtn = el('button', 'gc-tab on', 'Summary');
+      const topicsBtn = el('button', 'gc-tab', `Topics · ${a.topics.length}`);
+      summaryBtn.type = 'button';
+      topicsBtn.type = 'button';
+      tabs.append(summaryBtn, topicsBtn);
+
+      const topicsPanel = el('div', 'gc-topics');
       a.topics.forEach((t) => {
         const sec = el('section');
         sec.append(el('h4', null, esc(t.heading)));
         sec.append(el('p', null, esc(t.line)));
-        box.append(sec);
+        topicsPanel.append(sec);
       });
-      fold.append(box);
-      card.append(fold);
+      topicsPanel.hidden = true;
+
+      const show = (which) => {
+        const isTopics = which === 'topics';
+        topicsPanel.hidden = !isTopics;
+        summaryBtn.classList.toggle('on', !isTopics);
+        topicsBtn.classList.toggle('on', isTopics);
+        if (isTopics) topicsPanel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      };
+      summaryBtn.addEventListener('click', () => show('summary'));
+      topicsBtn.addEventListener('click', () => show('topics'));
+
+      // the tab bar sits under the answer, so the summary is what you read first
+      card.append(tabs, topicsPanel);
     }
 
     const foot = el('div', 'gc-foot');

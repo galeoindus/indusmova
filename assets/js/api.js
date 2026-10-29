@@ -403,7 +403,7 @@ export async function featured(lang, date = new Date(), { signal } = {}) {
  * so we walk back a few days until one answers.
  */
 export async function mostRead(lang, { days = 4, signal } = {}) {
-  for (let back = 1; back <= days; back++) {
+  for (let back = 2; back <= days + 1; back++) {
     const d = new Date(Date.now() - back * 864e5);
     const y = d.getUTCFullYear();
     const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
