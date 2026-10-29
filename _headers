@@ -1,10 +1,19 @@
 # indusmova — Cloudflare Pages headers.
 # https://developers.cloudflare.com/pages/configuration/headers/
 #
-# The rule this file follows: a page must never be served from a cache it
-# cannot revalidate. The document, the service worker and the build stamp
-# are no-store at the browser AND at the edge; the code revalidates on every
-# load; only images and icons, which really do not change, keep a long cache.
+# The caching rule, in one line: the document is revalidated on every visit,
+# and the code is cached forever because its address changes when the code
+# does.
+#
+#   · HTML  — `no-cache` means the browser keeps a copy but must ask the
+#             server before using it, every single time. A deploy is visible
+#             on the next page load, not on a hard refresh.
+#   · CSS/JS — requested with `?v=<version>`, so each release has a different
+#             URL. Those can be cached for a year with `immutable`, because
+#             the URL itself is the version. A new release means a new URL,
+#             so nothing stale can ever be served from that cache.
+#   · the service worker and the build stamp — never stored, or they would
+#             keep the old app alive.
 
 /*
   X-Content-Type-Options: nosniff
@@ -17,32 +26,92 @@
   Permissions-Policy: geolocation=(), camera=(), microphone=(self), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), interest-cohort=()
   Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; frame-src 'none'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org https://*.wikimedia.org https://*.wikipedia.org https://covers.openlibrary.org; connect-src 'self' https://cloudflareinsights.com https://translate.googleapis.com https://api.mymemory.translated.net https://*.wikipedia.org https://*.wikiquote.org https://*.wikisource.org https://*.wikinews.org https://*.wikibooks.org https://*.wikiversity.org https://*.wikivoyage.org https://*.wiktionary.org https://www.wikidata.org https://commons.wikimedia.org https://wikimedia.org https://*.wikimedia.org https://gutendex.com https://openlibrary.org https://covers.openlibrary.org https://archive.org https://api.crossref.org https://api.openalex.org https://openalex.org https://www.ebi.ac.uk https://eutils.ncbi.nlm.nih.gov https://europepmc.org https://doaj.org https://cdn.jsdelivr.net https://huggingface.co https://*.huggingface.co https://*.hf.co; manifest-src 'self'; media-src 'self' https://upload.wikimedia.org; upgrade-insecure-requests
 
-# ── the document: never cached, at the browser or at the edge ─────────────
+# ══════════════════════════════════════════════════════════════════════════
+# HTML — revalidate on every visit
+# ══════════════════════════════════════════════════════════════════════════
+# `no-cache` does not mean "do not cache". It means "keep it, but check it
+# with the server before you show it". The browser sends a conditional
+# request, the server answers 304 when nothing changed, and a deploy is
+# picked up on the next navigation.
 /
-  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
-  CDN-Cache-Control: no-store
+  Cache-Control: no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-cache
 
 /index.html
-  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
-  CDN-Cache-Control: no-store
+  Cache-Control: no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-cache
 
 /*.html
+  Cache-Control: no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-cache
+
+# the crawlable index pages are content: revalidate, but let the edge keep a
+# short copy so a crawl of 20 URLs does not hammer the origin
+/articles/*
+  Cache-Control: no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-cache
+
+/topics/
+  Cache-Control: no-cache, must-revalidate, max-age=0
+
+/questions/
+  Cache-Control: no-cache, must-revalidate, max-age=0
+
+/help/
+  Cache-Control: no-cache, must-revalidate, max-age=0
+
+/how-it-works/
+  Cache-Control: no-cache, must-revalidate, max-age=0
+
+/research/
+  Cache-Control: no-cache, must-revalidate, max-age=0
+
+# ══════════════════════════════════════════════════════════════════════════
+# CSS and JS — cached for a year, because the URL carries the version
+# ══════════════════════════════════════════════════════════════════════════
+# Every page requests these as /assets/js/app.js?v=4.1.0. Cloudflare's cache
+# key includes the query string, so 4.1.0 and 4.2.0 are two different
+# objects. Bumping the version in package.json and the pages is what makes a
+# release visible — not the cache header.
+/assets/js/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/css/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# the same policy for content-hashed filenames, if they are ever adopted
+# (app.9f2c1a.js and friends) — those can never collide at all
+/assets/h/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# ══════════════════════════════════════════════════════════════════════════
+# Never stored: the worker, the build stamp, the API
+# ══════════════════════════════════════════════════════════════════════════
+/sw.js
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
   CDN-Cache-Control: no-store
 
-/chat/
-  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
-  CDN-Cache-Control: no-store
-
-/chat/index.html
-  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
-  CDN-Cache-Control: no-store
-
-# the build stamp the page polls to notice a new deploy
 /assets/version.json
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
   CDN-Cache-Control: no-store
 
+/api/*
+  Cache-Control: no-store, max-age=0
+  CDN-Cache-Control: no-store
+
+# ══════════════════════════════════════════════════════════════════════════
+# Images, fonts, manifest — these genuinely do not change
+# ══════════════════════════════════════════════════════════════════════════
+/assets/img/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/manifest.webmanifest
+  Content-Type: application/manifest+json; charset=utf-8
+  Cache-Control: public, max-age=86400
+
+# ══════════════════════════════════════════════════════════════════════════
+# Files a crawler reads — an hour is plenty, and it keeps them current
+# ══════════════════════════════════════════════════════════════════════════
 /sitemap.xml
   Content-Type: application/xml; charset=utf-8
   Cache-Control: public, max-age=3600
@@ -55,35 +124,3 @@
 /llms.txt
   Content-Type: text/plain; charset=utf-8
   Cache-Control: public, max-age=3600
-
-# ── the service worker: must be re-fetched, or it keeps serving the old app ─
-/sw.js
-  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
-  CDN-Cache-Control: no-store
-
-# ── code: always revalidate, never trust a stored copy blindly ────────────
-/assets/js/*
-  Cache-Control: public, max-age=0, must-revalidate
-  CDN-Cache-Control: no-store
-
-/assets/css/*
-  Cache-Control: public, max-age=0, must-revalidate
-  CDN-Cache-Control: no-store
-
-# the versioned alias every page actually requests
-/assets/v3/*
-  Cache-Control: public, max-age=0, must-revalidate
-  CDN-Cache-Control: no-store
-
-# ── images and icons: these really do not change ─────────────────────────
-/assets/img/*
-  Cache-Control: public, max-age=604800
-
-/manifest.webmanifest
-  Content-Type: application/manifest+json; charset=utf-8
-  Cache-Control: public, max-age=3600
-
-# ── the article pages are content, so they revalidate but may be stored ───
-/articles/*
-  Cache-Control: public, max-age=0, must-revalidate
-  CDN-Cache-Control: no-store
