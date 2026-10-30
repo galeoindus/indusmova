@@ -12,7 +12,7 @@
   --im-clay-raised: 5px 5px 14px rgba(23, 59, 50, .075), -4px -4px 12px rgba(255, 255, 255, .72);
   --im-clay-hover: 8px 9px 20px rgba(23, 59, 50, .12), -5px -5px 13px rgba(255, 255, 255, .78);
   --im-inset: inset 3px 3px 8px rgba(23, 59, 50, .075), inset -3px -3px 8px rgba(255, 255, 255, .68);
-  --im-focus-ring: 0 0 0 3px color-mix(in srgb, var(--focus, #2b6de9) 23%, transparent);
+  --im-focus-ring: 0 0 0 3px color-mix(in srgb, var(--focus, var(--copper-ink, #9a5636)) 23%, transparent);
   --im-glass-blur: saturate(135%) blur(16px);
 }
 
@@ -170,7 +170,7 @@ button.btn,
 }
 
 :where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
-  outline: 3px solid var(--focus, #2b6de9);
+  outline: 3px solid var(--focus, var(--copper-ink, #9a5636));
   outline-offset: 3px;
   box-shadow: var(--im-focus-ring);
 }

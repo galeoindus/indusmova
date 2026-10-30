@@ -156,7 +156,6 @@ form.panel .select { cursor: pointer; }
   .topnav a { padding: 7px 8px; font-size: 12.5px; }
 }
 
-
 /* ======================================================================
    The hero assumes a dark panel
    ======================================================================
@@ -543,7 +542,6 @@ button, .btn, [role="button"], .tab, .chip, .depth-btn, .chip-btn {
 @media (max-width: 1039px) {
   .article-grid { grid-template-columns: 1fr; }
   .article-grid > .toc-rail { order: -1; }
-  .article-grid:not(.rail-open) > .toc-rail { display: none; }
   .toc-rail .toc-jump { position: static; }
   .toc-rail .toc-jump-list { max-height: 50vh; }
 }
@@ -708,7 +706,6 @@ button, .btn, [role="button"], .tab, .chip, .depth-btn, .chip-btn {
    Keep the stacking rule last, where it wins. */
 @media (max-width: 1039px) {
   .article-grid { grid-template-columns: minmax(0, 1fr); }
-  .article-grid > .toc-rail { order: -1; }
 }
 
 /* The Markdown actions panel is hidden with the `hidden` attribute, but the
@@ -795,7 +792,6 @@ button, .btn, [role="button"], .tab, .chip, .depth-btn, .chip-btn {
    "Jump to a section" button at the top instead. */
 
 [data-view="article"] .wrap { max-width: none; }
-.panel-wide { max-width: none; }
 .panel-wide .line-list > li,
 .art-body > p,
 .art-body > ul > li { max-width: 104ch; }
@@ -1254,10 +1250,7 @@ form.panel .searchbar:focus-within, .feedback .fb-note textarea:focus {
               inset -4px -4px 9px color-mix(in srgb, #ffffff 22%, transparent);
 }
 .dash-hero .mode { background: var(--neo-face); box-shadow: var(--neo-in); border: 1px solid var(--neo-edge); }
-.dash-hero .mode-btn { color: var(--muted); }
-.dash-hero .trust-strip { color: var(--muted); }
 .dash-hero .trust-strip li::before { color: var(--copper-ink); }
-.dash-hero .chips > span { color: var(--faint) !important; }
 
 /* Two small clay pebbles, low-contrast, tucked into the corners. */
 .dash-hero::before {
@@ -1317,7 +1310,6 @@ form.panel .searchbar:focus-within, .feedback .fb-note textarea:focus {
 }
 @media (min-width: 1200px) {
   .dash-actions { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-  .dash-actions > :first-child { grid-column: span 2; }
   .dash-actions > :nth-child(2) { grid-column: span 2; }
 }
 
@@ -1685,49 +1677,15 @@ html { scroll-padding-top: 84px; }
    surfaces, the controls and the chrome. Light mode is the same idea in
    daylight: soft paper, the same colour, less weight. */
 
-:root {
-  --aura-1: #ff5f9e;
-  --aura-2: #7b6bff;
-  --aura-3: #4fd8ff;
-
-  /* light daylight version */
-  --bg: #f4f1fb;
-  --surface: #ffffff;
-  --surface-2: #f0ecfa;
-  --text: #1a1c26;
-  --muted: #5b6076;
-  --faint: #767c92;
-  --border: #e6e1f4;
-  --border-2: #d8d1ee;
-  --primary: #6b4dff;
-  --accent: #e0447f;
-  --accent-2: #2f9fd0;
-  --copper: #e0447f;
-  --copper-ink: #b52d63;
-  --copper-deep: #a02455;
-  --forest: #3a2f86;
-  --sage: #8fd6ef;
-  --on-primary: #ffffff;
+:root :root {
+  /* Colour comes from styles.css. These three only exist so the gradient
+     washes below have somewhere to point; they are the site's own hues. */
+  --aura-1: var(--copper);
+  --aura-2: var(--forest);
+  --aura-3: var(--sage);
 }
 
 [data-theme="dark"] {
-  --bg: #0a0c12;
-  --surface: #141926;
-  --surface-2: #1b2231;
-  --text: #eef2fb;
-  --muted: #a7b0c6;
-  --faint: #7c869e;
-  --border: #1f2738;
-  --border-2: #2b3448;
-  --primary: #b794ff;
-  --accent: #ff5f9e;
-  --accent-2: #5fd8ff;
-  --copper: #ff7ab0;
-  --copper-ink: #ffa6cb;
-  --copper-deep: #c93f78;
-  --forest: #7b6bff;
-  --sage: #9be7ff;
-  --on-primary: #0a0c12;
 
   /* glass, recut for the dark room */
   --glass-bg: color-mix(in srgb, #ffffff 7%, transparent);
@@ -1740,6 +1698,10 @@ html { scroll-padding-top: 84px; }
   --clay-hi: inset 0 1px 0 color-mix(in srgb, #ffffff 12%, transparent);
   --clay-lo: inset 0 -1px 0 color-mix(in srgb, #000000 40%, transparent);
   --clay-drop: 0 26px 50px -28px rgba(0, 0, 0, .85);
+  /* the same three, in their dark-theme values */
+  --aura-1: var(--accent);
+  --aura-2: var(--accent-2);
+  --aura-3: var(--sage);
 }
 
 /* The colour field: violet top-left, pink right, cyan bottom. */
@@ -1752,7 +1714,6 @@ body::before {
   filter: blur(18px) saturate(1.2);
 }
 [data-theme="dark"] body::before { opacity: .78; }
-body::after { opacity: 0; }
 
 /* Surfaces: one glass sheet for every panel and card. */
 .panel, .answer-card, .sec:has(> .sec-head), .source-card, .page,
@@ -1849,3 +1810,14 @@ form.panel .searchbar, form.panel .select, .feedback .fb-note textarea,
 }
 .dash-hero::before { background: radial-gradient(circle at 32% 28%, var(--aura-2), color-mix(in srgb, var(--aura-2) 40%, #000)); }
 .hero-clock, .kicker, .dash-hero-badge { background: var(--glass-bg); border: 1px solid var(--glass-line); box-shadow: var(--glass-hi); }
+
+/* Icon tiles: the glyph inherited the card's text colour, which left it
+   nearly invisible on the clay surface. Give it its own contrast. */
+.cat-card .ic, .dash-action .ic, .topic-card .ic, .feature .ic, .site-intro .intro-card .ic {
+  color: var(--copper-ink);
+}
+[data-theme="dark"] .cat-card .ic, [data-theme="dark"] .dash-action .ic,
+[data-theme="dark"] .topic-card .ic, [data-theme="dark"] .feature .ic,
+[data-theme="dark"] .site-intro .intro-card .ic {
+  color: var(--accent);
+}

@@ -1,6 +1,6 @@
 @charset "utf-8";
 
-:root { color-scheme: light dark; --ivory: #f5f0e6; --forest: #173b32; --charcoal: #242824; --copper: #b46a45; --sage: #c8d5c3; --sand: #e8dfd0; --bg: var(--ivory); --surface: #fbf8f1; --surface-2: var(--sand); --text: var(--charcoal); --muted: #5c6259; --faint: #5b6258; --ok: #1f5c48; --warn: #8a4a24; --danger: #9b2c2c; --border: #e0d6c4; --border-2: #cfc3ac; --focus: #2b6de9; --primary: var(--forest); --accent: var(--copper); --copper-ink: #9a5636; --copper-deep: #8a4f24; --forest-ink: #173b32; --accent-2: #44705f; --on-primary: #f7f4ec; --topbar-h: 62px; --radius-xl: 24px; --radius-lg: 20px; --radius: 16px; --radius-sm: 14px; --radius-xs: 12px; --shadow-sm: 0 1px 2px rgba(36, 40, 36, .06); --shadow: 0 1px 2px rgba(36, 40, 36, .05), 0 12px 28px -14px rgba(23, 59, 50, .22); --shadow-lg: 0 2px 6px rgba(36, 40, 36, .06), 0 34px 60px -30px rgba(23, 59, 50, .38); --maxw: 1200px; --font-head: 'Lora', 'Tiro Devanagari Hindi', Georgia, 'Times New Roman', serif; --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Devanagari', 'Helvetica Neue', Arial, sans-serif; --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace; }
+:root { color-scheme: light dark; --ivory: #f5f0e6; --forest: #173b32; --charcoal: #242824; --copper: #b46a45; --sage: #c8d5c3; --sand: #e8dfd0; --bg: var(--ivory); --surface: #fbf8f1; --surface-2: var(--sand); --text: var(--charcoal); --muted: #5c6259; --faint: #5b6258; --ok: #1f5c48; --warn: #8a4a24; --danger: #9b2c2c; --border: #e0d6c4; --border-2: #cfc3ac; --focus: var(--copper-ink); --primary: var(--forest); --accent: var(--copper); --copper-ink: #9a5636; --copper-deep: #8a4f24; --forest-ink: #173b32; --accent-2: #44705f; --on-primary: #f7f4ec; --topbar-h: 62px; --radius-xl: 24px; --radius-lg: 20px; --radius: 16px; --radius-sm: 14px; --radius-xs: 12px; --shadow-sm: 0 1px 2px rgba(36, 40, 36, .06); --shadow: 0 1px 2px rgba(36, 40, 36, .05), 0 12px 28px -14px rgba(23, 59, 50, .22); --shadow-lg: 0 2px 6px rgba(36, 40, 36, .06), 0 34px 60px -30px rgba(23, 59, 50, .38); --maxw: 1200px; --font-head: 'Lora', 'Tiro Devanagari Hindi', Georgia, 'Times New Roman', serif; --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Devanagari', 'Helvetica Neue', Arial, sans-serif; --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace; }
 
 [data-theme="dark"] { --bg: #101713; --surface: #1a2620; --surface-2: #21302a; --text: #ede8dd; --muted: #a9b0a6; --faint: #848c84; --ok: #7fc4a5; --warn: #e0a271; --danger: #f08a8a; --border: #2a382f; --border-2: #3a4a40; --primary: var(--sage); --accent: #d08a62; --copper-ink: #d08a62; --copper-deep: #8a4f24; --forest-ink: #a8d5c0; --accent-2: #7fb3a0; --on-primary: #101713; --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4); --shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 12px 28px -14px rgba(0, 0, 0, .7); --shadow-lg: 0 2px 6px rgba(0, 0, 0, .45), 0 34px 60px -30px rgba(0, 0, 0, .9); }
 
@@ -608,7 +608,7 @@ a.card { text-decoration: none; }
 
 .prose pre { overflow-x: auto; max-width: 100%; }
 
-[data-theme="sepia"] { --focus: #1f5bd0; --aura-1: color-mix(in srgb, var(--sand) 42%, transparent); --aura-2: color-mix(in srgb, var(--copper) 14%, transparent); --aura-3: color-mix(in srgb, var(--sage) 20%, transparent); color-scheme: light; --bg: #f3e9d2; --surface: #faf3e2; --surface-2: #e9dcbd; --text: #3a3226; --muted: #675c48; --faint: #685c46; --border: #ddcfae; --border-2: #cdbb94; --primary: #3f4a34; --accent: #a8642f; --copper-ink: #8a4f24; --copper-deep: #7d451f; --forest-ink: #173b32; --accent-2: #4a6b4a; --on-primary: #faf3e2; --shadow-sm: 0 1px 2px rgba(80, 62, 30, .07); --shadow: 0 1px 2px rgba(80, 62, 30, .06), 0 12px 28px -14px rgba(80, 62, 30, .25); --shadow-lg: 0 2px 6px rgba(80, 62, 30, .08), 0 34px 60px -30px rgba(80, 62, 30, .35); }
+[data-theme="sepia"] { --focus: #a8642f; --aura-1: color-mix(in srgb, var(--sand) 42%, transparent); --aura-2: color-mix(in srgb, var(--copper) 14%, transparent); --aura-3: color-mix(in srgb, var(--sage) 20%, transparent); color-scheme: light; --bg: #f3e9d2; --surface: #faf3e2; --surface-2: #e9dcbd; --text: #3a3226; --muted: #675c48; --faint: #685c46; --border: #ddcfae; --border-2: #cdbb94; --primary: #3f4a34; --accent: #a8642f; --copper-ink: #8a4f24; --copper-deep: #7d451f; --forest-ink: #173b32; --accent-2: #4a6b4a; --on-primary: #faf3e2; --shadow-sm: 0 1px 2px rgba(80, 62, 30, .07); --shadow: 0 1px 2px rgba(80, 62, 30, .06), 0 12px 28px -14px rgba(80, 62, 30, .25); --shadow-lg: 0 2px 6px rgba(80, 62, 30, .08), 0 34px 60px -30px rgba(80, 62, 30, .35); }
 
 [data-theme="sepia"] .grain { mix-blend-mode: multiply; opacity: 0.22; }
 
@@ -715,12 +715,9 @@ a.card { text-decoration: none; }
 
 .panel .prose { max-width: var(--measure); }
 
-.prose table { display: block; max-width: 100%; overflow-x: auto; }
-
 .article-grid.rail-open .panel .prose { max-width: 100%; }
 
 @media (min-width: 960px) {
-  .article-grid.rail-open { grid-template-columns: minmax(0px, 1fr) 300px; gap: 44px; }
 }
 
 @media (max-width: 700px) {
@@ -844,7 +841,7 @@ button.point-from:hover { text-decoration: underline; }
 :root { --font-display: 'Space Grotesk', 'Lora', 'Tiro Devanagari Hindi', Georgia, serif; --aura-1: color-mix(in srgb, var(--sage) 37%, transparent); --aura-2: color-mix(in srgb, var(--copper) 16%, transparent); --aura-3: color-mix(in srgb, var(--forest) 10%, transparent); --glow: 0 0 0 1px color-mix(in srgb, var(--copper) 34%, transparent),
           0 0 22px -6px color-mix(in srgb, var(--copper) 45%, transparent); --ease: cubic-bezier(.22, .61, .36, 1); }
 
-[data-theme="dark"] { --focus: #8fb4ff; --bg: #070b09; --surface: #121a16; --surface-2: #1a241e; --border: #22302a; --border-2: #2e3f36; --aura-1: color-mix(in srgb, var(--forest) 27%, transparent); --aura-2: color-mix(in srgb, var(--copper) 21%, transparent); --aura-3: color-mix(in srgb, var(--sage) 10%, transparent); }
+[data-theme="dark"] { --focus: var(--accent); --bg: #070b09; --surface: #121a16; --surface-2: #1a241e; --border: #22302a; --border-2: #2e3f36; --aura-1: color-mix(in srgb, var(--forest) 27%, transparent); --aura-2: color-mix(in srgb, var(--copper) 21%, transparent); --aura-3: color-mix(in srgb, var(--sage) 10%, transparent); }
 
 body::before { background: radial-gradient(52vw 38vw at 12% -4%, var(--aura-1), transparent 64%),
     radial-gradient(46vw 34vw at 92% 6%, var(--aura-2), transparent 62%),
@@ -964,7 +961,6 @@ a.card:hover, .topic-card:hover { transform: translateY(-3px); box-shadow: var(-
 }
 
 @media (pointer: coarse) and (min-width: 900px) {
-.btn, .mic-btn, .depth-btn, .mode-btn, .bottom-nav a { min-height: 44px; }
 }
 
 .suggest { transform-origin: center top; animation: growFromOrigin .18s var(--ease) both; }
@@ -1352,9 +1348,7 @@ a.card:hover, .topic-card:hover { transform: translateY(-3px); box-shadow: var(-
 
 .crisis-help.shown { animation: helpIn .7s var(--ease) .1s both; }
 
-@keyframes helpIn { 
-  0% { opacity: 0; transform: translateY(10px); }
-  100% { opacity: 1; transform: none; }
+@keyframes helpIn {
 }
 
 .crisis-where { text-align: center; font-size: 13.5px; color: rgb(154, 167, 159); margin: 0px; }
@@ -1441,8 +1435,7 @@ a.card:hover, .topic-card:hover { transform: translateY(-3px); box-shadow: var(-
 
 .dash-hero-badge { background-image: linear-gradient(100deg, rgba(255, 255, 255, .16), var(--glow-a), rgba(255, 255, 255, .16)); background-size: 200% 100%; animation: 9s linear 0s infinite normal none running sheen; }
 
-@keyframes sheen { 
-  0% { background-position: 200% 0px; }
+@keyframes sheen {
   100% { background-position: -100% 0px; }
 }
 
@@ -1472,7 +1465,6 @@ body::before { animation-duration: 34s, 46s; }
 
 @keyframes floatIn { 
   0% { opacity: 0; transform: translateY(14px) rotateX(3deg); }
-  100% { opacity: 1; transform: none; }
 }
 
 .dash-action, .cat-card, .q-card, .howstep, .rail-card { animation: floatIn .5s var(--ease) both; }
