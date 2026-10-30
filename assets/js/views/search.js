@@ -42,11 +42,11 @@ export async function renderSearch(ctx, route) {
   }
 
   results.append(skeletonGrid(6, 'card'));
-  runSearch(ctx, results, query, wrap);
+  runSearch(ctx, results, query);
   return wrap;
 }
 
-async function runSearch(ctx, mount, query, wrap) {
+async function runSearch(ctx, mount, query) {
   const lang = ctx.state.contentLang;
   try {
     const hits = await ctx.api.search(lang, query, { limit: 18 });
@@ -78,6 +78,6 @@ async function runSearch(ctx, mount, query, wrap) {
     mount.append(ask);
   } catch (err) {
     mount.innerHTML = '';
-    mount.append(errorBox(err, { onRetry: () => runSearch(ctx, mount, query, wrap), query }));
+    mount.append(errorBox(err, { onRetry: () => runSearch(ctx, mount, query), query }));
   }
 }

@@ -1,7 +1,8 @@
 /* indusmova — local state: bookmarks, reading history and preferences.
  *
  * Everything is kept in localStorage on the device. indusmova has no accounts
- * and no server, so nothing about a reader leaves their browser. Writes are
+ * and no account server, so a reader's saved data never leaves their browser
+ * except when they explicitly ask chat to answer. Writes are
  * wrapped so a full or disabled storage never breaks the page.
  */
 

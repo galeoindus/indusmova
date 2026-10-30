@@ -29,22 +29,18 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Write the build stamp
-        run: |
-          SHORT=$(git rev-parse --short HEAD)
-          VERSION=$(node -p "require('./package.json').version")
-          BUILT=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          printf '{\n  "version": "%s",\n  "commit": "%s",\n  "built": "%s"\n}\n' \
-            "$VERSION" "$SHORT" "$BUILT" > assets/version.json
-          echo "stamped $VERSION+$SHORT at $BUILT"
+      - name: Stamp every page and asset URL
+        env:
+          BUILD_COMMIT: ${{ github.sha }}
+        run: npm run stamp:build
 
-      - name: Commit if it changed
+      - name: Commit if the build stamp changed
         run: |
-          if git diff --quiet -- assets/version.json; then
+          git add -- '*.html' assets/js/config.js assets/version.json
+          if git diff --cached --quiet; then
             echo "already current"; exit 0
           fi
           git config user.name  'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add assets/version.json
-          git commit -m "chore: stamp build $(node -p "require('./package.json').version")+$(git rev-parse --short HEAD)"
+          git commit -m "chore: stamp build $(node -p "require('./package.json').version")-$(git rev-parse --short HEAD)"
           git push

@@ -3,13 +3,26 @@
 > indusmova turns a question into an answer taken from a published encyclopaedia
 > entry, with the source attached. Ask in your own words in Hindi or English and
 > get the answer, its key points, the topics the entry covers, and a link to the
-> original page. Nothing is written by a model: every line is a sentence from the
-> source, selected and ordered, so the answer can be checked against the page it
-> came from.
+> original page. The article breakdown is quoted from the source; the optional
+> chat mode can add an AI explanation that is restricted to the selected source
+> passages and marked with numbered citations.
 
-indusmova is a browser-only reader. There is no account, no API key and no
-backend; the search calls go from the visitor's browser to the public Wikimedia
-APIs, and anything saved stays in that browser's own storage.
+indusmova has two reading modes. The **article breakdown** is extractive: every
+sentence is a sentence from the source, selected and ordered, so the answer can
+be checked against the page it came from. **Chat** is assisted: an AI model is
+prompted with the question and a handful of source excerpts and is instructed to
+answer only from them, citing the passage number for each claim.
+
+## Where the data goes
+
+- Search, article and Wikidata requests go from the visitor's browser to the
+  public Wikimedia APIs. Those APIs need no key.
+- When chat AI is used, the question and the selected source excerpts are sent
+  to the same-origin `/api/ask` Cloudflare Pages Function, which calls the
+  configured OpenRouter model or the Cloudflare Workers AI binding. Provider
+  credentials are server-side only.
+- There is no account. Bookmarks, reading history and saved chat answers stay in
+  the visitor's own browser storage.
 
 ## What this site is for
 
@@ -20,7 +33,9 @@ APIs, and anything saved stays in that browser's own storage.
 
 ## Main pages
 
-- [Home](https://indusmova.pages.dev/): ask a question, or open the chat.
+- [Home](https://indusmova.pages.dev/): ask a question, or open a breakdown.
+- [Chat](https://indusmova.pages.dev/chat/): ask in your own words, with
+  Quick / Detailed / Deep answers, saved answers, voice input and read-aloud.
 - [Articles](https://indusmova.pages.dev/articles/): the published entries, as
   static pages that read without JavaScript.
 - [Topics](https://indusmova.pages.dev/topics/): the entries grouped by subject.
@@ -52,7 +67,8 @@ APIs, and anything saved stays in that browser's own storage.
 Quote the entry, not this site, and link the original page shown under each
 answer. Article text is available under CC BY-SA 4.0 from the Wikimedia
 projects; indusmova is an independent reader and is not affiliated with or
-endorsed by the Wikimedia Foundation.
+endorsed by the Wikimedia Foundation. An AI explanation is a reading aid, not a
+source: cite the passage it points to.
 
 ## Notes for automated readers
 

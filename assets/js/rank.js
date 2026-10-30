@@ -88,11 +88,6 @@ const MODEL_ID = 'Xenova/all-MiniLM-L6-v2';
 const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2';
 
 let extractorPromise = null;
-let onProgress = null;
-
-export function setDeepProgress(fn) {
-  onProgress = fn;
-}
 
 /** Lazily load the embedding pipeline. Throws if the model cannot be fetched. */
 async function getExtractor() {
@@ -101,10 +96,7 @@ async function getExtractor() {
       const mod = await import(/* @vite-ignore */ `${TRANSFORMERS_URL}`);
       mod.env.allowLocalModels = false;
       mod.env.useBrowserCache = true;
-      return mod.pipeline('feature-extraction', MODEL_ID, {
-        dtype: 'q8',
-        progress_callback: (p) => { if (onProgress) onProgress(p); },
-      });
+      return mod.pipeline('feature-extraction', MODEL_ID, { dtype: 'q8' });
     })().catch((err) => {
       extractorPromise = null;
       throw err;
@@ -147,7 +139,3 @@ export async function rankByMeaning(question, sentenceList) {
   }
 }
 
-/** True once the meaning model is resident, so the UI can stop saying "loading". */
-export function isMeaningReady() {
-  return extractorPromise !== null;
-}

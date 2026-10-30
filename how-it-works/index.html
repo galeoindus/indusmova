@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
+  <meta name="indusmova-build" content="5.2.0-002078d">
+  <meta name="indusmova-version" content="5.2.0">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>How it works — indusmova</title>
@@ -9,12 +11,12 @@
   <meta name="theme-color" content="#101713">
   <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Lora:ital,wght@0,500;0,600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
-  <link rel="stylesheet" href="/assets/css/styles.css?v=3.0.2">
-  <link rel="stylesheet" href="/assets/css/app.css?v=3.0.2">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=5.2.0-002078d">
+  <link rel="stylesheet" href="/assets/css/app.css?v=5.2.0-002078d">
 <!-- INDUSMOVA-MULTIMORPHISM-OVERLAY:START -->
-<link rel="stylesheet" href="/assets/css/multimorphism-overlay.css?v=4.0.0">
+<link rel="stylesheet" href="/assets/css/multimorphism-overlay.css?v=5.2.0-002078d">
 <!-- INDUSMOVA-MULTIMORPHISM-OVERLAY:END -->
-<link rel="stylesheet" href="/assets/css/responsive.css?v=4.0.0">
+<link rel="stylesheet" href="/assets/css/responsive.css?v=5.2.0-002078d">
 </head>
 <body>
   <div class="grain" aria-hidden="true"></div>
@@ -38,7 +40,7 @@
   <main id="main" class="wrap-narrow" tabindex="-1">
     <div class="article-head">
       <h1 class="article-title">How it works</h1>
-      <p class="article-sub">Four steps, no black box. Every sentence you read was written by a Wikipedia editor and is quoted, not generated.</p>
+      <p class="article-sub">Four steps, no black box. The article breakdown is built from sentences a Wikipedia editor wrote and indusmova quotes. Chat is different: an AI model explains the selected source passages and must mark every claim with a numbered citation.</p>
     </div>
 
     <div class="page">
@@ -57,15 +59,15 @@
         <li><strong>Wikidata</strong> — structured facts behind a topic.</li>
         <li><strong>Wikimedia Commons</strong> — image credits and licences.</li>
       </ul>
-      <p>All of these are public, need no key, and are called directly from your browser. There is no indusmova server in the path.</p>
+      <p>All of these are public and keyless, and search requests go straight from your browser to Wikimedia. When AI chat is used, the question and the selected source excerpts are sent to the same-origin <code>/api/ask</code> Pages Function, which calls the configured OpenRouter model or the Cloudflare Workers AI binding. Credentials stay on the server and are never sent to the browser.</p>
 
       <h2>How sentences are chosen</h2>
       <p>The default ranker is a keyword overlap score: each word in your question is weighted by how rare it is across the article, and sentences that match are scored higher. A sentence containing a date or a number, and one that opens a paragraph, get a small bonus. The optional <strong>Understand meaning</strong> switch instead loads a small open sentence-embedding model (about 23 MB, once) and re-orders the same sentences by cosine similarity to your question. Either way, the sentences themselves are never rewritten.</p>
 
       <h2>What indusmova never does</h2>
       <ul>
-        <li>It does not generate prose, summaries or claims of its own.</li>
-        <li>It does not store your questions on a server — there is no server.</li>
+        <li>It never presents a model's guess as a sourced fact. The article breakdown quotes source sentences; chat answers must cite the passage behind each claim, and the sources stay visible under every answer.</li>
+        <li>It does not keep your questions on indusmova's side. Bookmarks, history and saved chat answers live in your own browser storage; when chat AI is used the question and selected excerpts are processed by the configured provider.</li>
         <li>It does not track you, sell data, or show advertising.</li>
         <li>It does not claim to be affiliated with the Wikimedia Foundation.</li>
       </ul>
@@ -96,8 +98,9 @@
     </div>
     <div class="foot-legal">
       <p>Wikipedia article text is available under CC BY-SA 4.0. Wikidata data is released under CC0 1.0. indusmova is an independent reader and is not affiliated with or endorsed by the Wikimedia Foundation.</p>
-      <p class="foot-version">indusmova v3.0.2</p>
+      <p class="foot-version">indusmova v5.2.0</p>
     </div>
   </footer>
+  <script type="module" src="/assets/js/build-watch.js?v=5.2.0-002078d"></script>
 </body>
 </html>

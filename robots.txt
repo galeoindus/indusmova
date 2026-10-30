@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # The app is a single document; every fragment resolves to the same URL.
-# Let the crawler reach the crawlable index pages and the API hosts it needs.
-Disallow: /sw.js
+# Let the crawler reach the crawlable index pages. There is no service worker
+# any more, so there is nothing to disallow.
 
 Sitemap: https://indusmova.pages.dev/sitemap.xml

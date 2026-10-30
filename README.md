@@ -4,7 +4,7 @@
 
 indusmova is a Wikimedia knowledge research and discovery platform. Ask a question, or open a topic, and get a direct answer, the key points, a topic-wise breakdown, the facts from the infobox, and every source with a link back to Wikipedia.
 
-It is a **static, single-page application**: plain HTML, CSS and ES modules, no build step, no backend, no API keys. Every fact is fetched live, in the reader's browser, from the public Wikimedia APIs.
+It is a **static single-page application** — plain HTML, CSS and ES modules with no frontend build step — plus one Cloudflare Pages Function, `/api/ask`, that powers the optional source-grounded AI chat. Search, article and Wikidata data are fetched live in the reader's browser from the public Wikimedia APIs, which need no key. The AI endpoint's OpenRouter credentials are Cloudflare encrypted Secrets and never reach the browser.
 
 ---
 
@@ -27,7 +27,8 @@ It is a **static, single-page application**: plain HTML, CSS and ES modules, no 
 | **Two languages of chrome** — English and हिन्दी, plus 12 content languages | header buttons |
 | **Light / dark / system theme**, reading comfort, reading-progress bar | header buttons |
 | **Voice search**, where the browser supports it | composer |
-| **PWA** — installable, works offline for the shell | `manifest.webmanifest`, `sw.js` |
+| **Chat** — ask in your own words, Quick / Detailed / Deep answers, numbered citations, saved answers, local history, voice input and read-aloud | `/chat/` |
+| **PWA** — installable; the shell loads offline (no service worker: caching is done with `_headers`) | `manifest.webmanifest`, `_headers` |
 
 ### The answer architecture
 
@@ -57,7 +58,9 @@ shows which level is active.
 3. **Filter** — the article is cleaned (navigation boxes, edit links, footnote markers and MathML annotations dropped), split into a lead and topic sections, and its sentences are scored against the question.
 4. **Understand** — a direct answer, key points, topic blocks, facts and sources are laid out.
 
-The default ranker is keyword overlap with a rough IDF weighting. The optional **Understand meaning** switch loads a small open sentence-embedding model (`Xenova/all-MiniLM-L6-v2`, about 23 MB, once) via transformers.js and re-orders the same sentences by cosine similarity. **Nothing is ever generated** — every sentence is quoted from the article, and the ranking only chooses the order.
+The default ranker is keyword overlap with a rough IDF weighting. The optional **Understand meaning** switch loads a small open sentence-embedding model (`Xenova/all-MiniLM-L6-v2`, about 23 MB, once) via transformers.js and re-orders the same sentences by cosine similarity. In this extractive mode nothing is generated — every sentence is quoted from the article, and the ranking only chooses the order.
+
+Chat is a separate, clearly labelled mode. `/chat/` sends the question plus up to six source excerpts to `/api/ask`, which prompts a model to explain those excerpts only, cite each factual sentence with `[n]`, and say so when the passages do not contain the answer. If no provider is configured or the call fails, the page shows an honest source excerpt instead of pretending an AI answered.
 
 ### Reading progress in the contents
 
@@ -258,7 +261,7 @@ Targets WCAG 2.2 AA. Keyboard-navigable throughout, a skip link, visible focus r
 
 ## Privacy
 
-No accounts, no analytics, no cookies, no tracking, no server of ours. Bookmarks, history and preferences live in `localStorage` on the device. Your questions go from your browser directly to Wikimedia.
+No accounts, no analytics, no cookies, no tracking. Bookmarks, reading history, saved answers and preferences live in `localStorage` on the device. Search and article requests go from your browser directly to Wikimedia. When you use chat, the question and the selected source excerpts are sent to this site's own `/api/ask` function and on to the configured AI provider; nothing else about you is sent, and no credentials are ever exposed to the page.
 
 ## Licences
 

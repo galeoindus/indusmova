@@ -4,10 +4,14 @@ Thanks for helping. A few things worth knowing before you start.
 
 ## Ground rules
 
-- **No generated prose.** indusmova quotes published sentences; it never writes
-  its own. If a change would make the app invent text, it is out of scope.
-- **No backend.** Everything runs in the browser against public Wikimedia APIs.
-  Pull requests that add a server, a key or a database will be declined.
+- **Source first.** The article breakdown quotes published sentences. Chat may
+  use a model, but only over the selected source passages, with citation markers
+  preserved and an honest "not in the sources" answer when the passages are
+  thin. A change that lets the app invent uncited facts is out of scope.
+- **Backend only for grounded AI.** The one server-side component is
+  `functions/api/ask.js`, the source-grounded AI endpoint. It may read
+  credentials from Cloudflare encrypted Secrets only — never from browser code,
+  `.env.example`, commits or logs. No database, no accounts, no analytics.
 - **No tracking.** No analytics, no cookies, no third-party scripts beyond the
   font stylesheet and the optional model CDN.
 

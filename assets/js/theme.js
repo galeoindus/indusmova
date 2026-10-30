@@ -5,11 +5,9 @@
  * Theme cycles auto -> light -> dark, stored per device. Comfort (opaque
  * surfaces) is a separate boolean. A reading-progress bar is updated on scroll.
  *
- * It also watches the build stamp — carefully. An earlier version reloaded on
- * the stamp changing AND again when the service worker took over, so a reader
- * could see the new page, then the old one, then the new one again. The rule
- * now: ask the worker to update, reload at most once per session, and never
- * twice for the same build.
+ * The build stamp is not handled here. It used to be, in two more places at
+ * once (app.js and this file), each with its own storage key and reload guard.
+ * assets/js/build-watch.js is now the single source of truth.
  */
 
 import { getPref, setPref } from './store.js';
@@ -69,8 +67,6 @@ export function initTheme() {
   });
 
   initProgress();
-  stampBuild();
-  initBuildWatch();
 }
 
 function applyComfort(on) {
@@ -100,96 +96,6 @@ function initProgress() {
     }
   }, { passive: true });
   update();
-}
-
-export function getTheme() {
-  return currentTheme;
-}
-
-
-/**
- * Say which build this is, in the footer, quietly.
- *
- * /assets/version.json is written on every push. The footer carried a version
- * string that had drifted two releases behind what was actually deployed, so
- * it now reads the stamp instead of a hard-coded value.
- */
-async function stampBuild() {
-  const versionEl = document.getElementById('appVersion');
-  const buildEl = document.getElementById('appBuild');
-  if (!versionEl && !buildEl) return;
-  try {
-    const res = await fetch(`/assets/version.json?t=${Date.now()}`, { cache: 'no-store' });
-    if (!res.ok) return;
-    const data = await res.json();
-    if (versionEl && data.version) versionEl.textContent = `v${data.version}`;
-    if (buildEl && data.commit) {
-      buildEl.textContent = `· ${data.commit}`;
-      buildEl.title = data.built ? `Built ${data.built}` : '';
-    }
-  } catch { /* the footer keeps whatever the markup says */ }
-}
-
-/**
- * Watch the build stamp — once, and only once per build.
- *
- * /assets/version.json is rewritten on every push and served no-store. The
- * page remembers the stamp it was loaded from and checks again when the tab
- * comes back into view. If the stamp has moved on, the page reloads itself,
- * but `sessionStorage` records that a reload already happened for that build,
- * so a page still being served from a slightly older copy cannot start a
- * reload loop — which is what produced the new / old / new flicker.
- *
- * The service worker is asked to check for its own update as well. It used to
- * be that the worker kept serving the previous app until the browser decided
- * to look, which is the other half of the stale-page problem.
- */
-function initBuildWatch() {
-  const SEEN = 'indusmova:build';
-  const RELOADED = 'indusmova:reloaded-for';
-  let reloading = false;
-
-  const check = async () => {
-    if (reloading || document.visibilityState !== 'visible') return;
-
-    let stamp = '';
-    try {
-      const res = await fetch(`/assets/version.json?t=${Date.now()}`, { cache: 'no-store' });
-      if (!res.ok) return;
-      const data = await res.json();
-      stamp = `${data.version || ''}+${data.commit || ''}`;
-    } catch { return; }
-    if (!stamp || stamp === '+') return;
-
-    let seen = null;
-    let reloadedFor = null;
-    try {
-      seen = localStorage.getItem(SEEN);
-      reloadedFor = sessionStorage.getItem(RELOADED);
-    } catch { return; }
-
-    // first visit on this device: just remember the build
-    if (!seen) {
-      try { localStorage.setItem(SEEN, stamp); } catch { /* ignore */ }
-      return;
-    }
-    if (seen === stamp) return;
-
-    // the build has moved on. Reload once, and only once, per session.
-    try { localStorage.setItem(SEEN, stamp); } catch { /* ignore */ }
-    if (reloadedFor === stamp) return;
-    try { sessionStorage.setItem(RELOADED, stamp); } catch { /* ignore */ }
-    reloading = true;
-    location.reload();
-  };
-
-  // let the page finish painting before the first check
-  if (document.readyState === 'complete') setTimeout(check, 1200);
-  else window.addEventListener('load', () => setTimeout(check, 1200), { once: true });
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') check();
-  });
 }
 
 export { prefersReducedMotion };

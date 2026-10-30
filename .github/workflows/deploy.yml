@@ -44,15 +44,11 @@ jobs:
             echo "::notice title=Deploy skipped::Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID to deploy automatically."
           fi
 
-      - name: Stamp the build
+      - name: Stamp every page and asset URL for this build
         if: steps.check.outputs.ready == 'true'
-        run: |
-          SHORT=$(git rev-parse --short HEAD)
-          VERSION=$(node -p "require('./package.json').version")
-          BUILT=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          printf '{\n  "version": "%s",\n  "commit": "%s",\n  "built": "%s"\n}\n' \
-            "$VERSION" "$SHORT" "$BUILT" > assets/version.json
-          cat assets/version.json
+        env:
+          BUILD_COMMIT: ${{ github.sha }}
+        run: npm run stamp:build
 
       - name: Publish to Cloudflare Pages
         if: steps.check.outputs.ready == 'true'

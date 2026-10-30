@@ -311,7 +311,7 @@ const STATIC = {
     body: [
       'indusmova is an independent reader for the free knowledge published by the Wikimedia projects. It takes a question, finds the Wikipedia article that answers it, sifts the article down to the sentences that matter, and lays the result out so it can be read in a minute or studied in depth.',
       'It is not an encyclopedia and it does not write prose. Every sentence shown is quoted from a published article, and every answer links back to the page it came from. Where a claim is contested on Wikipedia, it stays contested here.',
-      'The whole product runs in the browser. There are no accounts, no server of ours in the path, and no tracking. Your bookmarks, your reading history and your preferences are stored only on your device.',
+      'Search and article reading happen entirely in your browser: requests go straight from this page to the public Wikimedia APIs. There are no accounts and no tracking, and your bookmarks, reading history and preferences are stored only on your device. Chat is the one exception, and it is always your choice: when you send a message there, the question and the selected source excerpts go to this site\'s own /api/ask function and on to the configured AI provider (OpenRouter or Cloudflare Workers AI). Those providers process the request under their own terms. If you never open chat, nothing is sent to any server of ours.',
     ],
   },
   privacy: {
@@ -432,7 +432,7 @@ export function renderFeedback(ctx) {
   });
 
   wrap.append(form);
-  wrap.append(el('p', { class: 'ask-note', style: 'margin-top:18px', text: 'Feedback opens in your own email app. indusmova has no server, so nothing is sent until you press send there.' }));
+  wrap.append(el('p', { class: 'ask-note', style: 'margin-top:18px', text: 'Feedback opens in your own email app. Nothing is sent anywhere until you press send there.' }));
   return wrap;
 }
 

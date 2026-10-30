@@ -627,13 +627,6 @@ export function collectImages(root) {
   return out;
 }
 
-/** A short, readable plain-text version of an article, for the answer model. */
-export function plainText(html, { max = 6000 } = {}) {
-  const root = clean(html);
-  const text = textOf(root);
-  return text.length > max ? `${text.slice(0, max)}…` : text;
-}
-
 /** Count words in a cleaned element. */
 export function wordCount(html) {
   return textOf(typeof html === 'string' ? clean(html) : html).split(/\s+/).filter(Boolean).length;

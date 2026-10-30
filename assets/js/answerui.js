@@ -185,27 +185,6 @@ export function referencesBlock(references = []) {
 }
 
 /**
- * The actions that belong beside the answer rather than above it.
- *
- * Save, share, open at the source and export all live here, folded away until
- * asked for, so the top of the page stays a heading and a question rather than
- * a row of boxes of four different heights.
- */
-export function railActions(items) {
-  const details = el('details', { class: 'rail-actions' });
-  const summary = el('summary');
-  summary.append(el('span', { class: 'rail-actions-icon', html: icon('share') }));
-  summary.append(el('span', { text: t('actions') }));
-  details.append(summary);
-  const body = el('div', { class: 'rail-actions-body' });
-  // Accept either a list of controls or a single container holding them.
-  const list = Array.isArray(items) ? items : [items];
-  for (const item of list) if (item) body.append(item);
-  details.append(body);
-  return details;
-}
-
-/**
  * Copy and download, kept behind one control.
  *
  * The reader asked for these not to sit in the open: they are a convenience,

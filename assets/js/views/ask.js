@@ -193,8 +193,8 @@ async function paint(ctx, mount, state) {
 
   // Key points.
   if (answer.keyPoints.length > 1) {
-    const card = el('div', { class: 'answer-card' });
-    card.append(el('h2', { text: t('keyPoints') }));
+    const keyCard = el('div', { class: 'answer-card' });
+    keyCard.append(el('h2', { text: t('keyPoints') }));
     const ol = el('ol', { class: 'points-list' });
     answer.keyPoints.forEach((point) => {
       const li = el('li');
@@ -202,8 +202,8 @@ async function paint(ctx, mount, state) {
       if (point.section) li.append(el('span', { class: 'point-from', text: `— ${point.section}` }));
       ol.append(li);
     });
-    card.append(ol);
-    content.append(card);
+    keyCard.append(ol);
+    content.append(keyCard);
   }
 
   // The topic-wise breakdown: short by default, extended at deep-dive depth.
@@ -279,7 +279,9 @@ async function loadRelated(ctx, mount, { title, lang }) {
     section.append(grid);
     mount.append(section);
   } catch { /* related is a bonus */ }
-  mountOpenSources(ctx, mount, title);
+  // The source cards are a bonus too: a failure here must not reject the
+  // promise chain that rendered the answer.
+  try { mountOpenSources(ctx, mount, title); } catch { /* no sources block */ }
 }
 
 function esc(value) {

@@ -2,7 +2,8 @@
  *
  * Everything indusmova knows comes from the public Wikimedia APIs, called
  * straight from the browser (they send permissive CORS headers; the Action API
- * just needs `origin=*`). No keys, no server, no proxy.
+ * just needs `origin=*`). No keys and no proxy. This module never touches the
+ * site's own /api/ask endpoint — that call lives in chat-page.js.
  *
  *   Wikipedia Action API   search, parse, extracts, random, prefix search
  *   Wikipedia REST API     summaries, related, on-this-day, featured, pageviews
@@ -304,13 +305,6 @@ export async function extract(lang, title, { signal } = {}) {
 }
 
 /**
- * Articles related to a title.
- *
- * The REST `/page/related/` endpoint is convenient but does not send CORS
- * headers, so a browser cannot read it. The Action API's `morelike:` search
- * keyword gives the same thing and is CORS-enabled, so that is what we use.
- */
-/**
  * When a specific revision was saved, and the permalink that pins it (F-18).
  * The parse response gives the revision id; this turns it into a date and a
  * URL a reader can check later, and a link that still works after the article
@@ -338,6 +332,13 @@ export async function revisionInfo(lang, revid, { signal, project = 'wikipedia' 
   }
 }
 
+/**
+ * Articles related to a title.
+ *
+ * The REST `/page/related/` endpoint is convenient but does not send CORS
+ * headers, so a browser cannot read it. The Action API's `morelike:` search
+ * keyword gives the same thing and is CORS-enabled, so that is what we use.
+ */
 export async function related(lang, title, { signal, limit = 8 } = {}) {
   try {
     const url = actionUrl(lang, {

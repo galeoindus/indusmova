@@ -12,6 +12,9 @@ import { icon } from './icons.js';
 import { t } from './i18n.js';
 import { DEPTHS } from './config.js';
 
+/** The three depth presets, in the reader's interface language. */
+const DEPTH_KEYS = { quick: 'quickAnswer', detailed: 'detailed', deep: 'deepDive' };
+
 /** The text field + tools. `ctx.onSubmit(text)` fires on submit. */
 export function composerForm(ctx, { placeholderKey = 'askPlaceholder', autofocus = false, initialMode = null, labelled = false } = {}) {
   const form = el('form', { class: 'searchbar glass', id: 'searchForm', role: 'search', autocomplete: 'off' });
@@ -194,7 +197,7 @@ export function depthControl(ctx) {
       class: `depth-btn${ctx.state.depth === preset.id ? ' is-active' : ''}`,
       dataset: { depth: preset.id },
       'aria-pressed': String(ctx.state.depth === preset.id),
-      text: preset.label,
+      text: t(DEPTH_KEYS[preset.id] || 'detailed'),
     });
     btn.addEventListener('click', () => {
       ctx.setDepth(preset.id);
@@ -213,11 +216,10 @@ export function depthControl(ctx) {
   const deep = el('button', {
     type: 'button',
     class: `chip-btn deep-btn${ctx.state.deepRank ? ' is-on' : ''}`,
-    title: t('meaningOption'),
     'aria-label': t('meaningOption'),
     dataset: { deep: ctx.state.deepRank ? 'on' : 'off' },
     'aria-pressed': String(ctx.state.deepRank),
-    title: t('understandMeaningTitle'),
+    title: t('meaningOption'),
     html: `${icon('sparkle')}<span>${esc(t('understandMeaning'))}</span>`,
   });
   deep.addEventListener('click', () => {

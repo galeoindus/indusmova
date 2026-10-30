@@ -122,7 +122,7 @@ export const STRINGS = {
     accessibility: 'Accessibility',
     wikimediaTerms: 'Wikimedia Terms of Use',
     attribution: 'Wikipedia article text is available under the Creative Commons Attribution-ShareAlike Licence (CC BY-SA 4.0). Wikidata data is released under CC0 1.0. Files on Wikimedia Commons carry their own licence, shown with each image. indusmova is an independent reader and is not affiliated with or endorsed by the Wikimedia Foundation.',
-    aiNote: 'Answers are sentences selected from published sources by keyword relevance. No AI model writes them. An optional on-device model can re-order them by meaning, and it is off by default.',
+    aiNote: 'Article breakdowns quote published source sentences. In chat, an AI model is prompted to explain the selected source passages only and attach numbered citations. Open the original sources to verify every claim.',
     skip: 'Skip to content',
     randomTitle: 'Random article (R)',
     randomAria: 'Random article',
@@ -393,7 +393,7 @@ export const STRINGS = {
     accessibility: 'सुगम्यता',
     wikimediaTerms: 'विकिमीडिया उपयोग की शर्तें',
     attribution: 'विकिपीडिया लेख का पाठ क्रिएटिव कॉमन्स एट्रिब्यूशन-शेयरअलाइक लाइसेंस (CC BY-SA 4.0) के अंतर्गत उपलब्ध है। विकिडेटा डेटा CC0 1.0 के अंतर्गत जारी है। विकिमीडिया कॉमन्स की फ़ाइलों का अपना लाइसेंस होता है, जो हर चित्र के साथ दिखाया जाता है। indusmova एक स्वतंत्र रीडर है और विकिमीडिया फ़ाउंडेशन से संबद्ध या उससे अनुमोदित नहीं है।',
-    aiNote: 'उत्तर प्रकाशित स्रोतों से कीवर्ड-प्रासंगिकता के आधार पर चुने गए वाक्य हैं। कोई AI मॉडल इन्हें नहीं लिखता। एक वैकल्पिक ऑन-डिवाइस मॉडल इन्हें अर्थ के आधार पर क्रम दे सकता है, और वह डिफ़ॉल्ट रूप से बंद है।',
+    aiNote: 'लेखों का विवरण प्रकाशित स्रोतों के वाक्यों को उद्धृत करता है। चैट में AI मॉडल को चुने गए स्रोत-अंशों के आधार पर ही उत्तर देने और क्रमांकित स्रोत-संकेत जोड़ने का निर्देश दिया जाता है। हर दावे की पुष्टि मूल स्रोत से करें।',
     skip: 'सामग्री पर जाएँ',
     randomTitle: 'कोई भी लेख (R)',
     randomAria: 'कोई भी लेख',
@@ -556,10 +556,6 @@ let active = 'en';
 export function setUiLang(code) {
   active = STRINGS[code] ? code : 'en';
   if (typeof document !== 'undefined') document.documentElement.setAttribute('lang', active === 'hi' ? 'hi' : 'en');
-  return active;
-}
-
-export function getUiLang() {
   return active;
 }
 

@@ -1,38 +1,38 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" data-theme="dark">
 <head>
+  <meta name="indusmova-build" content="5.2.0-002078d">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Ask — indusmova</title>
-  <meta name="description" content="Ask a question in your own words and read the answer taken from the entry itself, with the source attached and openable.">
-  <link rel="canonical" href="https://indusmova.pages.dev/chat/">
+  <meta name="description" content="Ask a question in your own words and get an AI-assisted answer grounded in readable sources.">
+  <meta name="indusmova-version" content="5.2.0">
   <meta name="robots" content="index, follow, max-image-preview:large">
+  <link rel="canonical" href="https://indusmova.pages.dev/chat/">
   <meta name="theme-color" content="#0f1214" media="(prefers-color-scheme: dark)">
   <meta name="theme-color" content="#fbf9f5" media="(prefers-color-scheme: light)">
   <meta name="color-scheme" content="light dark">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="indusmova">
   <meta property="og:title" content="Ask — indusmova">
-  <meta property="og:description" content="A question in, an answer with its source out.">
+  <meta property="og:description" content="AI-assisted answers, grounded in sources you can open and check.">
   <meta property="og:url" content="https://indusmova.pages.dev/chat/">
   <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Lora:wght@500;600&amp;display=swap">
-  <link rel="stylesheet" href="/assets/css/chat-page.css?v=5.0.0">
+  <link rel="stylesheet" href="/assets/css/chat-page.css?v=5.2.0-002078d">
+  <link rel="stylesheet" href="/assets/css/chat-upgrade.css?v=5.2.0-002078d">
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to the question box</a>
   <header class="bar">
-    <a class="home" href="/">
-      <span class="mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.6a8.4 8.4 0 0 1-9 8.4 9.2 9.2 0 0 1-3.4-.7L3 21l1.6-4.6A8.2 8.2 0 0 1 3.6 11 8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.6Z"></path></svg>
-      </span>
-      <span>
-        <b>indusmova</b>
-        <small>ask, and check the source</small>
-      </span>
+    <a class="home" href="/" aria-label="indusmova home">
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.6a8.4 8.4 0 0 1-9 8.4 9.2 9.2 0 0 1-3.4-.7L3 21l1.6-4.6A8.2 8.2 0 0 1 3.6 11 8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.6Z"/></svg></span>
+      <span><b>indusmova</b><small>Ask · research · verify</small></span>
     </a>
     <span class="grow"></span>
+    <a class="top-link" href="/research/">Research desk</a>
     <button id="newChat" type="button">New chat</button>
     <button id="themeBtn" type="button" aria-label="Switch theme" title="Light / dark">◐</button>
   </header>
@@ -42,41 +42,39 @@
   </main>
 
   <div class="dock">
+    <div class="chat-tools" aria-label="Chat settings">
+      <label>Article language
+        <select id="contentLanguage" aria-label="Article language">
+          <option value="en">English</option><option value="hi">हिन्दी</option><option value="bn">বাংলা</option>
+          <option value="ta">தமிழ்</option><option value="te">తెలుగు</option><option value="mr">मराठी</option>
+          <option value="gu">ગુજરાતી</option><option value="kn">ಕನ್ನಡ</option><option value="ml">മലയാളം</option>
+          <option value="pa">ਪੰਜਾਬੀ</option><option value="ur">اردو</option><option value="sa">संस्कृतम्</option>
+        </select>
+      </label>
+      <label>Answer depth
+        <select id="answerDepth" aria-label="Answer depth">
+          <option value="quick">Quick</option><option value="detailed" selected>Detailed</option><option value="deep">Deep research</option>
+        </select>
+      </label>
+      <label>Interface
+        <select id="uiLanguage" aria-label="Interface language"><option value="en">English</option><option value="hi">हिन्दी</option></select>
+      </label>
+      <button id="voiceBtn" type="button" hidden>Voice input</button>
+      <button id="savedAnswersBtn" type="button">Saved answers</button>
+    </div>
     <form class="composer" id="composer" autocomplete="off">
       <label class="sr-only" for="prompt">Ask a question</label>
-      <textarea id="prompt" rows="1" placeholder="Ask anything…" spellcheck="false"></textarea>
-      <button class="send" id="send" type="submit" aria-label="Send">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12 20 4l-4.5 16-4-6.5L4 12Z"></path></svg>
-      </button>
+      <textarea id="prompt" rows="1" maxlength="800" placeholder="Ask anything…" spellcheck="true"></textarea>
+      <button class="send" id="send" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12 20 4l-4.5 16-4-6.5L4 12Z"/></svg></button>
     </form>
-    <p class="hint">Every answer quotes the entry it came from — open the source to check it.</p>
+    <div class="dock-foot">
+      <p class="hint" id="privacyHint">AI answers are grounded in the source passages shown below. Check the original before relying on a claim.</p>
+      <button id="speakBtn" type="button" hidden>Read answer aloud</button>
+    </div>
   </div>
 
-  <noscript>
-    <div class="dock">
-      <p class="hint">The chat needs JavaScript. The library does not — <a href="/articles/">browse the entries</a> instead.</p>
-    </div>
-  </noscript>
-
-  <script type="module" src="/assets/js/chat-page.js?v=5.0.0"></script>
-  <script>
-    (function () {
-      var btn = document.getElementById('themeBtn');
-      var saved = null;
-      try { saved = localStorage.getItem('indusmova:theme'); } catch (e) { saved = null; }
-      function apply(theme) {
-        document.documentElement.setAttribute('data-theme', theme);
-        document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) {
-          m.setAttribute('content', theme === 'dark' ? '#0f1214' : '#fbf9f5');
-        });
-      }
-      if (saved === 'light' || saved === 'dark') apply(saved);
-      btn.addEventListener('click', function () {
-        var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        apply(next);
-        try { localStorage.setItem('indusmova:theme', next); } catch (e) {}
-      });
-    })();
-  </script>
+  <noscript><div class="dock"><p class="hint">The chat needs JavaScript. Browse the public articles at <a href="/articles/">the library</a>.</p></div></noscript>
+  <script type="module" src="/assets/js/build-watch.js?v=5.2.0-002078d"></script>
+  <script type="module" src="/assets/js/chat-page.js?v=5.2.0-002078d"></script>
 </body>
 </html>

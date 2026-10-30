@@ -68,15 +68,17 @@
 # ══════════════════════════════════════════════════════════════════════════
 # CSS and JS — cached for a year, because the URL carries the version
 # ══════════════════════════════════════════════════════════════════════════
-# Every page requests these as /assets/js/app.js?v=4.1.0. Cloudflare's cache
-# key includes the query string, so 4.1.0 and 4.2.0 are two different
-# objects. Bumping the version in package.json and the pages is what makes a
-# release visible — not the cache header.
+# These files are NOT content-hashed: /assets/js/app.js?v=5.1.0-abc1234 is
+# the same path with a different query, and relative ES-module imports such as
+# ./api.js carry no query at all. A one-year immutable cache therefore pinned
+# old modules in browsers while the HTML moved on. Unhashed JS/CSS now
+# revalidate on every request (a 304 costs one round trip); immutable is kept
+# only for genuinely fingerprinted paths under /assets/h/*.
 /assets/js/*
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=0, must-revalidate
 
 /assets/css/*
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=0, must-revalidate
 
 # the same policy for content-hashed filenames, if they are ever adopted
 # (app.9f2c1a.js and friends) — those can never collide at all

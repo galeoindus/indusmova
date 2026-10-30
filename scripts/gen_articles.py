@@ -30,40 +30,11 @@ POINTS_STYLE = '''
     .points-prose > li::marker { color: var(--copper, #b46a45); }
 '''
 
-POINTS_SCRIPT = '''
-<script>
-(function () {
-  var END = /([.!?][\\"'\\u201d\\u2019)\\]]?)\\s+(?=[A-Z0-9\\"'\\u201c([\\u0900-\\u097F])/g;
-  var SKIP = 'figure, figcaption, table, .infobox, .thumb, .reflist, blockquote';
-  document.querySelectorAll('.prose p').forEach(function (p) {
-    if (p.closest(SKIP) || (p.textContent || '').trim().length < 25) return;
-    var points = [], current = [], flush = function () { if (current.length) { points.push(current); current = []; } };
-    Array.prototype.slice.call(p.childNodes).forEach(function (node) {
-      if (node.nodeType !== 3) { current.push(node.cloneNode(true)); return; }
-      var text = node.textContent, start = 0, m;
-      END.lastIndex = 0;
-      while ((m = END.exec(text))) {
-        var end = m.index + m[1].length;
-        current.push(document.createTextNode(text.slice(start, end)));
-        flush();
-        start = end + (m[0].length - m[1].length);
-      }
-      if (start < text.length) current.push(document.createTextNode(text.slice(start)));
-    });
-    flush();
-    if (points.length < 2) return;
-    var ul = document.createElement('ul');
-    ul.className = 'line-list points-prose';
-    points.forEach(function (nodes) {
-      var li = document.createElement('li');
-      nodes.forEach(function (n) { li.appendChild(n); });
-      ul.appendChild(li);
-    });
-    p.parentNode.replaceChild(ul, p);
-  });
-})();
-</script>
-'''
+# The sentence-splitting used to be an inline <script>, which the site's
+# Content-Security-Policy blocks (script-src 'self'). It now lives in
+# assets/js/article-points.js and is loaded as a module like every other
+# script on the site.
+POINTS_SCRIPT = '\n<script type="module" src="/assets/js/article-points.js?v=5.1.0" defer></script>'
 
 ORIGIN = "https://indusmova.pages.dev"
 LANG = "en"
@@ -366,8 +337,9 @@ HEAD = """<!DOCTYPE html>
   <meta property="og:site_name" content="indusmova">
   <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Lora:ital,wght@0,500;0,600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
-  <link rel="stylesheet" href="/assets/v3/css/styles.css?v=3.0.2">
-  <link rel="stylesheet" href="/assets/v3/css/app.css?v=3.0.2">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=5.1.0">
+  <link rel="stylesheet" href="/assets/css/app.css?v=5.1.0">
+  <link rel="stylesheet" href="/assets/css/responsive.css?v=5.1.0">
   <script type="application/ld+json">{jsonld}</script>
 </head>
 <body>
@@ -403,6 +375,7 @@ HEAD = """<!DOCTYPE html>
     <div class="article-actions">
       <a class="btn btn-primary" href="/#/article/{slug_enc}">Open in indusmova</a>
       <a class="btn btn-ghost" href="/#/ask?q={title_enc}">Ask about it</a>
+      <a class="btn btn-ghost" href="/chat/?q={title_enc}">Chat about it</a>
       <a class="btn btn-ghost" href="{wikiUrl}" target="_blank" rel="noopener noreferrer">Read on Wikipedia ↗</a>
     </div>
 """
@@ -439,10 +412,10 @@ FOOT = """  </main>
     <div class="foot-legal">
       <p>Wikipedia article text is available under the Creative Commons Attribution-ShareAlike Licence (CC BY-SA 4.0). Wikidata data is released under CC0 1.0. Files on Wikimedia Commons carry their own licence, shown with each image. indusmova is an independent reader and is not affiliated with or endorsed by the Wikimedia Foundation.</p>
       <p>indusmova reformats, condenses and reorders this text for reading. The original, with its full edit history, is at <a href="{wikiUrl}" target="_blank" rel="noopener noreferrer">{lang}.wikipedia.org</a>.</p>
-      <p class="foot-version">indusmova v3.0.2</p>
+      <p class="foot-version">indusmova v{version}</p>
     </div>
   </footer>
-{POINTS_SCRIPT}</body>
+{points}</body>
 </html>
 """
 
@@ -542,7 +515,7 @@ def page_html(art, related):
         out.append(f'    <div class="langbar"><div class="langbar-inner"><span>Also available in:</span>'
                    f'<div class="pill-row">{pills}</div></div></div>\n')
 
-    out.append(FOOT.format(wikiUrl=art["wikiUrl"], lang=LANG))
+    out.append(FOOT.format(wikiUrl=art["wikiUrl"], lang=LANG, version=VERSION, points=POINTS_SCRIPT))
     return "".join(out)
 
 
@@ -641,8 +614,9 @@ def main():
   <meta name="theme-color" content="#101713">
   <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Lora:ital,wght@0,500;0,600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
-  <link rel="stylesheet" href="/assets/v3/css/styles.css?v=3.0.2">
-  <link rel="stylesheet" href="/assets/v3/css/app.css?v=3.0.2">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=5.1.0">
+  <link rel="stylesheet" href="/assets/css/app.css?v=5.1.0">
+  <link rel="stylesheet" href="/assets/css/responsive.css?v=5.1.0">
 </head>
 <body>
   <div class="grain" aria-hidden="true"></div>
@@ -658,8 +632,7 @@ def main():
     </div>
     <div class="grid">
 {cards}    </div>
-  </main>
-{FOOT.format(wikiUrl=f"https://{LANG}.wikipedia.org/", lang=LANG)}
+{FOOT.format(wikiUrl=f"https://{LANG}.wikipedia.org/", lang=LANG, version=VERSION, points=POINTS_SCRIPT)}
 """
     os.makedirs(os.path.join(ROOT, "articles"), exist_ok=True)
     with open(os.path.join(ROOT, "articles", "index.html"), "w", encoding="utf-8") as fh:

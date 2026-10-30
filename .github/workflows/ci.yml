@@ -18,5 +18,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Check every module and run the tests
-        run: npm run verify
+      - name: Stamp every page and verify the repository
+        env:
+          BUILD_COMMIT: ${{ github.sha }}
+        run: npm run stamp:build && npm run verify

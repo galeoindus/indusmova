@@ -276,7 +276,7 @@ import { answerFor, toMarkdown } from './research-answer.js';
         resultsList.innerHTML = `<div class="no-results"><span class="no-results-icon">${icons.search}</span><h3>Search cancelled</h3><p>Your search was stopped. No answer was generated and no request is still running.</p><button type="button" data-action="retry">Try again ↗</button></div>`;
         $('[data-results-count]').textContent = 'Cancelled';
       } else {
-        resultsList.innerHTML = `<div class="no-results"><span class="no-results-icon">!</span><h3>Could not reach Wikipedia</h3><p>${esc(error?.message || 'A network error interrupted this search.')} This browser-only tool needs an internet connection to reach the public source API. No backend or API key is configured.</p><button type="button" data-action="retry">Retry search ↗</button></div>`;
+        resultsList.innerHTML = `<div class="no-results"><span class="no-results-icon">!</span><h3>Could not reach Wikipedia</h3><p>${esc(error?.message || 'A network error interrupted this search.')} This browser-only tool needs an internet connection to reach the public source API. No API key is needed.</p><button type="button" data-action="retry">Retry search ↗</button></div>`;
         $('[data-results-count]').textContent = 'Connection error';
       }
     } finally {

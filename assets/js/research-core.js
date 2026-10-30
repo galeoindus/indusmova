@@ -1,13 +1,8 @@
 /*
  * IndusMova public-source search core.
- * Browser-only: direct requests to Wikimedia's public API; no backend or AI model.
+ * Browser-only: direct requests to Wikimedia's public API; no backend call, no AI model.
  */
 const LANGUAGES = new Set(['en', 'hi', 'bn', 'ta', 'te', 'mr', 'gu', 'kn', 'ml', 'pa', 'ur', 'sa']);
-
-export const LANGUAGE_NAMES = {
-  en: 'English', hi: 'हिन्दी', bn: 'বাংলা', ta: 'தமிழ்', te: 'తెలుగు', mr: 'मराठी',
-  gu: 'ગુજરાતી', kn: 'ಕನ್ನಡ', ml: 'മലയാളം', pa: 'ਪੰਜਾਬੀ', ur: 'اردو', sa: 'संस्कृतम्',
-};
 
 export function cleanText(value, max = 3000) {
   return String(value ?? '')

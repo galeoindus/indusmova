@@ -85,11 +85,6 @@ export function updateRouteMetadata(route, content = {}) {
   if (link) link.setAttribute('href', canonical);
 }
 
-/** Describe the page from the article that actually loaded. */
-export function describeArticle(text, extra = {}) {
-  updateRouteMetadata(extra.route || {}, { description: text, ...extra });
-}
-
 /**
  * The document language, and the direction of a content region.
  *
