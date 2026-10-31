@@ -1,14 +1,18 @@
-/* indusmova chat — AI-first answers, broken into topics.
+/* indusmova chat — one question box, one answer column.
  *
- * The rules this file follows, because they were the complaint:
+ * Behaviour, in the order it matters:
  *
- *   1. The AI answers. There is no "show a source excerpt instead" path. If a
- *      provider fails, the request is retried, and only if every attempt fails
- *      does the thread say so — with a Retry button in the thread.
- *   2. The question never travels back into the input box. It stays in the
- *      thread where it was asked.
- *   3. An answer is laid out the way an assistant lays one out: a direct lead,
- *      then one card per topic, then the sources behind it.
+ *   1. Empty page: the question box sits in the middle of the screen under the
+ *      greeting, the way an AI search page opens. Once you ask, the same box
+ *      settles at the bottom and the answer fills the column.
+ *   2. Nothing ever sends you back to the empty state on its own. A failed
+ *      request leaves the question and the reason in the thread, with a Retry
+ *      button. Only "New chat" clears it.
+ *   3. The answer is laid out as a lead, then one block per topic, then the
+ *      sources as chips — no cards inside cards.
+ *   4. Read-aloud picks the most natural voice the device actually has and
+ *      speaks sentence by sentence, so it does not sound like a robot reading
+ *      a paragraph in one breath.
  */
 
 const LANGS = ['en', 'hi', 'bn', 'ta', 'te', 'mr', 'gu', 'kn', 'ml', 'pa', 'ur', 'sa'];
@@ -20,59 +24,51 @@ const SPEECH = {
 const COPY = {
   en: {
     hello: 'What do you want to <em>understand</em>?',
-    intro: 'Ask in your own words. The answer comes back broken into topics, with the sources behind every claim.',
+    intro: 'Ask in your own words. You get a clear answer, broken into topics, with the sources behind every claim.',
     ask: 'Ask anything…',
-    voice: 'Voice', listening: 'Listening…',
-    hint: 'Answers are written from the source passages shown under them. Open a source to check a claim.',
-    thinking: 'Reading the sources and writing the answer',
-    searching: 'Finding the best source',
+    hint: 'Answers are written from the sources shown under them.',
+    searching: 'Finding the best sources',
     writing: 'Writing the answer',
-    noResults: 'No article matched that question. Try a shorter phrase, or change the article language.',
-    failed: 'The answer could not be written just now.',
-    failedBody: 'The AI service did not respond. Your question is still above — press Retry.',
-    retry: 'Retry',
+    noResults: 'No article matched that question. Try a shorter phrase, or change the source language.',
+    failed: 'The answer could not be written.',
+    failedBody: 'The AI service did not respond in time. Your question is still here — try again.',
+    retry: 'Try again',
     sources: 'Sources',
     copy: 'Copy', copied: 'Copied', save: 'Save', saved: 'Saved',
-    speak: 'Read aloud', stopSpeak: 'Stop',
+    speak: 'Read aloud', stopSpeak: 'Stop reading',
+    followUp: 'Ask more',
     newChat: 'New chat', savedTitle: 'Saved', noSaved: 'Nothing saved on this device yet.',
     remove: 'Remove', back: 'Back to the chat',
     offline: 'You are offline. Answers need a connection.',
-    depth: 'Depth', language: 'Source language', ui: 'Interface',
-    quick: 'Quick', detailed: 'Detailed', deep: 'Deep',
-    followUp: 'Ask a follow-up',
+    voice: 'Voice', listening: 'Listening…',
   },
   hi: {
     hello: 'आप क्या <em>समझना</em> चाहते हैं?',
     intro: 'अपने शब्दों में पूछें। उत्तर विषयों में बँटा हुआ आएगा, और हर दावे के साथ उसका स्रोत रहेगा।',
     ask: 'अपना सवाल लिखें…',
-    voice: 'आवाज़', listening: 'सुन रहा है…',
-    hint: 'उत्तर नीचे दिए स्रोत-अंशों से लिखे जाते हैं। किसी दावे को जाँचने के लिए स्रोत खोलें।',
-    thinking: 'स्रोत पढ़कर उत्तर लिखा जा रहा है',
-    searching: 'सबसे अच्छा स्रोत खोजा जा रहा है',
+    hint: 'उत्तर नीचे दिए स्रोतों से लिखे जाते हैं।',
+    searching: 'सबसे अच्छे स्रोत खोजे जा रहे हैं',
     writing: 'उत्तर लिखा जा रहा है',
-    noResults: 'इस सवाल से कोई लेख नहीं मिला। छोटा वाक्यांश आज़माएँ या लेख की भाषा बदलें।',
-    failed: 'अभी उत्तर नहीं लिखा जा सका।',
-    failedBody: 'AI सेवा ने जवाब नहीं दिया। आपका सवाल ऊपर मौजूद है — फिर कोशिश करें दबाएँ।',
+    noResults: 'इस सवाल से कोई लेख नहीं मिला। छोटा वाक्यांश आज़माएँ या स्रोत की भाषा बदलें।',
+    failed: 'उत्तर नहीं लिखा जा सका।',
+    failedBody: 'AI सेवा ने समय पर जवाब नहीं दिया। आपका सवाल यहीं है — फिर कोशिश करें।',
     retry: 'फिर कोशिश करें',
     sources: 'स्रोत',
     copy: 'कॉपी', copied: 'कॉपी हो गया', save: 'सहेजें', saved: 'सहेजा गया',
-    speak: 'सुनें', stopSpeak: 'रोकें',
+    speak: 'सुनें', stopSpeak: 'पढ़ना बंद करें',
+    followUp: 'आगे पूछें',
     newChat: 'नई चैट', savedTitle: 'सहेजे गए', noSaved: 'इस डिवाइस पर अभी कुछ सहेजा नहीं है।',
     remove: 'हटाएँ', back: 'चैट पर लौटें',
     offline: 'आप ऑफ़लाइन हैं। उत्तर के लिए इंटरनेट चाहिए।',
-    depth: 'गहराई', language: 'स्रोत की भाषा', ui: 'इंटरफ़ेस',
-    quick: 'संक्षिप्त', detailed: 'विस्तृत', deep: 'गहन',
-    followUp: 'आगे का सवाल',
+    voice: 'आवाज़', listening: 'सुन रहा है…',
   },
 };
 
-const $ = (sel) => document.querySelector(sel);
+const $ = (s) => document.querySelector(s);
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const clean = (v, max = 8000) => String(v ?? '')
   .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ')
-  .replace(/\s+/g, ' ')
-  .trim()
-  .slice(0, max);
+  .replace(/\s+/g, ' ').trim().slice(0, max);
 const wikiUrl = (v) => {
   try {
     const u = new URL(String(v || ''));
@@ -80,16 +76,15 @@ const wikiUrl = (v) => {
   } catch { return ''; }
 };
 
-const HISTORY_KEY = 'indusmova:chat:thread:v3';
-const SAVED_KEY = 'indusmova:chat:saved:v2';
+const THREAD_KEY = 'indusmova:chat:thread:v4';
+const SAVED_KEY = 'indusmova:chat:saved:v3';
 const API = (lang) => `https://${lang}.wikipedia.org/w/api.php`;
 
 let busy = false;
 let controller = null;
-let speaking = false;
-let lastSpoken = '';
-let messages = readStore(HISTORY_KEY, []);
+let messages = readStore(THREAD_KEY, []);
 let saved = readStore(SAVED_KEY, []);
+let speaking = false;
 
 function readStore(key, fallback) {
   try {
@@ -98,22 +93,34 @@ function readStore(key, fallback) {
   } catch { return fallback; }
 }
 function persist() {
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(messages.slice(-30))); } catch { /* blocked */ }
+  try { localStorage.setItem(THREAD_KEY, JSON.stringify(messages.slice(-30))); } catch { /* blocked */ }
   try { localStorage.setItem(SAVED_KEY, JSON.stringify(saved.slice(0, 100))); } catch { /* blocked */ }
 }
 const lang = () => $('#contentLanguage').value || 'en';
 const uiLang = () => $('#uiLanguage').value || 'en';
 const t = (k) => (COPY[uiLang()] || COPY.en)[k] || COPY.en[k] || k;
 
-function node(tag, cls, html) {
+const el = (tag, cls, html) => {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
   if (html != null) n.innerHTML = html;
   return n;
+};
+
+/* ── layout: the box moves, the page does not ───────────────────────────── */
+const dock = $('#dock');
+const stage = $('.stage');
+
+function setEmpty(empty) {
+  document.body.classList.toggle('is-empty', empty);
+  if (empty) {
+    if (dock.parentElement !== stage) stage.append(dock);
+  } else if (dock.parentElement !== document.body) {
+    document.body.append(dock);
+  }
 }
 
-/* ── sources from Wikipedia ─────────────────────────────────────────────── */
-
+/* ── sources ────────────────────────────────────────────────────────────── */
 async function searchSources(query, language, limit, signal) {
   const url = new URL(API(language));
   const params = {
@@ -128,16 +135,12 @@ async function searchSources(query, language, limit, signal) {
   const data = await res.json();
   const pages = data?.query?.pages;
   const list = Array.isArray(pages) ? pages : (pages ? Object.values(pages) : []);
-  return list
-    .filter((p) => p && !p.missing && p.extract)
-    .map((p) => ({
-      title: clean(p.title, 200),
-      text: clean(p.extract, 1800),
-      url: wikiUrl(p.fullurl) || `https://${language}.wikipedia.org/wiki/${encodeURIComponent(String(p.title).replace(/ /g, '_'))}`,
-    }));
+  return list.filter((p) => p && !p.missing && p.extract).map((p) => ({
+    title: clean(p.title, 200),
+    text: clean(p.extract, 1800),
+    url: wikiUrl(p.fullurl) || `https://${language}.wikipedia.org/wiki/${encodeURIComponent(String(p.title).replace(/ /g, '_'))}`,
+  }));
 }
-
-/* ── the answer, from the AI endpoint ───────────────────────────────────── */
 
 async function askAI(question, passages, depth, signal) {
   const res = await fetch('/api/ask', {
@@ -156,118 +159,132 @@ async function askAI(question, passages, depth, signal) {
   return data;
 }
 
-/* ── rendering ──────────────────────────────────────────────────────────── */
-
-/** Split "lead + ## Topic" text into a lead and its topics. */
+/* ── answer text → lead + topics ────────────────────────────────────────── */
 function structure(text) {
-  const blocks = String(text || '').split(/^\s*#{2,3}\s+/m);
-  const leadRaw = blocks.shift() || '';
-  const lead = leadRaw.replace(/^\s*#{1,3}\s*/, '').trim();
-  const topics = blocks.map((block) => {
+  const parts = String(text || '').split(/^\s*#{2,3}\s+/m);
+  const lead = (parts.shift() || '').replace(/^\s*#{1,3}\s*/, '').trim();
+  const topics = parts.map((block) => {
     const [first, ...rest] = block.split('\n');
     const heading = clean(first, 90).replace(/[#*:]+$/, '').trim();
-    const body = rest.join('\n').trim() || (heading ? '' : clean(block, 2000));
-    return { heading: heading || 'More', body: body || '' };
-  }).filter((topic) => topic.body || topic.heading);
+    return { heading: heading || '', body: rest.join('\n').trim() };
+  }).filter((x) => x.heading && x.body);
   return { lead, topics };
 }
 
-function cite(html, prefix) {
+function withCitations(html, prefix) {
   return String(html)
-    .replace(/\[(\d{1,2})\]/g, (m, n) => `<a class="citation" href="#${prefix}-${Number(n)}" aria-label="Source ${Number(n)}">${Number(n)}</a>`)
+    .replace(/\[(\d{1,2})\]/g, (m, n) => `<a class="cite" href="#${prefix}-${Number(n)}" aria-label="Source ${Number(n)}">${Number(n)}</a>`)
     .replace(/\n{2,}/g, '</p><p>')
     .replace(/\n/g, ' ');
 }
 
-function renderUser(text) {
-  const row = node('div', 'msg-user');
-  row.append(node('div', 'bubble', esc(text)));
+/* ── rendering ──────────────────────────────────────────────────────────── */
+function renderQuestion(text) {
+  const row = el('div', 'q');
+  row.textContent = text;
   $('#thread').append(row);
 }
 
-function renderAnswer(answer, { store = false } = {}) {
-  const prefix = `s${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
-  const card = node('article', 'msg-ai');
+function renderAnswer(a, { store = false } = {}) {
+  const prefix = `s${Date.now().toString(36)}`;
+  const box = el('article', 'a');
 
-  const head = node('div', 'ai-head');
-  head.append(node('span', 'dot'));
-  head.append(node('span', null, esc(answer.provider === 'workers-ai' ? 'Workers AI' : (answer.provider || 'AI'))));
-  if (answer.title) head.append(node('span', 'title', esc(answer.title)));
-  card.append(head);
+  const meta = el('div', 'a-meta');
+  meta.append(el('span', 'dot'));
+  meta.append(el('span', null, esc(a.provider === 'workers-ai' ? 'Workers AI' : (a.provider || 'AI'))));
+  if (a.title) meta.append(el('span', 'src-name', esc(a.title)));
+  box.append(meta);
 
-  const { lead, topics } = structure(answer.answer);
-  if (lead) card.append(node('p', 'lead', cite(esc(lead), prefix)));
+  const { lead, topics } = structure(a.answer);
+  if (lead) box.append(el('p', 'a-lead', withCitations(esc(lead), prefix)));
 
   for (const topic of topics) {
-    const box = node('div', 'topic');
-    box.append(node('h3', null, esc(topic.heading)));
-    if (topic.body) box.append(node('p', null, cite(esc(topic.body), prefix)));
-    card.append(box);
+    const block = el('div', 'a-topic');
+    block.append(el('h3', null, esc(topic.heading)));
+    block.append(el('p', null, withCitations(esc(topic.body), prefix)));
+    box.append(block);
   }
 
-  const sources = (answer.sources || []).filter((s) => s.url && wikiUrl(s.url));
+  const sources = (a.sources || []).filter((s) => s.url && wikiUrl(s.url));
   if (sources.length) {
-    const box = node('div', 'sources');
-    box.append(node('h4', null, t('sources')));
+    const row = el('div', 'src-row');
     for (const s of sources) {
-      const a = node('a', 'source');
-      a.id = `${prefix}-${Number(s.n)}`;
-      a.href = wikiUrl(s.url);
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      if (s.cited) a.classList.add('is-cited');
-      a.append(node('span', 'n', `[${Number(s.n)}]`));
-      a.append(node('span', 't', esc(s.title)));
-      a.append(node('span', 'go', '↗'));
-      box.append(a);
+      const chip = el('a', 'src-chip');
+      chip.id = `${prefix}-${Number(s.n)}`;
+      chip.href = wikiUrl(s.url);
+      chip.target = '_blank';
+      chip.rel = 'noopener noreferrer';
+      chip.append(el('span', 'n', `[${Number(s.n)}]`));
+      chip.append(el('span', 't', esc(s.title)));
+      row.append(chip);
     }
-    card.append(box);
+    box.append(row);
   }
 
-  const actions = node('div', 'actions');
-  const copyBtn = node('button', null, t('copy'));
-  copyBtn.type = 'button';
-  copyBtn.addEventListener('click', async () => {
-    const text = [answer.title, lead, ...topics.map((x) => `${x.heading}\n${x.body}`),
+  const actions = el('div', 'a-actions');
+  const copy = el('button', null, t('copy'));
+  copy.type = 'button';
+  copy.addEventListener('click', async () => {
+    const text = [a.title, lead, ...topics.map((x) => `${x.heading}\n${x.body}`),
       ...sources.map((s) => `[${s.n}] ${s.title} — ${s.url}`)].filter(Boolean).join('\n\n');
-    try { await navigator.clipboard.writeText(text); copyBtn.textContent = t('copied'); } catch { /* clipboard blocked */ }
+    try { await navigator.clipboard.writeText(text); copy.textContent = t('copied'); } catch { /* blocked */ }
   });
-  actions.append(copyBtn);
+  actions.append(copy);
 
-  const saveBtn = node('button', null, t('save'));
-  saveBtn.type = 'button';
-  saveBtn.addEventListener('click', () => {
-    if (!saved.some((x) => x.answer === answer.answer)) {
-      saved.unshift({ ...answer, savedAt: new Date().toISOString() });
+  const save = el('button', null, t('save'));
+  save.type = 'button';
+  save.addEventListener('click', () => {
+    if (!saved.some((x) => x.answer === a.answer)) {
+      saved.unshift({ ...a, savedAt: new Date().toISOString() });
       saved = saved.slice(0, 100);
       persist();
     }
-    saveBtn.textContent = t('saved');
+    save.textContent = t('saved');
   });
-  actions.append(saveBtn);
+  actions.append(save);
 
   if ('speechSynthesis' in window) {
-    const speakBtn = node('button', null, t('speak'));
+    const speakBtn = el('button', null, t('speak'));
     speakBtn.type = 'button';
-    speakBtn.addEventListener('click', () => speak(answer.answer));
+    speakBtn.addEventListener('click', () => toggleSpeak(a.answer, speakBtn));
     actions.append(speakBtn);
   }
-  card.append(actions);
+  box.append(actions);
 
-  $('#thread').append(card);
-  lastSpoken = answer.answer || '';
+  // A short row of next questions, the way an AI page offers them.
+  if (a.title) {
+    const follow = el('div', 'followups');
+    const ideas = uiLang() === 'hi'
+      ? [`${a.title} का इतिहास क्या है?`, `${a.title} क्यों महत्वपूर्ण है?`, `${a.title} के मुख्य तथ्य बताइए`]
+      : [`What is the history of ${a.title}?`, `Why does ${a.title} matter?`, `Key facts about ${a.title}`];
+    for (const idea of ideas) {
+      const b = el('button', null, esc(idea));
+      b.type = 'button';
+      b.addEventListener('click', () => ask(idea));
+      follow.append(b);
+    }
+    box.append(follow);
+  }
+
+  $('#thread').append(box);
   scrollDown();
-  if (store) { messages.push({ type: 'user', text: answer.question }); messages.push({ type: 'ai', data: answer }); persist(); }
+  if (store) {
+    messages.push({ type: 'q', text: a.question });
+    messages.push({ type: 'a', data: a });
+    persist();
+  }
 }
 
-function renderError(question, depth) {
-  const box = node('div', 'err');
-  box.append(node('strong', null, esc(t('failed'))));
-  box.append(node('p', null, esc(t('failedBody'))));
-  const retry = node('button', null, t('retry'));
-  retry.type = 'button';
-  retry.addEventListener('click', () => { box.remove(); ask(question, depth); });
-  box.append(retry);
+function renderNote(title, body, retryQuestion, depth) {
+  const box = el('div', 'note');
+  box.append(el('strong', null, esc(title)));
+  box.append(el('p', null, esc(body)));
+  if (retryQuestion) {
+    const btn = el('button', null, t('retry'));
+    btn.type = 'button';
+    btn.addEventListener('click', () => { box.remove(); ask(retryQuestion, depth); });
+    box.append(btn);
+  }
   $('#thread').append(box);
   scrollDown();
 }
@@ -277,8 +294,7 @@ function scrollDown() {
   main.scrollTop = main.scrollHeight;
 }
 
-/* ── the ask flow ───────────────────────────────────────────────────────── */
-
+/* ── asking ─────────────────────────────────────────────────────────────── */
 async function ask(raw, depthOverride) {
   const question = clean(raw, 800);
   if (!question || busy) return;
@@ -286,20 +302,19 @@ async function ask(raw, depthOverride) {
   const language = lang();
 
   busy = true;
+  setEmpty(false);
   $('#send').disabled = true;
   const stop = $('#stopBtn');
   if (stop) stop.hidden = false;
 
-  const empty = $('#thread .empty');
-  if (empty) empty.remove();
-  renderUser(question);
+  renderQuestion(question);
   scrollDown();
 
-  const thinking = node('div', 'thinking');
-  thinking.append(node('span', 'pulse'));
-  const label = node('span', null, t('searching'));
-  thinking.append(label);
-  $('#thread').append(thinking);
+  const working = el('div', 'working');
+  working.append(el('span', 'dot'));
+  const label = el('span', null, t('searching'));
+  working.append(label);
+  $('#thread').append(working);
   scrollDown();
 
   controller = new AbortController();
@@ -309,33 +324,26 @@ async function ask(raw, depthOverride) {
     const limit = depth === 'quick' ? 4 : depth === 'deep' ? 8 : 6;
     const passages = await searchSources(question, language, limit, controller.signal);
     if (!passages.length) {
-      thinking.remove();
-      const box = node('div', 'err');
-      box.append(node('strong', null, esc(t('noResults'))));
-      $('#thread').append(box);
-      scrollDown();
+      working.remove();
+      renderNote(t('noResults'), '', null, depth);
       return;
     }
 
     label.textContent = t('writing');
 
     let data = null;
-    let lastError = null;
-    // Two attempts. A cold model or a hiccup should not cost the reader the
-    // answer; only two real failures should surface as an error.
     for (let attempt = 0; attempt < 2 && !data; attempt += 1) {
       try {
         data = await askAI(question, passages, depth, controller.signal);
       } catch (err) {
         if (err.name === 'AbortError') throw err;
-        lastError = err;
         if (attempt === 0) await new Promise((r) => setTimeout(r, 700));
       }
     }
 
-    thinking.remove();
+    working.remove();
     if (!data) {
-      renderError(question, depth);
+      renderNote(t('failed'), t('failedBody'), question, depth);
       return;
     }
 
@@ -353,18 +361,11 @@ async function ask(raw, depthOverride) {
       model: data.model || '',
     }, { store: true });
   } catch (err) {
-    thinking.remove();
-    if (err.name !== 'AbortError') renderError(question, depth);
-    else {
-      const box = node('div', 'err');
-      box.append(node('strong', null, esc(t('failed'))));
-      box.append(node('p', null, 'The request took too long and was stopped.'));
-      const retry = node('button', null, t('retry'));
-      retry.type = 'button';
-      retry.addEventListener('click', () => { box.remove(); ask(question, depth); });
-      box.append(retry);
-      $('#thread').append(box);
-      scrollDown();
+    working.remove();
+    if (err.name === 'AbortError') {
+      renderNote(t('failed'), 'The request took too long and was stopped.', question, depth);
+    } else {
+      renderNote(t('failed'), t('failedBody'), question, depth);
     }
   } finally {
     clearTimeout(timer);
@@ -372,23 +373,96 @@ async function ask(raw, depthOverride) {
     busy = false;
     $('#send').disabled = false;
     if (stop) stop.hidden = true;
+    scrollDown();
   }
 }
 
-/* ── voice ──────────────────────────────────────────────────────────────── */
-
-function speak(text) {
-  if (!('speechSynthesis' in window) || !text) return;
-  window.speechSynthesis.cancel();
-  if (speaking) { speaking = false; return; }
-  const u = new SpeechSynthesisUtterance(String(text).replace(/\[(\d+)\]/g, '').replace(/[#*]/g, ''));
-  u.lang = SPEECH[lang()] || 'en-IN';
-  u.rate = 0.98;
-  speaking = true;
-  u.onend = u.onerror = () => { speaking = false; };
-  window.speechSynthesis.speak(u);
+/* ── voice out: pick the best voice, speak in sentences ─────────────────── */
+let voiceCache = [];
+function loadVoices() {
+  if (!('speechSynthesis' in window)) return;
+  voiceCache = window.speechSynthesis.getVoices() || [];
+}
+if ('speechSynthesis' in window) {
+  loadVoices();
+  window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
 }
 
+function bestVoice(code) {
+  const want = SPEECH[code] || 'en-IN';
+  const base = want.split('-')[0];
+  const pool = voiceCache.filter((v) => v.lang === want || v.lang.replace('_', '-').startsWith(base));
+  if (!pool.length) return null;
+  const score = (v) => {
+    const n = v.name.toLowerCase();
+    let s = 0;
+    if (/natural|neural|premium|enhanced|siri/.test(n)) s += 6;
+    if (/google/.test(n)) s += 5;
+    if (!v.localService) s += 3;          // cloud voices sound markedly better
+    if (v.lang === want) s += 3;
+    if (/compact|espeak|festival|robot/.test(n)) s -= 6;
+    return s;
+  };
+  return pool.slice().sort((a, b) => score(b) - score(a))[0];
+}
+
+function chunkSentences(text) {
+  const flat = String(text || '')
+    .replace(/\[(\d+)\]/g, '')
+    .replace(/[#*_`>]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const parts = flat.match(/[^.!?।]+[.!?।]+|\S[^.!?।]*$/g) || [flat];
+  const out = [];
+  let buf = '';
+  for (const p of parts) {
+    if ((buf + p).length > 180 && buf) { out.push(buf.trim()); buf = p; }
+    else buf += p;
+  }
+  if (buf.trim()) out.push(buf.trim());
+  return out.filter(Boolean).slice(0, 40);
+}
+
+function stopSpeaking() {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  speaking = false;
+  document.querySelectorAll('.a-actions button[data-speak]').forEach((b) => {
+    b.dataset.speak = 'off';
+    b.textContent = t('speak');
+  });
+}
+
+function toggleSpeak(text, button) {
+  if (!('speechSynthesis' in window) || !text) return;
+  if (speaking) { stopSpeaking(); return; }
+
+  stopSpeaking();
+  const voice = bestVoice(lang());
+  const chunks = chunkSentences(text);
+  if (!chunks.length) return;
+
+  speaking = true;
+  button.dataset.speak = 'on';
+  button.textContent = t('stopSpeak');
+
+  let i = 0;
+  const speakNext = () => {
+    if (!speaking || i >= chunks.length) { stopSpeaking(); return; }
+    const u = new SpeechSynthesisUtterance(chunks[i++]);
+    if (voice) { u.voice = voice; u.lang = voice.lang; }
+    else u.lang = SPEECH[lang()] || 'en-IN';
+    // Slightly slower than default reads as deliberate rather than robotic.
+    u.rate = 0.97;
+    u.pitch = 1.0;
+    u.volume = 1;
+    u.onend = speakNext;
+    u.onerror = stopSpeaking;
+    window.speechSynthesis.speak(u);
+  };
+  speakNext();
+}
+
+/* ── voice in ───────────────────────────────────────────────────────────── */
 function startVoice() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return;
@@ -406,102 +480,90 @@ function startVoice() {
   rec.start();
 }
 
-/* ── saved answers ──────────────────────────────────────────────────────── */
-
+/* ── saved ──────────────────────────────────────────────────────────────── */
 function showSaved() {
+  setEmpty(false);
   const thread = $('#thread');
   thread.replaceChildren();
-
-  const head = node('div', 'saved-head');
-  head.append(node('h1', null, esc(t('savedTitle'))));
-  const back = node('button', null, `← ${esc(t('back'))}`);
+  const top = el('div', 'saved-top');
+  top.append(el('h2', null, esc(t('savedTitle'))));
+  const back = el('button', 'ghost', `← ${esc(t('back'))}`);
   back.type = 'button';
   back.addEventListener('click', () => renderThread());
-  head.append(back);
-  thread.append(head);
+  top.append(back);
+  thread.append(top);
 
-  if (!saved.length) {
-    thread.append(node('p', 'hint', esc(t('noSaved'))));
-    return;
-  }
+  if (!saved.length) { thread.append(el('p', 'hint', esc(t('noSaved')))); return; }
   for (const item of saved) {
-    const box = node('div', 'saved-item');
-    box.append(node('h3', null, esc(item.title || 'Answer')));
-    box.append(node('p', null, esc(clean(item.answer, 260))));
-    const remove = node('button', null, t('remove'));
+    const card = el('div', 'saved-card');
+    card.append(el('h3', null, esc(item.title || 'Answer')));
+    card.append(el('p', null, esc(clean(item.answer, 240))));
+    const remove = el('button', 'ghost', t('remove'));
     remove.type = 'button';
     remove.addEventListener('click', () => {
       saved = saved.filter((x) => x !== item);
       persist();
       showSaved();
     });
-    box.append(remove);
-    thread.append(box);
+    card.append(remove);
+    thread.append(card);
   }
 }
 
-/* ── thread state ───────────────────────────────────────────────────────── */
-
+/* ── thread ─────────────────────────────────────────────────────────────── */
 function renderThread() {
   const thread = $('#thread');
   thread.replaceChildren();
-  if (!messages.length) { renderEmpty(); return; }
+  if (!messages.length) {
+    setEmpty(true);
+    return;
+  }
+  setEmpty(false);
   for (const m of messages) {
-    if (m.type === 'user') renderUser(m.text);
-    else if (m.type === 'ai' && m.data) renderAnswer(m.data);
+    if (m.type === 'q') renderQuestion(m.text);
+    else if (m.type === 'a' && m.data) renderAnswer(m.data);
   }
   scrollDown();
 }
 
-function renderEmpty() {
-  const box = node('div', 'empty');
-  box.append(node('h1', null, t('hello')));
-  box.append(node('p', null, esc(t('intro'))));
-  const grid = node('div', 'suggestions');
-  const suggestions = uiLang() === 'hi'
+function renderSuggestions() {
+  const box = $('#suggestions');
+  box.replaceChildren();
+  const ideas = uiLang() === 'hi'
     ? ['यूनिफाइड पेमेंट्स इंटरफेस क्या है?', 'सम्राट अशोक कौन थे?', 'प्रकाश संश्लेषण कैसे होता है?', 'चंद्रयान-3 चंद्रमा पर कब उतरा?']
     : ['What is the Unified Payments Interface?', 'Who was Ashoka?', 'How does photosynthesis work?', 'When did Chandrayaan-3 land on the Moon?'];
-  for (const s of suggestions) {
-    const b = node('button', null, esc(s));
+  for (const idea of ideas) {
+    const b = el('button', null, esc(idea));
     b.type = 'button';
-    b.addEventListener('click', () => ask(s));
-    grid.append(b);
+    b.addEventListener('click', () => ask(idea));
+    box.append(b);
   }
-  box.append(grid);
-  $('#thread').append(box);
-}
-
-function autoGrow() {
-  const input = $('#prompt');
-  input.style.height = 'auto';
-  input.style.height = `${Math.min(180, input.scrollHeight)}px`;
 }
 
 function applyCopy() {
+  $('#empty h1').innerHTML = t('hello');
+  $('#empty p').textContent = t('intro');
   $('#prompt').placeholder = t('ask');
   $('#privacyHint').textContent = t('hint');
   $('#newChat').textContent = t('newChat');
   $('#savedAnswersBtn').textContent = t('savedTitle');
   $('#voiceBtn').textContent = t('voice');
   $('#offline').textContent = t('offline');
-  const labels = document.querySelectorAll('.tools label');
-  if (labels[0]) labels[0].firstChild.nodeValue = `${t('language')} `;
-  if (labels[1]) labels[1].firstChild.nodeValue = `${t('depth')} `;
-  if (labels[2]) labels[2].firstChild.nodeValue = `${t('ui')} `;
-  const depth = $('#answerDepth').options;
-  if (depth[0]) depth[0].textContent = t('quick');
-  if (depth[1]) depth[1].textContent = t('detailed');
-  if (depth[2]) depth[2].textContent = t('deep');
+  renderSuggestions();
+}
+
+function autoGrow() {
+  const input = $('#prompt');
+  input.style.height = 'auto';
+  input.style.height = `${Math.min(168, input.scrollHeight)}px`;
 }
 
 /* ── wiring ─────────────────────────────────────────────────────────────── */
-
 $('#prompt').addEventListener('input', autoGrow);
 $('#prompt').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#composer').requestSubmit(); }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitQuestion(); }
 });
-$('#composer').addEventListener('submit', (e) => {
-  e.preventDefault();
+function submitQuestion() {
   if (busy) return;
   const input = $('#prompt');
   const value = input.value.trim();
@@ -509,11 +571,19 @@ $('#composer').addEventListener('submit', (e) => {
   input.value = '';
   autoGrow();
   ask(value);
-});
+}
+// The button is type="button" on purpose: if it could submit the form, a tap
+// before this module attaches would reload the page and drop the reader back
+// on an empty question box. Nothing here can navigate.
+$('#send').addEventListener('click', submitQuestion);
+$('#composer').addEventListener('submit', (e) => { e.preventDefault(); submitQuestion(); });
+$('#stopBtn').addEventListener('click', () => { if (controller) controller.abort(); });
 $('#newChat').addEventListener('click', () => {
+  stopSpeaking();
   messages = [];
   persist();
-  renderThread();
+  $('#thread').replaceChildren();
+  setEmpty(true);
   $('#prompt').focus();
 });
 $('#savedAnswersBtn').addEventListener('click', showSaved);
@@ -521,7 +591,7 @@ $('#voiceBtn').addEventListener('click', startVoice);
 $('#themeBtn').addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = next;
-  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', next === 'dark' ? '#0d1411' : '#f6f4ee'));
+  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', next === 'dark' ? '#0d1411' : '#fbf9f4'));
   try { localStorage.setItem('indusmova:theme', next); } catch { /* blocked */ }
 });
 $('#contentLanguage').addEventListener('change', () => {
@@ -533,11 +603,13 @@ $('#answerDepth').addEventListener('change', () => {
 $('#uiLanguage').addEventListener('change', () => {
   try { localStorage.setItem('indusmova:chat:ui', uiLang()); } catch { /* blocked */ }
   applyCopy();
-  if (!messages.length) { $('#thread').replaceChildren(); renderEmpty(); }
 });
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && controller) controller.abort();
+  if (e.key === 'Escape') {
+    if (controller) controller.abort();
+    else if (speaking) stopSpeaking();
+  }
   if (e.key === '/' && !e.target.closest('input, textarea, select')) {
     e.preventDefault();
     $('#prompt').focus();
@@ -553,7 +625,6 @@ window.addEventListener('online', syncConnection);
 window.addEventListener('offline', syncConnection);
 
 /* ── boot ───────────────────────────────────────────────────────────────── */
-
 try {
   const savedLang = localStorage.getItem('indusmova:chat:lang');
   if (LANGS.includes(savedLang)) $('#contentLanguage').value = savedLang;
