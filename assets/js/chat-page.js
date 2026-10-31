@@ -77,6 +77,7 @@ const wikiUrl = (v) => {
 };
 
 const THREAD_KEY = 'indusmova:chat:thread:v4';
+const RECENT_KEY = 'indusmova:chat:recent:v1';
 const SAVED_KEY = 'indusmova:chat:saved:v3';
 const API = (lang) => `https://${lang}.wikipedia.org/w/api.php`;
 
@@ -85,6 +86,8 @@ let controller = null;
 let messages = readStore(THREAD_KEY, []);
 let saved = readStore(SAVED_KEY, []);
 let speaking = false;
+let recent = readStore(RECENT_KEY, []);
+let activeQuestion = '';
 
 function readStore(key, fallback) {
   try {
@@ -440,6 +443,7 @@ async function ask(raw, depthOverride) {
   if (stop) stop.hidden = false;
 
   renderQuestion(question);
+  rememberQuestion(question);
   scrollDown();
 
   const working = el('div', 'working');
@@ -642,6 +646,38 @@ function showSaved() {
   }
 }
 
+/* ── the rail ───────────────────────────────────────────────────────────── */
+function rememberQuestion(question) {
+  recent = [{ q: question, at: Date.now() }, ...recent.filter((r) => r.q !== question)].slice(0, 25);
+  activeQuestion = question;
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(recent)); } catch { /* blocked */ }
+  renderRail();
+}
+
+function renderRail() {
+  const list = $('#railList');
+  if (!list) return;
+  list.replaceChildren();
+  if (!recent.length) {
+    list.append(el('p', 'rail-empty', 'Your questions will appear here.'));
+    return;
+  }
+  for (const item of recent) {
+    const btn = el('button', 'rail-item', esc(item.q));
+    btn.type = 'button';
+    btn.title = item.q;
+    if (item.q === activeQuestion) btn.classList.add('is-active');
+    btn.addEventListener('click', () => {
+      if (busy) return;
+      $('#thread').replaceChildren();
+      messages = [];
+      persist();
+      ask(item.q);
+    });
+    list.append(btn);
+  }
+}
+
 /* ── thread ─────────────────────────────────────────────────────────────── */
 function renderThread() {
   const thread = $('#thread');
@@ -710,6 +746,16 @@ function submitQuestion() {
 $('#send').addEventListener('click', submitQuestion);
 $('#composer').addEventListener('submit', (e) => { e.preventDefault(); submitQuestion(); });
 $('#stopBtn').addEventListener('click', () => { if (controller) controller.abort(); });
+$('#railNew')?.addEventListener('click', () => {
+  stopSpeaking();
+  messages = [];
+  persist();
+  activeQuestion = '';
+  $('#thread').replaceChildren();
+  setEmpty(true);
+  renderRail();
+  $('#prompt').focus();
+});
 $('#newChat').addEventListener('click', () => {
   stopSpeaking();
   messages = [];
@@ -773,6 +819,7 @@ if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) $('
 
 applyCopy();
 initJumpButton();
+renderRail();
 renderThread();
 syncConnection();
 autoGrow();

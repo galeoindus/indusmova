@@ -424,3 +424,56 @@ body:not(.is-empty) .dock {
 }
 .jump:hover { border-color: var(--accent); color: var(--ink); }
 .jump[hidden] { display: none; }
+
+/* ── the rail: the list of chats, so it is obvious where you are ──────── */
+.rail {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 252px;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 12px;
+  overflow-y: auto;
+  background: var(--bg-soft);
+  border-right: 1px solid var(--line);
+}
+.rail-new {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 11px;
+  background: transparent; color: var(--ink);
+  font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.rail-new:hover { border-color: var(--accent); }
+.rail-new svg { width: 15px; height: 15px; }
+.rail-head {
+  margin: 12px 4px 2px;
+  font-size: 10px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted);
+}
+.rail-item {
+  display: block; width: 100%;
+  padding: 8px 10px;
+  border: 0; border-radius: 9px;
+  background: transparent; color: var(--ink-2);
+  font: inherit; font-size: 12.5px; text-align: left;
+  cursor: pointer;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rail-item:hover { background: var(--bg); color: var(--ink); }
+.rail-item.is-active { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--ink); }
+.rail-empty { margin: 4px; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+
+@media (min-width: 901px) {
+  body { padding-left: 252px; }
+  .brand { margin-left: 2px; }
+}
+@media (max-width: 900px) {
+  .rail { display: none; }
+}
+
+.brand b { font-family: "Lora", Georgia, serif; font-size: 18px; font-weight: 600; letter-spacing: -0.015em; }
+.brand .mark svg { width: 18px; height: 18px; }
+.brand .mark { width: 32px; height: 32px; border-radius: 10px; }

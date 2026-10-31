@@ -16,7 +16,7 @@
   style.textContent = `
   .im-launcher {
     position: fixed;
-    left: max(16px, env(safe-area-inset-left));
+    right: max(16px, env(safe-area-inset-right));
     bottom: max(18px, env(safe-area-inset-bottom));
     z-index: 9000;
     display: inline-flex;

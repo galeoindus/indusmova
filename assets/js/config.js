@@ -9,7 +9,7 @@ export const SITE = {
   name: 'indusmova',
   title: 'indusmova — From question to understanding',
   tagline: 'From question to understanding',
-  version: '5.11.0',
+  version: '5.12.0',
   // The canonical origin. Everything that has to be an absolute URL — canonical
   // links, Open Graph, the sitemap — is built from this and nothing else, so a
   // single edit moves the whole site.

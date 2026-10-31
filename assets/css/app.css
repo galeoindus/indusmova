@@ -1821,3 +1821,17 @@ form.panel .searchbar, form.panel .select, .feedback .fb-note textarea,
 [data-theme="dark"] .site-intro .intro-card .ic {
   color: var(--accent);
 }
+
+/* Brand: one word, one mark. The old two-line lockup read as a heading with
+   a subtitle, which made the header heavy on a phone. */
+.brand-text { display: none; }
+.brand-word {
+  font-family: var(--font-head, "Lora", Georgia, serif);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--text, #242824);
+  line-height: 1;
+}
+.brand-mark svg { width: 32px; height: 32px; display: block; }
+.brand { gap: 10px; }
