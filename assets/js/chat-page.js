@@ -180,7 +180,12 @@ function inlineMd(text, prefix) {
 }
 
 function markdown(src, prefix) {
-  const escaped = esc(String(src || '')).replace(/\r\n/g, '\n');
+  // Defence in depth: if a heading still arrives mid-sentence (a model that
+  // ignored the formatting rule, or an answer cached before this fix), break
+  // it onto its own line so it renders as a heading instead of showing ##.
+  const escaped = esc(String(src || ''))
+    .replace(/\r\n/g, '\n')
+    .replace(/([^\n])\s+(#{2,3}\s)/g, '$1\n$2');
   const lines = escaped.split('\n');
   const out = [];
   let list = null;      // 'ul' | 'ol' | null
