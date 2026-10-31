@@ -1826,7 +1826,7 @@ form.panel .searchbar, form.panel .select, .feedback .fb-note textarea,
    a subtitle, which made the header heavy on a phone. */
 .brand-text { display: none; }
 .brand-word {
-  font-family: var(--font-head, "Lora", Georgia, serif);
+  font-family: var(--font-head, 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Tiro Devanagari Hindi', serif);
   font-size: 19px;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -1835,3 +1835,5 @@ form.panel .searchbar, form.panel .select, .feedback .fb-note textarea,
 }
 .brand-mark svg { width: 32px; height: 32px; display: block; }
 .brand { gap: 10px; }
+
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}

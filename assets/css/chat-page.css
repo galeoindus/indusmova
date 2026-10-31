@@ -46,7 +46,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font: 15px/1.65 "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: 15px/1.65 system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Devanagari', 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   /* A flex shell, not a grid: the composer can only ever be the last item in
      the main column this way, and 100vh is kept as the fallback because older
@@ -89,7 +89,7 @@ body {
 }
 .brand .mark svg { width: 18px; height: 18px; }
 .brand b {
-  font-family: "Lora", Georgia, serif;
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Tiro Devanagari Hindi', serif;
   font-size: 17px; font-weight: 600; letter-spacing: -0.01em;
 }
 
@@ -195,7 +195,7 @@ body:not(.is-empty) .empty { display: none; }
 .empty { text-align: center; }
 .empty h1 {
   margin: 0 0 10px;
-  font-family: "Lora", Georgia, serif;
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Tiro Devanagari Hindi', serif;
   font-size: clamp(26px, 3.4vw, 34px);
   font-weight: 400; line-height: 1.2; letter-spacing: -0.02em;
 }
@@ -269,7 +269,7 @@ body:not(.is-empty) .empty { display: none; }
 }
 .md h2 { font-size: 12.5px; }
 .md > p:first-child {
-  font-family: "Lora", Georgia, serif;
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Tiro Devanagari Hindi', serif;
   font-size: 17.5px; line-height: 1.65; color: var(--ink);
 }
 .md strong { color: var(--ink); font-weight: 600; }
