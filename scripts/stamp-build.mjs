@@ -43,6 +43,11 @@ for (const file of await walk(ROOT)) {
   } else if (/<head[^>]*>/i.test(html)) {
     html = html.replace(/<head[^>]*>/i, (head) => `${head}\n  <meta name="indusmova-build" content="${build}">`);
   }
+  // The shared design layer: type, spacing, controls, focus, print. Loaded
+  // last so it settles every page onto the same system.
+  if (!/assets\/css\/system\.css/.test(html) && /<\/head>/i.test(html)) {
+    html = html.replace(/<\/head>/i, `  <link rel="stylesheet" href="/assets/css/system.css?v=${build}">\n</head>`);
+  }
   if (!/assets\/js\/build-watch\.js/.test(html) && /<\/body>/i.test(html)) {
     html = html.replace(/<\/body>/i, `  <script type="module" src="/assets/js/build-watch.js?v=${build}"></script>\n</body>`);
   }

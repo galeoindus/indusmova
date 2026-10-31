@@ -1,0 +1,159 @@
+/* indusmova — one system for the whole site.
+ *
+ * This is the layer that makes every page feel like the same product. It is
+ * loaded last, on every page, so the reading surface, the controls and the
+ * spacing are identical whether you are on the home page, an article, the
+ * chat, the topics index or the research desk.
+ *
+ * It only sets type, space, surfaces, controls and focus — it does not move
+ * anything. Layout stays with each page's own stylesheet, so this cannot
+ * break an existing screen.
+ */
+
+:root {
+  /* a fluid type scale: one ramp, every screen */
+  --fs-xs: clamp(11px, 0.72rem + 0.1vw, 12px);
+  --fs-sm: clamp(12.5px, 0.8rem + 0.1vw, 13.5px);
+  --fs-base: clamp(15px, 0.94rem + 0.12vw, 16px);
+  --fs-lg: clamp(17px, 1.02rem + 0.25vw, 18.5px);
+  --fs-xl: clamp(20px, 1.15rem + 0.6vw, 24px);
+  --fs-2xl: clamp(24px, 1.3rem + 1.1vw, 32px);
+  --fs-3xl: clamp(28px, 1.4rem + 1.8vw, 40px);
+
+  /* one spacing ramp */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+
+  /* one radius ramp */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --r-pill: 999px;
+
+  --measure: 68ch;
+  --tap: 44px;         /* the smallest comfortable touch target */
+}
+
+/* ── type ──────────────────────────────────────────────────────────────── */
+body {
+  font-size: var(--fs-base);
+  line-height: 1.68;
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+}
+
+h1 { font-size: var(--fs-3xl); line-height: 1.15; letter-spacing: -0.022em; }
+h2 { font-size: var(--fs-2xl); line-height: 1.2; letter-spacing: -0.018em; }
+h3 { font-size: var(--fs-xl); line-height: 1.28; letter-spacing: -0.012em; }
+h4 { font-size: var(--fs-lg); line-height: 1.32; }
+h5, h6 { font-size: var(--fs-base); }
+
+h1, h2, h3, h4 { text-wrap: balance; }
+p, li { text-wrap: pretty; }
+
+/* long prose never runs past a comfortable line length */
+.prose > p, .prose > ul, .prose > ol, .article-sub, .lead {
+  max-width: var(--measure);
+}
+
+/* ── controls ──────────────────────────────────────────────────────────── */
+button, .btn, select, input[type="submit"] {
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  border-radius: var(--r-md);
+  min-height: var(--tap);
+  transition: background-color .16s ease, border-color .16s ease, color .16s ease, transform .12s ease;
+}
+button:not(.btn-icon):not(.btn-round), .btn { padding: 9px 15px; }
+button:active, .btn:active { transform: translateY(0.5px); }
+button:disabled, .btn:disabled, [aria-disabled="true"] { opacity: .55; cursor: not-allowed; }
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: var(--fs-base);
+  border-radius: var(--r-md);
+}
+textarea { line-height: 1.6; }
+
+/* icons inside buttons keep their own box */
+.btn-icon, .icon, .ico { min-height: 0; }
+
+/* ── focus: always visible, never a surprise ───────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent, #b46a45);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+:focus:not(:focus-visible) { outline: none; }
+
+/* ── surfaces ──────────────────────────────────────────────────────────── */
+.card, .panel, .answer-card, .factbox, .src-group, .topic-block,
+.q-card, .cat-card, .dash-action, .saved-card {
+  border-radius: var(--r-lg);
+}
+.card, .q-card, .cat-card, .dash-action { transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+@media (hover: hover) {
+  .card:hover, .q-card:hover, .cat-card:hover, .dash-action:hover { transform: translateY(-2px); }
+}
+
+/* tables scroll instead of breaking the page */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ── small touches that make a site feel finished ──────────────────────── */
+::selection { background: color-mix(in srgb, var(--accent, #b46a45) 30%, transparent); }
+
+* { scrollbar-width: thin; scrollbar-color: var(--border-2, #cfc3ac) transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--border-2, #cfc3ac) 80%, transparent);
+  border-radius: var(--r-pill);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* links inside prose read as prose, not as buttons */
+.prose a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+/* ── phones and small tablets ──────────────────────────────────────────── */
+@media (max-width: 900px) {
+  :root { --measure: 62ch; }
+  .wrap, .wrap-narrow { padding-left: 16px; padding-right: 16px; }
+}
+
+@media (max-width: 640px) {
+  h1 { font-size: clamp(24px, 6vw, 30px); }
+  h2 { font-size: clamp(19px, 5vw, 23px); }
+  h3 { font-size: clamp(16px, 4.4vw, 19px); }
+  body { line-height: 1.72; }
+  .btn, button { min-height: 44px; }
+  /* a thumb needs a real target, not a 24px glyph */
+  .btn-icon, .icon, .ico { min-width: 44px; min-height: 44px; }
+  .topbar-inner { padding-left: 12px; padding-right: 12px; }
+  .table-scroll { margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px; }
+}
+
+/* respect the system setting, everywhere */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .card:hover, .q-card:hover, .cat-card:hover, .dash-action:hover { transform: none; }
+}
+
+/* printing: the words, not the chrome */
+@media print {
+  .topbar, .side, .bottom-nav, .app-rail, .im-launcher, .read-progress, .toast { display: none !important; }
+  body { background: #fff; color: #000; }
+  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.8em; word-break: break-all; }
+  .prose > p { max-width: none; }
+}
