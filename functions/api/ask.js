@@ -172,67 +172,175 @@ function isRetryableStatus(status) {
   return [401, 402, 403, 408, 409, 425, 429].includes(status) || status >= 500;
 }
 
+/* ── model discovery ───────────────────────────────────────────────────────
+ * A hard-coded model id is a promise the operator cannot keep: OpenRouter adds
+ * and retires models constantly, and an id that exists for one account may be
+ * unavailable for another. So the endpoint asks OpenRouter what it actually
+ * serves, caches that list per isolate, and answers with a model that exists.
+ *
+ * Order of preference:
+ *   1. OPENROUTER_MODEL, if it is set and still in the catalogue;
+ *   2. a strong, inexpensive general model from the catalogue;
+ *   3. any text model the catalogue offers.
+ */
+const MODELS_ENDPOINT = 'https://openrouter.ai/api/v1/models';
+const MODELS_TTL_MS = 60 * 60 * 1000;
+// Preference order for the automatic pick. First match that exists wins.
+const MODEL_PREFERENCES = [
+  'openai/gpt-4o-mini',
+  'openai/gpt-4.1-mini',
+  'anthropic/claude-3.5-haiku',
+  'anthropic/claude-3.5-sonnet',
+  'google/gemini-flash-1.5',
+  'google/gemini-2.0-flash-001',
+  'meta-llama/llama-3.3-70b-instruct',
+  'mistralai/mistral-small-24b-instruct',
+  'qwen/qwen-2.5-72b-instruct',
+  'deepseek/deepseek-chat',
+];
+
+let modelCache = { at: 0, ids: [], key: '' };
+
+function isChatModel(entry) {
+  const id = String(entry?.id || '');
+  if (!id) return false;
+  // Skip embedding, moderation and image models: they cannot answer a question.
+  if (/embed|moderation|whisper|tts|dall-e|stable-diffusion|vision-only/i.test(id)) return false;
+  const modality = String(entry?.architecture?.modality || '');
+  if (modality && !modality.includes('text->text') && !modality.includes('->text')) return false;
+  return true;
+}
+
+async function listOpenRouterModels(env, signal) {
+  const key = getOpenRouterKeys(env)[0] || '';
+  if (modelCache.ids.length && Date.now() - modelCache.at < MODELS_TTL_MS && modelCache.key === key) {
+    return modelCache.ids;
+  }
+  try {
+    const res = await fetch(MODELS_ENDPOINT, {
+      signal,
+      headers: key ? { authorization: `Bearer ${key}` } : {},
+    });
+    if (!res.ok) return modelCache.ids;
+    const data = await res.json();
+    const ids = (data?.data || []).filter(isChatModel).map((m) => String(m.id));
+    if (ids.length) modelCache = { at: Date.now(), ids, key };
+    return ids;
+  } catch {
+    return modelCache.ids;
+  }
+}
+
+/** The models to try, best first. */
+async function resolveModels(env, signal) {
+  const available = await listOpenRouterModels(env, signal);
+  const configured = text(env?.OPENROUTER_MODEL, 120);
+  const out = [];
+
+  if (configured) {
+    // Trust the operator when the catalogue is unreachable, but not when it
+    // proves the model is gone.
+    if (!available.length || available.includes(configured)) out.push(configured);
+  }
+  for (const pref of MODEL_PREFERENCES) {
+    if (available.includes(pref) && !out.includes(pref)) out.push(pref);
+    if (out.length >= 3) break;
+  }
+  if (!out.length && available.length) out.push(available[0]);
+  if (!out.length && configured) out.push(configured);
+  if (!out.length) out.push(DEFAULT_OPENROUTER_MODEL);
+  return out.slice(0, 4);
+}
+
 async function runOpenRouter(question, passages, depth, env) {
   const keys = getOpenRouterKeys(env);
   if (!keys.length) return { ok: false, configured: false, reason: 'not_configured' };
 
   const start = nextKeyStart % keys.length;
   nextKeyStart = (nextKeyStart + 1) % keys.length;
-  const model = text(env?.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL, 120);
   const messages = makeMessages(question, passages, depth);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort('OpenRouter failover budget exhausted'), OPENROUTER_BUDGET_MS);
   let lastStatus = 0;
+  let lastReason = 'keys_exhausted';
+
+  // Start with the model the operator named (or the default) and only ask the
+  // catalogue for alternatives if that one turns out not to exist. This keeps
+  // the normal request to a single round trip.
+  const queue = [text(env?.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL, 120)];
+  const tried = new Set();
+  let discovered = false;
 
   try {
-    for (let offset = 0; offset < keys.length; offset += 1) {
+    while (queue.length) {
       if (controller.signal.aborted) break;
-      const key = keys[(start + offset) % keys.length];
-      try {
-        const response = await fetch(OPENROUTER_ENDPOINT, {
-          method: 'POST',
-          signal: controller.signal,
-          headers: {
-            authorization: `Bearer ${key}`,
-            'content-type': 'application/json',
-            'http-referer': String(env?.SITE_ORIGIN || 'https://indusmova.pages.dev'),
-            'x-openrouter-title': 'indusmova',
-          },
-          body: JSON.stringify({
-            model,
-            messages,
-            max_tokens: (DEPTHS[depth] || DEPTHS.detailed).maxTokens,
-            temperature: 0.2,
-            stream: false,
-          }),
-        });
+      const model = queue.shift();
+      if (!model || tried.has(model)) continue;
+      tried.add(model);
+      let modelMissing = false;
 
-        if (!response.ok) {
-          lastStatus = response.status;
-          if (isRetryableStatus(response.status)) continue;
-          // A model/request configuration error will not be fixed by another key.
-          return { ok: false, configured: true, reason: 'provider_rejected', status: response.status };
-        }
-
-        const data = await response.json();
-        const answer = text(extractOpenRouterAnswer(data), 8_000);
-        if (!answer) {
-          lastStatus = 502;
-          continue;
-        }
-        return { ok: true, answer, provider: 'openrouter', model };
-      } catch {
-        lastStatus = 502;
-        // Transient provider failures try the next key; the shared deadline
-        // prevents six slow attempts from exceeding the chat's request budget.
+      for (let offset = 0; offset < keys.length; offset += 1) {
         if (controller.signal.aborted) break;
+        const key = keys[(start + offset) % keys.length];
+        try {
+          const response = await fetch(OPENROUTER_ENDPOINT, {
+            method: 'POST',
+            signal: controller.signal,
+            headers: {
+              authorization: `Bearer ${key}`,
+              'content-type': 'application/json',
+              'http-referer': String(env?.SITE_ORIGIN || 'https://indusmova.pages.dev'),
+              'x-openrouter-title': 'indusmova',
+            },
+            body: JSON.stringify({
+              model,
+              messages,
+              max_tokens: (DEPTHS[depth] || DEPTHS.detailed).maxTokens,
+              temperature: 0.25,
+              stream: false,
+            }),
+          });
+
+          if (!response.ok) {
+            lastStatus = response.status;
+            // 404/400 here means this account or this catalogue does not have
+            // that model. That is a reason to pick a different model, not a
+            // reason to fail the question.
+            if (response.status === 404 || response.status === 400) {
+              modelMissing = true;
+              lastReason = 'model_unavailable';
+              break;
+            }
+            if (isRetryableStatus(response.status)) continue;
+            return { ok: false, configured: true, reason: 'provider_rejected', status: response.status };
+          }
+
+          const data = await response.json();
+          const answer = text(extractOpenRouterAnswer(data), 8_000);
+          if (!answer) {
+            lastStatus = 502;
+            continue;
+          }
+          return { ok: true, answer, provider: 'openrouter', model };
+        } catch {
+          lastStatus = 502;
+          if (controller.signal.aborted) break;
+        }
+      }
+
+      if (modelMissing && !discovered) {
+        discovered = true;
+        const others = await resolveModels(env, controller.signal);
+        for (const candidate of others) {
+          if (!tried.has(candidate) && !queue.includes(candidate)) queue.push(candidate);
+        }
       }
     }
   } finally {
     clearTimeout(timer);
   }
 
-  return { ok: false, configured: true, reason: 'keys_exhausted', status: lastStatus || 502 };
+  return { ok: false, configured: true, reason: lastReason, status: lastStatus || 502 };
 }
 
 async function readBodyLimited(request, maxBytes) {
@@ -395,6 +503,8 @@ export async function onRequest({ request, env = {} }) {
 
 export const __test = Object.freeze({
   normalizePassages,
+  resolveModels,
+  isChatModel,
   getOpenRouterKeys,
   citedNumbers,
   isRetryableStatus,

@@ -159,23 +159,95 @@ async function askAI(question, passages, depth, signal) {
   return data;
 }
 
-/* ── answer text → lead + topics ────────────────────────────────────────── */
-function structure(text) {
-  const parts = String(text || '').split(/^\s*#{2,3}\s+/m);
-  const lead = (parts.shift() || '').replace(/^\s*#{1,3}\s*/, '').trim();
-  const topics = parts.map((block) => {
-    const [first, ...rest] = block.split('\n');
-    const heading = clean(first, 90).replace(/[#*:]+$/, '').trim();
-    return { heading: heading || '', body: rest.join('\n').trim() };
-  }).filter((x) => x.heading && x.body);
-  return { lead, topics };
+/* ── markdown ─────────────────────────────────────────────────────────────
+ * The model answers in markdown. Showing it raw — literal ## and ** in the
+ * middle of a sentence — is what made the chat look unfinished. This turns it
+ * into real elements: headings, lists, bold, inline code, quotes, rules,
+ * simple tables and links.
+ *
+ * Safety: the text is escaped first, then only our own tags are introduced, so
+ * nothing the model writes can become markup of its own. Links are restricted
+ * to http(s) and the citation markers become links to the source chips.
+ */
+function inlineMd(text, prefix) {
+  return text
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+    .replace(/(^|[\s(])_([^_\n]+)_/g, '$1<em>$2</em>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/\[(\d{1,2})\]/g, (m, n) => `<a class="cite" href="#${prefix}-${Number(n)}" aria-label="Source ${Number(n)}">${Number(n)}</a>`);
 }
 
-function withCitations(html, prefix) {
-  return String(html)
-    .replace(/\[(\d{1,2})\]/g, (m, n) => `<a class="cite" href="#${prefix}-${Number(n)}" aria-label="Source ${Number(n)}">${Number(n)}</a>`)
-    .replace(/\n{2,}/g, '</p><p>')
-    .replace(/\n/g, ' ');
+function markdown(src, prefix) {
+  const escaped = esc(String(src || '')).replace(/\r\n/g, '\n');
+  const lines = escaped.split('\n');
+  const out = [];
+  let list = null;      // 'ul' | 'ol' | null
+  let para = [];
+  let quote = [];
+
+  const flushPara = () => {
+    if (para.length) { out.push(`<p>${inlineMd(para.join(' '), prefix)}</p>`); para = []; }
+  };
+  const flushList = () => {
+    if (list) { out.push(`</${list}>`); list = null; }
+  };
+  const flushQuote = () => {
+    if (quote.length) { out.push(`<blockquote>${inlineMd(quote.join(' '), prefix)}</blockquote>`); quote = []; }
+  };
+  const flushAll = () => { flushPara(); flushList(); flushQuote(); };
+
+  for (const raw of lines) {
+    const line = raw.replace(/\s+$/, '');
+
+    if (!line.trim()) { flushAll(); continue; }
+
+    // fenced code
+    if (/^```/.test(line.trim())) { flushAll(); continue; }
+
+    // horizontal rule
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) { flushAll(); out.push('<hr>'); continue; }
+
+    // headings
+    const h = line.match(/^(#{1,4})\s+(.*)$/);
+    if (h) {
+      flushAll();
+      const level = Math.min(4, Math.max(2, h[1].length));
+      out.push(`<h${level}>${inlineMd(h[2], prefix)}</h${level}>`);
+      continue;
+    }
+
+    // blockquote — the text is escaped first, so the marker arrives as &gt;
+    if (/^(&gt;|>)\s?/.test(line)) { flushPara(); flushList(); quote.push(line.replace(/^(&gt;|>)\s?/, '')); continue; }
+    flushQuote();
+
+    // table row (kept simple: header + rows, separators dropped)
+    if (/^\|.*\|$/.test(line.trim())) {
+      flushAll();
+      const cells = line.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+      if (cells.every((c) => /^:?-{2,}:?$/.test(c) || c === '')) continue;
+      out.push(`<div class="md-row">${cells.map((c) => `<span>${inlineMd(c, prefix)}</span>`).join('')}</div>`);
+      continue;
+    }
+
+    // lists
+    const ul = line.match(/^\s*[-*+]\s+(.*)$/);
+    const ol = line.match(/^\s*\d+[.)]\s+(.*)$/);
+    if (ul || ol) {
+      flushPara();
+      const want = ul ? 'ul' : 'ol';
+      if (list && list !== want) flushList();
+      if (!list) { list = want; out.push(`<${want}>`); }
+      out.push(`<li>${inlineMd((ul || ol)[1], prefix)}</li>`);
+      continue;
+    }
+    flushList();
+
+    para.push(line.trim());
+  }
+  flushAll();
+  return out.join('');
 }
 
 /* ── rendering ──────────────────────────────────────────────────────────── */
@@ -195,15 +267,9 @@ function renderAnswer(a, { store = false } = {}) {
   if (a.title) meta.append(el('span', 'src-name', esc(a.title)));
   box.append(meta);
 
-  const { lead, topics } = structure(a.answer);
-  if (lead) box.append(el('p', 'a-lead', withCitations(esc(lead), prefix)));
-
-  for (const topic of topics) {
-    const block = el('div', 'a-topic');
-    block.append(el('h3', null, esc(topic.heading)));
-    block.append(el('p', null, withCitations(esc(topic.body), prefix)));
-    box.append(block);
-  }
+  const body = el('div', 'md');
+  body.innerHTML = markdown(a.answer, prefix);
+  box.append(body);
 
   const sources = (a.sources || []).filter((s) => s.url && wikiUrl(s.url));
   if (sources.length) {
@@ -225,7 +291,7 @@ function renderAnswer(a, { store = false } = {}) {
   const copy = el('button', null, t('copy'));
   copy.type = 'button';
   copy.addEventListener('click', async () => {
-    const text = [a.title, lead, ...topics.map((x) => `${x.heading}\n${x.body}`),
+    const text = [a.title, a.answer,
       ...sources.map((s) => `[${s.n}] ${s.title} — ${s.url}`)].filter(Boolean).join('\n\n');
     try { await navigator.clipboard.writeText(text); copy.textContent = t('copied'); } catch { /* blocked */ }
   });
