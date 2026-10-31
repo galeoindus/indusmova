@@ -24,3 +24,6 @@
 /how-it-works   /how-it-works/    301
 /help           /help/            301
 
+
+# Search Console was submitted the old sitemap name; keep it working.
+/site.xml       /sitemap.xml      301

@@ -69,3 +69,25 @@ await writeFile(configPath, config);
 
 await writeFile(join(ROOT, 'assets/version.json'), `${JSON.stringify({ version, commit, built: new Date().toISOString() }, null, 2)}\n`);
 process.stdout.write(`Build ${build}: stamped ${changed} HTML files, config.js and assets/version.json.\n`);
+
+// ── sitemap ────────────────────────────────────────────────────────────────
+// Built from the pages that exist in this deployment, so it can never list a
+// URL that 404s or miss a page that was added. `priority` and `changefreq`
+// are omitted: Google has said it ignores both.
+const ORIGIN = 'https://indusmova.pages.dev';
+const pages = (await walk(ROOT))
+  .map((f) => relative(ROOT, f).replace(/\\/g, '/'))
+  .filter((rel) => !rel.startsWith('404') && rel.endsWith('.html'))
+  .map((rel) => (rel === 'index.html' ? '/' : `/${rel.replace(/index\.html$/, '')}`))
+  .filter((path, i, all) => all.indexOf(path) === i)
+  .sort((a, b) => (a === '/' ? -1 : b === '/' ? 1 : a.localeCompare(b)));
+const today = new Date().toISOString().slice(0, 10);
+const xml = [
+  '<?xml version="1.0" encoding="UTF-8"?>',
+  '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+  ...pages.map((p) => `  <url>\n    <loc>${ORIGIN}${p}</loc>\n    <lastmod>${today}</lastmod>\n  </url>`),
+  '</urlset>',
+  '',
+].join('\n');
+await writeFile(join(ROOT, 'sitemap.xml'), xml);
+process.stdout.write(`Sitemap: ${pages.length} URLs written.\n`);
