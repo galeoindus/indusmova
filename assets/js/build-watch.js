@@ -1,5 +1,16 @@
 /* Single source of truth for build display and auto-refresh of already-open tabs. */
 (() => {
+  /* A deployment address is frozen at the build it was made from. Opening one
+   * looks exactly like "the site is stuck on an old version", and no refresh
+   * can fix it, because that URL will serve that build for ever. So any
+   * <id>.indusmova.pages.dev visit is sent to the canonical domain, keeping
+   * the path and the fragment. */
+  const host = location.hostname;
+  if (/^[0-9a-f]{8}\.indusmova\.pages\.dev$/i.test(host)) {
+    location.replace(`https://indusmova.pages.dev${location.pathname}${location.search}${location.hash}`);
+    return;
+  }
+
   const meta = document.querySelector('meta[name="indusmova-build"]');
   const versionMeta = document.querySelector('meta[name="indusmova-version"]');
   const pageBuild = String(meta?.content || versionMeta?.content || '').trim();
