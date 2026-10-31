@@ -30,8 +30,15 @@ body { font-size: var(--fluid-body); }
 .hero h1,
 h1 { font-size: var(--fluid-h1); line-height: 1.1; }
 .dash-hero h2,
-.article-sub,
 h2 { font-size: var(--fluid-h2); }
+
+/* The article lead is a paragraph, not a heading. It was being set at h2 size,
+   which made the opening line of every article shout. */
+.article-sub {
+  font-size: clamp(15.5px, 0.95rem + 0.35vw, 18px);
+  line-height: 1.62;
+  max-width: var(--measure, 68ch);
+}
 
 /* ── touch: nothing important may depend on hover ─────────────────────── */
 @media (hover: none) {

@@ -42,26 +42,20 @@
 }
 
 /* ── type ──────────────────────────────────────────────────────────────── */
+/* Sizes belong to each page: a hero, an article lead and a card title are
+   different jobs. This layer only sets rhythm, measure and wrapping, so it
+   cannot blow up a layout that already knows its own scale. */
 body {
-  font-size: var(--fs-base);
   line-height: 1.68;
   text-rendering: optimizeLegibility;
   -webkit-text-size-adjust: 100%;
 }
 
-h1 { font-size: var(--fs-3xl); line-height: 1.15; letter-spacing: -0.022em; }
-h2 { font-size: var(--fs-2xl); line-height: 1.2; letter-spacing: -0.018em; }
-h3 { font-size: var(--fs-xl); line-height: 1.28; letter-spacing: -0.012em; }
-h4 { font-size: var(--fs-lg); line-height: 1.32; }
-h5, h6 { font-size: var(--fs-base); }
-
 h1, h2, h3, h4 { text-wrap: balance; }
 p, li { text-wrap: pretty; }
 
 /* long prose never runs past a comfortable line length */
-.prose > p, .prose > ul, .prose > ol, .article-sub, .lead {
-  max-width: var(--measure);
-}
+.prose > p, .prose > ul, .prose > ol { max-width: var(--measure); }
 
 /* ── controls ──────────────────────────────────────────────────────────── */
 button, .btn, select, input[type="submit"] {
@@ -128,9 +122,6 @@ textarea { line-height: 1.6; }
 }
 
 @media (max-width: 640px) {
-  h1 { font-size: clamp(24px, 6vw, 30px); }
-  h2 { font-size: clamp(19px, 5vw, 23px); }
-  h3 { font-size: clamp(16px, 4.4vw, 19px); }
   body { line-height: 1.72; }
   .btn, button { min-height: 44px; }
   /* a thumb needs a real target, not a 24px glyph */
