@@ -27,6 +27,7 @@ import { mountOpenSources } from './library.js';
 import { articleHref, searchHref } from '../router.js';
 import { updateRouteMetadata, setArticleStructuredData, markContentLang, pathFor } from '../meta.js';
 import { CONTENT_LANGS } from '../config.js';
+import { offerFullerTranslation } from '../translate.js';
 
 const PROJECT_NAMES = {
   wikipedia: 'Wikipedia', wikiquote: 'Wikiquote', wikisource: 'Wikisource',
@@ -523,6 +524,9 @@ function publishMetadata(ctx, state) {
   });
   // The chrome may be English while the article is Hindi or Urdu.
   markContentLang(document.getElementById('main'), state.lang);
+  // If this edition is much shorter than English, offer the full text in the
+  // reader's language rather than letting them settle for less.
+  offerFullerTranslation(ctx, state).catch(() => {});
 }
 
 /** Honour a ?s=section deep link once the blocks exist. */
