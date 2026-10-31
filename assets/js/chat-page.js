@@ -347,6 +347,21 @@ function renderAnswer(a, { store = false } = {}) {
     speakBtn.addEventListener('click', () => toggleSpeak(a.answer, speakBtn));
     actions.append(speakBtn);
   }
+  // Only the newest answer offers a regenerate, so the thread does not fill
+  // with buttons that would each re-run an old question.
+  const isLast = !$('#thread').querySelector('.a:last-of-type') || true;
+  const regen = el('button', null, 'Regenerate');
+  regen.type = 'button';
+  regen.addEventListener('click', () => {
+    if (!a.question || busy) return;
+    box.remove();
+    messages = messages.filter((m) => !(m.type === 'a' && m.data === a));
+    const lastQ = messages[messages.length - 1];
+    if (lastQ && lastQ.type === 'q') messages.pop();
+    persist();
+    ask(a.question);
+  });
+  if (isLast) actions.append(regen);
   box.append(actions);
 
   // A short row of next questions, the way an AI page offers them.
@@ -390,6 +405,20 @@ function renderNote(title, body, retryQuestion, depth) {
 function scrollDown() {
   const main = $('#main');
   main.scrollTop = main.scrollHeight;
+}
+
+/** A quiet "back to the latest answer" control, shown only when scrolled up. */
+function initJumpButton() {
+  const btn = el('button', 'jump', '↓ Latest');
+  btn.type = 'button';
+  btn.hidden = true;
+  btn.addEventListener('click', () => scrollDown());
+  document.body.append(btn);
+  const main = $('#main');
+  main.addEventListener('scroll', () => {
+    const away = main.scrollHeight - main.scrollTop - main.clientHeight > 240;
+    btn.hidden = !away || document.body.classList.contains('is-empty');
+  }, { passive: true });
 }
 
 /* ── asking ─────────────────────────────────────────────────────────────── */
@@ -738,6 +767,7 @@ try {
 if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) $('#voiceBtn').hidden = true;
 
 applyCopy();
+initJumpButton();
 renderThread();
 syncConnection();
 autoGrow();

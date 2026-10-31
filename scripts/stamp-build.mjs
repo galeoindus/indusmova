@@ -46,6 +46,12 @@ for (const file of await walk(ROOT)) {
   if (!/assets\/js\/build-watch\.js/.test(html) && /<\/body>/i.test(html)) {
     html = html.replace(/<\/body>/i, `  <script type="module" src="/assets/js/build-watch.js?v=${build}"></script>\n</body>`);
   }
+  // The floating "Ask AI" launcher belongs on every page except the chat
+  // itself, which is already the destination.
+  const isChat = /(^|\/)chat\/index\.html$/.test(file.replace(/\\/g, '/'));
+  if (!isChat && !/assets\/js\/chat-launcher\.js/.test(html) && /<\/body>/i.test(html)) {
+    html = html.replace(/<\/body>/i, `  <script src="/assets/js/chat-launcher.js?v=${build}" defer></script>\n</body>`);
+  }
   html = html.replace(/indusmova v\d+\.\d+\.\d+/gi, `indusmova v${version}`);
   // The footer prints the version inside a span, so "indusmova v5.0.0" alone
   // never matched it and the no-JS footer drifted a release behind.

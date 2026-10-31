@@ -447,6 +447,21 @@ export async function onRequestPost({ request, env = {} }) {
     return json({ error: 'no_sources', message: 'At least one valid Wikipedia source passage is required.' }, 400);
   }
 
+  // ── answer cache ───────────────────────────────────────────────────────
+  // The same question over the same passages produces the same answer, so it
+  // is worth keeping at the edge. This is the single biggest cost saving:
+  // a repeated question never reaches a provider at all.
+  const cacheKeyUrl = `https://indusmova-cache.internal/ask?q=${encodeURIComponent(question)}`
+    + `&d=${depth}&s=${encodeURIComponent(passages.map((p) => p.title).join('|')).slice(0, 400)}`;
+  const cacheKey = new Request(cacheKeyUrl, { method: 'GET' });
+  const edgeCache = typeof caches !== 'undefined' && caches.default ? caches.default : null;
+  if (edgeCache) {
+    try {
+      const hit = await edgeCache.match(cacheKey);
+      if (hit) return json({ ...(await hit.json()), cached: true });
+    } catch { /* a cache miss must never block an answer */ }
+  }
+
   const providerMode = ['auto', 'openrouter', 'workers-ai'].includes(String(env.AI_PROVIDER || '').toLowerCase())
     ? String(env.AI_PROVIDER || 'auto').toLowerCase()
     : 'auto';
@@ -481,7 +496,7 @@ export async function onRequestPost({ request, env = {} }) {
   }
 
   const citations = citedNumbers(result.answer);
-  return json({
+  const payload = {
     answer: result.answer,
     provider: result.provider,
     model: result.model,
@@ -492,7 +507,16 @@ export async function onRequestPost({ request, env = {} }) {
       url: p.url,
       cited: citations.includes(p.n),
     })),
-  });
+  };
+
+  if (edgeCache) {
+    try {
+      const stored = json(payload);
+      stored.headers.set('cache-control', 'public, max-age=3600');
+      await edgeCache.put(cacheKey, stored);
+    } catch { /* storing is best effort */ }
+  }
+  return json(payload);
 }
 
 export async function onRequestGet({ env = {} }) {

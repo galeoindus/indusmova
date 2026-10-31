@@ -1,6 +1,6 @@
 {
   "name": "indusmova",
-  "version": "5.7.0",
+  "version": "5.8.0",
   "private": true,
   "type": "module",
   "description": "indusmova — a Wikimedia knowledge research and discovery platform. Ask a question or open a topic and get a direct answer, key points, infobox facts and the sources behind them, with an optional source-grounded AI explanation.",

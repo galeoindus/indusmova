@@ -405,3 +405,22 @@ body:not(.is-empty) .dock {
   .md.typing::after { animation: none; }
   .working .dot { animation: none; }
 }
+
+/* jump-to-latest */
+.jump {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 132px;
+  z-index: 40;
+  padding: 8px 15px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--ink-2);
+  font: inherit; font-size: 12px; font-weight: 600;
+  box-shadow: 0 8px 22px -12px rgba(0,0,0,.6);
+  cursor: pointer;
+}
+.jump:hover { border-color: var(--accent); color: var(--ink); }
+.jump[hidden] { display: none; }
