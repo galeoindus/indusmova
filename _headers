@@ -33,22 +33,26 @@
 # request, the server answers 304 when nothing changed, and a deploy is
 # picked up on the next navigation.
 /
-  Cache-Control: no-cache, must-revalidate, max-age=0
-  CDN-Cache-Control: no-cache
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-store
+  Pragma: no-cache
 
 /index.html
-  Cache-Control: no-cache, must-revalidate, max-age=0
-  CDN-Cache-Control: no-cache
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-store
+  Pragma: no-cache
 
 /*.html
-  Cache-Control: no-cache, must-revalidate, max-age=0
-  CDN-Cache-Control: no-cache
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-store
+  Pragma: no-cache
 
 # the crawlable index pages are content: revalidate, but let the edge keep a
 # short copy so a crawl of 20 URLs does not hammer the origin
 /articles/*
-  Cache-Control: no-cache, must-revalidate, max-age=0
-  CDN-Cache-Control: no-cache
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-store
+  Pragma: no-cache
 
 /topics/
   Cache-Control: no-cache, must-revalidate, max-age=0
@@ -88,6 +92,18 @@
 # ══════════════════════════════════════════════════════════════════════════
 # Never stored: the worker, the build stamp, the API
 # ══════════════════════════════════════════════════════════════════════════
+
+# directory entry points are HTML as well
+/articles/
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-store
+  Pragma: no-cache
+
+/chat/
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-store
+  Pragma: no-cache
+
 /assets/version.json
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
   CDN-Cache-Control: no-store
