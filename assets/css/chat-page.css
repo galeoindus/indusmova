@@ -552,3 +552,16 @@ body.is-empty .scroll { display: flex; align-items: center; justify-content: cen
 
 .mic { font-size: 0; }
 .mic.is-listening { color: var(--accent); }
+
+/* ── laptops ─────────────────────────────────────────────────────────────
+   Between 900 and 1100px the rail was eating a quarter of the screen and
+   squeezing the answer column. It narrows there instead of disappearing, so
+   the chat list stays reachable. */
+@media (max-width: 1100px) and (min-width: 901px) {
+  :root { --rail-w: 214px; --col: 660px; }
+  .rail { padding: 12px 8px; }
+  .rail-item { font-size: 12px; }
+}
+@media (min-width: 1101px) {
+  :root { --col: 720px; }
+}
