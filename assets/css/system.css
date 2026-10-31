@@ -148,3 +148,19 @@ textarea { line-height: 1.6; }
   a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.8em; word-break: break-all; }
   .prose > p { max-width: none; }
 }
+
+/* ── sidebar links ─────────────────────────────────────────────────────── */
+/* In the light theme these sat at a very pale grey on a pale surface and were
+   hard to read. They are navigation, so they need body-text contrast, not a
+   hint of colour. */
+.side-link, .bottom-nav a, .toc-jump-list a {
+  color: color-mix(in srgb, var(--text, #242824) 88%, transparent);
+}
+.side-link:hover, .bottom-nav a:hover, .toc-jump-list a:hover {
+  color: var(--text, #242824);
+}
+.side-link[aria-current="page"], .side-link.is-active, .bottom-nav a[aria-current="page"] {
+  color: var(--text, #242824);
+  font-weight: 600;
+}
+.side-link svg { opacity: .9; }
