@@ -250,6 +250,38 @@ function markdown(src, prefix) {
   return out.join('');
 }
 
+/* ── typewriter ───────────────────────────────────────────────────────────
+ * The answer arrives whole, then is revealed a few words at a time with the
+ * markdown re-rendered as it grows, so headings and lists appear as they are
+ * being written rather than popping in at the end. Readers who ask their
+ * system to reduce motion get the finished answer straight away.
+ */
+function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function typeOut(target, text, prefix) {
+  const full = String(text || '');
+  if (prefersReducedMotion() || full.length > 6000) {
+    target.innerHTML = markdown(full, prefix);
+    return;
+  }
+  const chunks = full.split(/(\s+)/);
+  let i = 0;
+  target.classList.add('typing');
+  const step = () => {
+    i = Math.min(chunks.length, i + 3);
+    target.innerHTML = markdown(chunks.slice(0, i).join(''), prefix);
+    scrollDown();
+    if (i < chunks.length) {
+      setTimeout(step, 16);
+    } else {
+      target.classList.remove('typing');
+    }
+  };
+  step();
+}
+
 /* ── rendering ──────────────────────────────────────────────────────────── */
 function renderQuestion(text) {
   const row = el('div', 'q');
@@ -268,8 +300,8 @@ function renderAnswer(a, { store = false } = {}) {
   box.append(meta);
 
   const body = el('div', 'md');
-  body.innerHTML = markdown(a.answer, prefix);
   box.append(body);
+  typeOut(body, a.answer, prefix);
 
   const sources = (a.sources || []).filter((s) => s.url && wikiUrl(s.url));
   if (sources.length) {

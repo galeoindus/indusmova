@@ -451,12 +451,24 @@ export async function onRequestPost({ request, env = {} }) {
     ? String(env.AI_PROVIDER || 'auto').toLowerCase()
     : 'auto';
 
+  // Wikipedia supplied the passages; these two write the sentence over them.
+  // OpenRouter is tried first when it is configured, Workers AI covers for it.
+  // A second provider is also asked when the first came back without a single
+  // citation — an uncited answer is not usable here — and the better of the
+  // two is kept.
   let result = { ok: false, reason: 'not_configured' };
   if (providerMode !== 'workers-ai') {
     result = await runOpenRouter(question, passages, depth, env);
   }
-  if (!result.ok && providerMode !== 'openrouter') {
-    result = await runWorkersAI(question, passages, depth, env);
+  const thin = result.ok && citedNumbers(result.answer).length === 0;
+  if ((!result.ok || thin) && providerMode !== 'openrouter') {
+    const second = await runWorkersAI(question, passages, depth, env);
+    if (second.ok) {
+      // Keep whichever answer actually cites its sources; on a tie, the longer.
+      const firstScore = result.ok ? citedNumbers(result.answer).length * 10 + result.answer.length / 100 : -1;
+      const secondScore = citedNumbers(second.answer).length * 10 + second.answer.length / 100;
+      if (!result.ok || secondScore > firstScore) result = second;
+    }
   }
   if (!result.ok) {
     const configured = getOpenRouterKeys(env).length > 0 || Boolean(env.AI);
@@ -486,6 +498,7 @@ export async function onRequestPost({ request, env = {} }) {
 export async function onRequestGet({ env = {} }) {
   return json({
     ok: true,
+    pipeline: 'wikipedia-sources -> openrouter | workers-ai -> cited answer',
     providerMode: ['auto', 'openrouter', 'workers-ai'].includes(String(env.AI_PROVIDER || '').toLowerCase())
       ? String(env.AI_PROVIDER || 'auto').toLowerCase()
       : 'auto',

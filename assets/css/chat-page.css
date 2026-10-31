@@ -186,6 +186,18 @@ body:not(.is-empty) .empty { display: none; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
+.md.typing::after {
+  content: "";
+  display: inline-block;
+  width: 7px; height: 1.05em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: caret 1s steps(2, start) infinite;
+}
+@keyframes caret { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
 .md { display: flex; flex-direction: column; gap: 12px; font-size: 15.5px; color: var(--ink-2); }
 .md > *:first-child { margin-top: 0; }
 .md p { margin: 0; line-height: 1.68; }
@@ -390,5 +402,6 @@ body:not(.is-empty) .dock {
 
 @media (prefers-reduced-motion: reduce) {
   main { scroll-behavior: auto; }
+  .md.typing::after { animation: none; }
   .working .dot { animation: none; }
 }
