@@ -491,7 +491,7 @@ async function ask(raw, depthOverride) {
       return;
     }
 
-    renderAnswer({
+    const finished = {
       question,
       title: passages[0]?.title || '',
       answer: data.answer,
@@ -503,7 +503,9 @@ async function ask(raw, depthOverride) {
       })),
       provider: data.provider || 'AI',
       model: data.model || '',
-    }, { store: true });
+    };
+    renderAnswer(finished, { store: true });
+    attachAnswer(question, finished);
   } catch (err) {
     working.remove();
     if (err.name === 'AbortError') {
@@ -657,10 +659,46 @@ function showSaved() {
 
 /* ── the rail ───────────────────────────────────────────────────────────── */
 function rememberQuestion(question) {
-  recent = [{ q: question, at: Date.now() }, ...recent.filter((r) => r.q !== question)].slice(0, 25);
+  recent = [{ q: question, at: Date.now(), answer: null }, ...recent.filter((r) => r.q !== question)].slice(0, 25);
   activeQuestion = question;
-  try { localStorage.setItem(RECENT_KEY, JSON.stringify(recent)); } catch { /* blocked */ }
+  persistRecent();
   renderRail();
+}
+
+/**
+ * Keep the finished answer with its question.
+ *
+ * Without this the rail only held the words of the question, so clicking a
+ * past chat sent the whole request again — another Wikipedia search and
+ * another paid model call for text that had already been written. The answer
+ * now lives in the browser, so reopening a chat is a read, not a request.
+ */
+function attachAnswer(question, answer) {
+  const hit = recent.find((r) => r.q === question);
+  if (hit) hit.answer = answer;
+  else recent.unshift({ q: question, at: Date.now(), answer });
+  persistRecent();
+  renderRail();
+}
+
+function persistRecent() {
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(recent)); } catch { /* blocked */ }
+}
+
+/** Reopen a saved chat from the browser — no network, no cost. */
+function openSaved(item) {
+  if (!item) return;
+  messages = [];
+  activeQuestion = item.q;
+  $('#thread').replaceChildren();
+  renderQuestion(item.q);
+  if (item.answer) renderAnswer(item.answer, { animate: false });
+  const titleEl = $('#chatTitle');
+  if (titleEl) titleEl.textContent = item.q;
+  setEmpty(false);
+  renderRail();
+  scrollDown();
+  $('#prompt').focus();
 }
 
 function renderRail() {
@@ -681,10 +719,7 @@ function renderRail() {
     if (item.q === activeQuestion) btn.classList.add('is-active');
     btn.addEventListener('click', () => {
       if (busy) return;
-      $('#thread').replaceChildren();
-      messages = [];
-      persist();
-      ask(item.q);
+      openSaved(item);
     });
     list.append(btn);
   }
