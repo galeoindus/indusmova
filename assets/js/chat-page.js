@@ -300,15 +300,17 @@ function renderQuestion(text) {
 function renderAnswer(a, { store = false, animate = true } = {}) {
   const prefix = `s${Date.now().toString(36)}`;
   const box = el('article', 'a');
+  const inner = el('div', 'a-body');
+  box.append(inner);
 
   const meta = el('div', 'a-meta');
   meta.append(el('span', 'dot'));
   meta.append(el('span', null, esc(a.provider === 'workers-ai' ? 'Workers AI' : (a.provider || 'AI'))));
   if (a.title) meta.append(el('span', 'src-name', esc(a.title)));
-  box.append(meta);
+  inner.append(meta);
 
   const body = el('div', 'md');
-  box.append(body);
+  inner.append(body);
   // Only a freshly written answer is typed out. Re-opening the chat used to
   // replay the whole thread character by character, which cost time and made
   // a returning reader wait for text they had already read.
@@ -328,7 +330,7 @@ function renderAnswer(a, { store = false, animate = true } = {}) {
       chip.append(el('span', 't', esc(s.title)));
       row.append(chip);
     }
-    box.append(row);
+    inner.append(row);
   }
 
   const actions = el('div', 'a-actions');
@@ -374,7 +376,7 @@ function renderAnswer(a, { store = false, animate = true } = {}) {
     ask(a.question);
   });
   if (isLast) actions.append(regen);
-  box.append(actions);
+  inner.append(actions);
 
   // A short row of next questions, the way an AI page offers them.
   if (a.title) {
@@ -388,7 +390,7 @@ function renderAnswer(a, { store = false, animate = true } = {}) {
       b.addEventListener('click', () => ask(idea));
       follow.append(b);
     }
-    box.append(follow);
+    inner.append(follow);
   }
 
   $('#thread').append(box);
@@ -448,6 +450,8 @@ async function ask(raw, depthOverride) {
 
   renderQuestion(question);
   rememberQuestion(question);
+  const titleEl = $('#chatTitle');
+  if (titleEl) titleEl.textContent = question;
   scrollDown();
 
   const working = el('div', 'working');
@@ -611,12 +615,13 @@ function startVoice() {
   rec.interimResults = true;
   rec.continuous = false;
   const btn = $('#voiceBtn');
-  btn.textContent = t('listening');
+  btn.setAttribute('aria-label', t('listening'));
+  btn.classList.add('is-listening');
   rec.onresult = (e) => {
     $('#prompt').value = Array.from(e.results).map((r) => r[0].transcript).join(' ');
     autoGrow();
   };
-  rec.onerror = rec.onend = () => { btn.textContent = t('voice'); };
+  rec.onerror = rec.onend = () => { btn.setAttribute('aria-label', t('voice')); btn.classList.remove('is-listening'); };
   rec.start();
 }
 
@@ -659,14 +664,17 @@ function rememberQuestion(question) {
 }
 
 function renderRail() {
+  const filter = ($('#railSearch')?.value || '').trim().toLowerCase();
+
   const list = $('#railList');
   if (!list) return;
   list.replaceChildren();
-  if (!recent.length) {
-    list.append(el('p', 'rail-empty', 'Your questions will appear here.'));
+  const shown = filter ? recent.filter((r) => r.q.toLowerCase().includes(filter)) : recent;
+  if (!shown.length) {
+    list.append(el('p', 'rail-empty', filter ? 'No chats match that.' : 'Your questions will appear here.'));
     return;
   }
-  for (const item of recent) {
+  for (const item of shown) {
     const btn = el('button', 'rail-item', esc(item.q));
     btn.type = 'button';
     btn.title = item.q;
@@ -704,10 +712,14 @@ function renderSuggestions() {
   const box = $('#suggestions');
   box.replaceChildren();
   const ideas = uiLang() === 'hi'
-    ? ['यूनिफाइड पेमेंट्स इंटरफेस क्या है?', 'सम्राट अशोक कौन थे?', 'प्रकाश संश्लेषण कैसे होता है?', 'चंद्रयान-3 चंद्रमा पर कब उतरा?']
-    : ['What is the Unified Payments Interface?', 'Who was Ashoka?', 'How does photosynthesis work?', 'When did Chandrayaan-3 land on the Moon?'];
-  for (const idea of ideas) {
-    const b = el('button', null, esc(idea));
+    ? [['विषय समझें', 'प्रकाश संश्लेषण कैसे होता है?'],
+       ['तथ्य जाँचें', 'चंद्रयान-3 चंद्रमा पर कब उतरा?'],
+       ['और गहरे जाएँ', 'सम्राट अशोक कौन थे और क्यों महत्वपूर्ण हैं?']]
+    : [['Explain a topic', 'How does photosynthesis work?'],
+       ['Check a fact', 'When did Chandrayaan-3 land on the Moon?'],
+       ['Go deeper', 'Who was Ashoka, and why does he matter?']];
+  for (const [label, idea] of ideas) {
+    const b = el('button', null, `<b>${esc(label)}</b><span>${esc(idea)}</span>`);
     b.type = 'button';
     b.addEventListener('click', () => ask(idea));
     box.append(b);
@@ -718,11 +730,12 @@ function applyCopy() {
   $('#empty h1').innerHTML = t('hello');
   $('#empty p').textContent = t('intro');
   $('#prompt').placeholder = t('ask');
-  $('#privacyHint').textContent = t('hint');
-  $('#newChat').textContent = t('newChat');
-  $('#savedAnswersBtn').textContent = t('savedTitle');
-  $('#voiceBtn').textContent = t('voice');
-  $('#offline').textContent = t('offline');
+  const ph = $('#privacyHint');
+  if (ph) ph.textContent = t('hint');
+  const vb = $('#voiceBtn');
+  if (vb) vb.setAttribute('aria-label', t('voice'));
+  const off = $('#offline');
+  if (off) off.textContent = t('offline');
   renderSuggestions();
 }
 
@@ -751,40 +764,37 @@ function submitQuestion() {
 // on an empty question box. Nothing here can navigate.
 $('#send').addEventListener('click', submitQuestion);
 $('#composer').addEventListener('submit', (e) => { e.preventDefault(); submitQuestion(); });
-$('#stopBtn').addEventListener('click', () => { if (controller) controller.abort(); });
-$('#railNew')?.addEventListener('click', () => {
+$('#stopBtn')?.addEventListener('click', () => { if (controller) controller.abort(); });
+$('#railNew')?.addEventListener('click', startNewChat);
+function startNewChat() {
   stopSpeaking();
   messages = [];
   persist();
   activeQuestion = '';
+  const t = $('#chatTitle');
+  if (t) t.textContent = 'New chat';
   $('#thread').replaceChildren();
   setEmpty(true);
   renderRail();
   $('#prompt').focus();
-});
-$('#newChat').addEventListener('click', () => {
-  stopSpeaking();
-  messages = [];
-  persist();
-  $('#thread').replaceChildren();
-  setEmpty(true);
-  $('#prompt').focus();
-});
-$('#savedAnswersBtn').addEventListener('click', showSaved);
-$('#voiceBtn').addEventListener('click', startVoice);
-$('#themeBtn').addEventListener('click', () => {
+}
+$('#newChat')?.addEventListener('click', startNewChat);
+$('#savedAnswersBtn')?.addEventListener('click', showSaved);
+$('#railSearch')?.addEventListener('input', () => renderRail());
+$('#voiceBtn')?.addEventListener('click', startVoice);
+$('#themeBtn')?.addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = next;
   document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', next === 'dark' ? '#0d1411' : '#fbf9f4'));
   try { localStorage.setItem('indusmova:theme', next); } catch { /* blocked */ }
 });
-$('#contentLanguage').addEventListener('change', () => {
+$('#contentLanguage')?.addEventListener('change', () => {
   try { localStorage.setItem('indusmova:chat:lang', lang()); } catch { /* blocked */ }
 });
-$('#answerDepth').addEventListener('change', () => {
+$('#answerDepth')?.addEventListener('change', () => {
   try { localStorage.setItem('indusmova:chat:depth', $('#answerDepth').value); } catch { /* blocked */ }
 });
-$('#uiLanguage').addEventListener('change', () => {
+$('#uiLanguage')?.addEventListener('change', () => {
   try { localStorage.setItem('indusmova:chat:ui', uiLang()); } catch { /* blocked */ }
   applyCopy();
 });
