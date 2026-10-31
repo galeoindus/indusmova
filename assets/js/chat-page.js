@@ -297,7 +297,7 @@ function renderQuestion(text) {
   $('#thread').append(row);
 }
 
-function renderAnswer(a, { store = false } = {}) {
+function renderAnswer(a, { store = false, animate = true } = {}) {
   const prefix = `s${Date.now().toString(36)}`;
   const box = el('article', 'a');
 
@@ -309,7 +309,11 @@ function renderAnswer(a, { store = false } = {}) {
 
   const body = el('div', 'md');
   box.append(body);
-  typeOut(body, a.answer, prefix);
+  // Only a freshly written answer is typed out. Re-opening the chat used to
+  // replay the whole thread character by character, which cost time and made
+  // a returning reader wait for text they had already read.
+  if (animate) typeOut(body, a.answer, prefix);
+  else body.innerHTML = markdown(a.answer, prefix);
 
   const sources = (a.sources || []).filter((s) => s.url && wikiUrl(s.url));
   if (sources.length) {
@@ -687,9 +691,11 @@ function renderThread() {
     return;
   }
   setEmpty(false);
+  const lastQ = [...messages].reverse().find((m) => m.type === 'q');
+  if (lastQ) activeQuestion = lastQ.text;
   for (const m of messages) {
     if (m.type === 'q') renderQuestion(m.text);
-    else if (m.type === 'a' && m.data) renderAnswer(m.data);
+    else if (m.type === 'a' && m.data) renderAnswer(m.data, { animate: false });
   }
   scrollDown();
 }
