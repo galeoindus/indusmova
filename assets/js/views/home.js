@@ -159,12 +159,13 @@ async function loadAotd(ctx, mount) {
       return;
     }
     const section = el('section', { class: 'sec' });
-    section.append(sectionHead({ title: t('aotd'), more: articleHref(article.title, lang), moreLabel: t('readArticle') })
-      || el('div'));
-    // Replace the "view all" wording with the snapshot's "changes daily".
+    // The snapshot's own wording: "changes daily" rather than a "view all"
+    // link. The heading used to be built here and never appended, so the
+    // section kept the other label.
     const head = el('div', { class: 'sec-head' });
     head.append(el('h2', { text: t('aotd') }));
     head.append(el('span', { class: 'more', text: t('changesDaily') }));
+    section.append(head);
 
     const wrap = el('div', { class: 'aotd' });
     const figure = el('figure', { class: 'aotd-media' });

@@ -230,11 +230,14 @@ function numberCitations(root, texts) {
     if (!number.has(id)) { number.set(id, references.length + 1); references.push(text); }
   }
 
-  let fallback = references.length;
   for (const sup of sups) {
     const target = targetOf(sup);
-    let n = number.get(target);
-    if (!n) { fallback += 1; n = fallback; }
+    const n = number.get(target);
+    // A marker whose reference item could not be found has no number to point
+    // at. Inventing one produced a link to an anchor that is not in the
+    // reference list, so the marker is left as it stands: its own text — a page
+    // locator, usually — still reads, and nothing links to a missing target.
+    if (!n) continue;
     const marker = root.ownerDocument.createElement('sup');
     marker.className = 'cite';
     const a = root.ownerDocument.createElement('a');

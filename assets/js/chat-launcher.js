@@ -59,7 +59,9 @@
   link.id = 'im-chat-launcher';
   link.className = 'im-launcher';
   link.href = '/chat/';
-  link.setAttribute('aria-label', 'Open the AI chat');
+  // The visible label is "Ask AI", and WCAG 2.5.3 (Label in Name) requires the
+  // accessible name to contain it — speech input matches on this string.
+  link.setAttribute('aria-label', 'Ask AI');
   link.innerHTML = `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M21 11.6a8.4 8.4 0 0 1-9 8.4 9.2 9.2 0 0 1-3.4-.7L3 21l1.6-4.6A8.2 8.2 0 0 1 3.6 11 8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.6Z"></path>
@@ -67,8 +69,10 @@
     <span class="im-dot" aria-hidden="true"></span>
     <span class="im-lbl">Ask AI</span>`;
 
-  // A shortcut that does not fight the page's own keys.
+  // A shortcut that does not fight the page's own keys: inside a text field,
+  // Ctrl/Cmd+I belongs to the field (italic, insert), not to this link.
   document.addEventListener('keydown', (event) => {
+    if (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable]')) return;
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'i') {
       event.preventDefault();
       location.href = '/chat/';

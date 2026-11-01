@@ -9,6 +9,23 @@
 import { textOf } from './parse.js';
 import { SITE } from './config.js';
 
+/**
+ * Turn an in-app route into a URL that still works once the file is saved.
+ *
+ * Article links are rewritten to `#/article/<slug>` while the page is live, so
+ * exported Markdown used to carry fragment links that resolved to nothing
+ * outside a running indusmova page. A saved file gets real addresses instead.
+ */
+function absoluteHref(href) {
+  if (!href) return '';
+  if (href.startsWith('#/article/')) {
+    const [slug, query] = href.slice('#/article/'.length).split('?');
+    return `${SITE.origin}/articles/${slug}/${query ? `?${query}` : ''}`;
+  }
+  if (href.startsWith('#/')) return `${SITE.origin}/${href}`;
+  return href;
+}
+
 function inline(node) {
   let out = '';
   for (const child of node.childNodes) {
@@ -34,7 +51,7 @@ function inline(node) {
         break;
       }
       case 'A': {
-        const href = child.getAttribute('href') || '';
+        const href = absoluteHref(child.getAttribute('href') || '');
         const label = inner.trim();
         if (!label) break;
         out += href ? `[${label}](${href})` : label;

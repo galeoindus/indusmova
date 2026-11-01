@@ -72,8 +72,10 @@ export async function renderToday(ctx, route) {
     text: new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'long' }).format(new Date(2000, month - 1, day)),
   });
   picker.append(dateLabel);
-  const prev = el('button', { type: 'button', class: 'tab', text: '‹' });
-  const next = el('button', { type: 'button', class: 'tab', text: '›' });
+  // A glyph is not a name: these two carry an aria-label so a screen reader
+  // announces the day step instead of reading out the character.
+  const prev = el('button', { type: 'button', class: 'tab', text: '‹', 'aria-label': t('previousDay'), title: t('previousDay') });
+  const next = el('button', { type: 'button', class: 'tab', text: '›', 'aria-label': t('nextDay'), title: t('nextDay') });
   const go = (delta) => {
     let d = new Date(2000, month - 1, day + delta);
     ctx.navigate(`/today?m=${d.getMonth() + 1}&d=${d.getDate()}`);

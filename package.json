@@ -1,6 +1,6 @@
 {
   "name": "indusmova",
-  "version": "5.18.1",
+  "version": "5.18.2",
   "private": true,
   "type": "module",
   "description": "indusmova — a Wikimedia knowledge research and discovery platform. Ask a question or open a topic and get a direct answer, key points, infobox facts and the sources behind them, with an optional source-grounded AI explanation.",
@@ -32,5 +32,7 @@
     "stamp:build": "node scripts/stamp-build.mjs",
     "audit:site": "node scripts/audit-site.mjs"
   },
-  "devDependencies": {}
+  "dependencies": {
+    "jsdom": "^29.1.1"
+  }
 }

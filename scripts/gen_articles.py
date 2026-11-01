@@ -22,6 +22,12 @@ from bs4 import BeautifulSoup, NavigableString
 # The repository root, so the script can be run from anywhere.
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# The release number, read from package.json. It used to be referenced as a bare
+# VERSION name that nothing defined, so every run of this script died with a
+# NameError before it wrote a single page.
+with open(os.path.join(ROOT, "package.json"), encoding="utf-8") as _pkg:
+    VERSION = json.load(_pkg)["version"]
+
 # The article body reads the way the breakdown reads: one point per sentence.
 # Kept inline so each generated page stays standalone.
 POINTS_STYLE = '''
@@ -537,6 +543,48 @@ def _file_key(src):
     return (m.group(1) if m else src.split("/")[-1]).lower()
 
 
+# BeautifulSoup's html.parser lowercases every attribute name it reads, and SVG
+# is case-sensitive: `viewBox` and `linearGradient` are not `viewbox` and
+# `lineargradient`. A page round-tripped through it lost the brand mark's
+# gradient and its scaling. These names are put back after serialisation.
+SVG_CASE = {
+    "viewbox": "viewBox",
+    "lineargradient": "linearGradient",
+    "radialgradient": "radialGradient",
+    "clippath": "clipPath",
+    "preserveaspectratio": "preserveAspectRatio",
+    "gradientunits": "gradientUnits",
+    "gradienttransform": "gradientTransform",
+    "patternunits": "patternUnits",
+    "patterncontentunits": "patternContentUnits",
+    "patterntransform": "patternTransform",
+    "clippathunits": "clipPathUnits",
+    "textlength": "textLength",
+    "markerwidth": "markerWidth",
+    "markerheight": "markerHeight",
+    "markerunits": "markerUnits",
+    "refx": "refX",
+    "refy": "refY",
+    "attributename": "attributeName",
+    "attributetype": "attributeType",
+    "basefrequency": "baseFrequency",
+    "stddeviation": "stdDeviation",
+    "spreadmethod": "spreadMethod",
+    "startoffset": "startOffset",
+    "pathlength": "pathLength",
+}
+
+# A tag or attribute name sits after `<`, `/` or a space and before `=`, a
+# space, `/` or `>`. Only names in SVG_CASE are rewritten, so ordinary HTML
+# attributes pass through untouched.
+_SVG_NAME = re.compile(r"(?<=[</\s])([A-Za-z][A-Za-z0-9]*)(?==|[\s/>])")
+
+
+def restore_svg_case(markup):
+    """Put the camel case back into SVG tag and attribute names."""
+    return _SVG_NAME.sub(lambda m: SVG_CASE.get(m.group(1).lower(), m.group(1)), markup)
+
+
 def dedupe_images(html_text):
     soup = BeautifulSoup(html_text, "html.parser")
     seen = set()
@@ -556,7 +604,7 @@ def dedupe_images(html_text):
                 img.decompose()
         else:
             seen.add(key)
-    return str(soup)
+    return restore_svg_case(str(soup))
 
 
 def main():

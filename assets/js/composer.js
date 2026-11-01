@@ -233,7 +233,9 @@ export function depthControl(ctx) {
 
 /** A row of chips. Each may be a link (href) or a button (onClick). */
 export function chipRow(items, { onPick, justify = false } = {}) {
-  const wrap = el('div', { class: 'chips', id: 'quickChips' });
+  // No id: the home page renders two chip rows, and a shared id made the
+  // document invalid and gave both rows the same anchor target.
+  const wrap = el('div', { class: 'chips' });
   if (justify) wrap.style.justifyContent = 'flex-start';
   for (const item of items) {
     const isObj = typeof item === 'object';
@@ -268,7 +270,7 @@ export function attachSuggest(textarea, ctx) {
         const row = el('a', {
           class: 'suggest-item',
           href: '#',
-          html: `${hit.thumb ? `<img src="${hit.thumb}" alt="" loading="lazy" width="34" height="34">` : ''}
+          html: `${hit.thumb ? `<img src="${esc(hit.thumb)}" alt="" loading="lazy" width="34" height="34">` : ''}
                  <span><span class="si-title">${esc(hit.title)}</span>${hit.description ? `<span class="si-desc">${esc(hit.description)}</span>` : ''}</span>`,
         });
         row.addEventListener('click', (event) => {

@@ -37,13 +37,29 @@ let handlers = [];
 let lastPath = null;
 
 /**
+ * Decode a path segment without throwing.
+ *
+ * A hand-typed or truncated address such as `#/article/100%` is not valid
+ * percent-encoding, and decodeURIComponent throws on it. That throw used to
+ * escape the hashchange handler and stop routing altogether, so the segment is
+ * kept as it was written instead.
+ */
+function safeDecode(segment) {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
+
+/**
  * A real article path, as served after the /articles/* rewrite.
  * Returns null when the address bar holds an ordinary page.
  */
 export function parsePath(pathname = window.location.pathname) {
   const m = String(pathname).match(/^\/articles\/(.+?)\/?$/);
   if (!m) return null;
-  const title = unslug(decodeURIComponent(m[1]));
+  const title = unslug(safeDecode(m[1]));
   const query = Object.fromEntries(new URLSearchParams(window.location.search || ''));
   return {
     name: 'article',
@@ -65,7 +81,7 @@ export function parse(hash = window.location.hash) {
         name: route.name,
         path,
         query,
-        params: { title: m[1] ? decodeURIComponent(m[1]) : '' },
+        params: { title: m[1] ? safeDecode(m[1]) : '' },
       };
     }
   }

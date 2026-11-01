@@ -226,7 +226,7 @@ export function rowCta({ title, lang, wikiUrl }) {
 
 /** A toast, bottom-centre. */
 let toastTimer = null;
-export function toast(message) {
+export function toast(message, { duration = 2600 } = {}) {
   let node = document.getElementById('indusmova-toast');
   if (!node) {
     node = el('div', { id: 'indusmova-toast', class: 'toast', role: 'status', 'aria-live': 'polite' });
@@ -235,7 +235,7 @@ export function toast(message) {
   node.textContent = message;
   node.classList.add('shown');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => node.classList.remove('shown'), 2600);
+  toastTimer = setTimeout(() => node.classList.remove('shown'), duration);
 }
 
 export { esc, clamp, cleanUrl };

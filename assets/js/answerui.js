@@ -16,6 +16,10 @@ import { articleHref } from './router.js';
 import { toast } from './components.js';
 import { download } from './markdown.js';
 
+/** A page-unique id, so two instances of a widget cannot collide. */
+let uidSeq = 0;
+const nextId = (prefix) => `${prefix}-${(uidSeq += 1)}`;
+
 /** How the answer was assembled: what was read, how it was ranked. */
 export function evidenceStrip({ matched = 0, considered = 0, sections = 0, title = '', rankedBy = 'relevance', deep = false }) {
   const ok = matched > 0;
@@ -192,7 +196,9 @@ export function referencesBlock(references = []) {
  */
 export function markdownActions({ getText, filename }) {
   const wrap = el('div', { class: 'md-disclosure' });
-  const panelId = 'mdActions';
+  // The article view renders this twice on one page, so the panel id has to be
+  // per instance — a shared id made one toggle open the other's panel.
+  const panelId = nextId('mdActions');
   const toggle = el('button', {
     type: 'button', class: 'btn btn-ghost', 'aria-expanded': 'false', 'aria-controls': panelId,
     html: `${icon('copy')}<span>${esc(t('markdownActions'))}</span>`,
@@ -250,8 +256,14 @@ export function feedback(ctx, key) {
   const row = el('div', { class: 'fb-row', role: 'group', 'aria-label': t('feedback') });
 
   const note = el('div', { class: 'fb-note', hidden: true });
-  const label = el('label', { text: '' });
-  const area = el('textarea', { rows: '3', placeholder: t('feedbackPlaceholder') });
+  // The note field needs a name of its own: the label only gains text once an
+  // emoji is chosen, so before that the textarea was announced with none.
+  const noteId = nextId('fbNote');
+  const label = el('label', { text: '', for: noteId });
+  const area = el('textarea', {
+    id: noteId, rows: '3', placeholder: t('feedbackPlaceholder'),
+    'aria-label': t('feedbackPlaceholder'),
+  });
   const actions = el('div', { class: 'fb-actions' });
   const send = el('button', { type: 'button', class: 'btn btn-primary btn-sm', text: t('send') });
   const cancel = el('button', { type: 'button', class: 'btn btn-ghost btn-sm', text: t('cancel') });

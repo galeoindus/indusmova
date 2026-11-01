@@ -80,16 +80,6 @@ async function build(ctx, mount, state, title, retry = 0) {
       .then((rev) => {
         state.revision = rev;
         renderRevisionLine(state);
-        // The sources block shows the revision too, so replace it in place.
-        const old = document.getElementById('sourcesBlock');
-        if (old && rev) {
-          const fresh = sourcesGroup({
-            lang: state.lang, title: state.data.title, wikiUrl: state.wikiUrl,
-            citations: state.answer?.citations || [], project: state.project, revision: rev,
-          });
-          fresh.id = 'sourcesBlock';
-          old.replaceWith(fresh);
-        }
       })
       .catch(() => {});
     state.root = clean(state.data.html);
@@ -237,9 +227,13 @@ export function jumper(state, answer, idPrefix = 'topic') {
     document.getElementById('tocBtn')?.setAttribute('aria-expanded', 'false');
   });
 
-  // Track the reader's position and mark sections read / being read.
+  // Track the reader's position and mark sections read / being read. The
+  // contents panel is rebuilt on every re-composition, so the previous
+  // observer is dropped first — otherwise each one keeps watching detached
+  // nodes and painting into markup that is no longer on the page.
+  state.tocObserver?.disconnect();
   const observer = observeSections(topics, links, bar, idPrefix);
-  if (observer) state.tocObserver = observer;
+  state.tocObserver = observer || null;
 
   return wrap;
 }

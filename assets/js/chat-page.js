@@ -361,9 +361,6 @@ function renderAnswer(a, { store = false, animate = true } = {}) {
     speakBtn.addEventListener('click', () => toggleSpeak(a.answer, speakBtn));
     actions.append(speakBtn);
   }
-  // Only the newest answer offers a regenerate, so the thread does not fill
-  // with buttons that would each re-run an old question.
-  const isLast = !$('#thread').querySelector('.a:last-of-type') || true;
   const regen = el('button', null, 'Regenerate');
   regen.type = 'button';
   regen.addEventListener('click', () => {
@@ -375,7 +372,6 @@ function renderAnswer(a, { store = false, animate = true } = {}) {
     persist();
     ask(a.question);
   });
-  if (isLast) actions.append(regen);
   inner.append(actions);
 
   // A short row of next questions, the way an AI page offers them.
@@ -394,6 +390,11 @@ function renderAnswer(a, { store = false, animate = true } = {}) {
   }
 
   $('#thread').append(box);
+  // Only the newest answer offers a regenerate, so the thread does not fill
+  // with buttons that would each re-run an old question. The test runs after
+  // the answer is in the thread, because before that the newest answer is the
+  // previous one.
+  if ([...$('#thread').querySelectorAll('.a')].pop() === box) actions.append(regen);
   scrollDown();
   if (store) {
     messages.push({ type: 'q', text: a.question });
