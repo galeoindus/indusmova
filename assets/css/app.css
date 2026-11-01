@@ -1858,3 +1858,86 @@ form.panel .searchbar, form.panel .select, .feedback .fb-note textarea,
   .translate-offer { padding: 12px; }
   .translated-article { padding: 16px; }
 }
+
+/* ======================================================================
+   · THE QUESTION BOX, SIMPLIFIED
+   ----------------------------------------------------------------------
+   Two fixes from reading the page as a reader rather than as a stylesheet.
+
+   1. The Search / Ask switch. It used to be a neumorphic pill with a hairline
+      border and an inset shadow, which on a dark screen reads as a thin line
+      drawn through the question box — the one thing in the whole composer
+      that looked like a mistake. It is now a flat segmented control, the way
+      Google's own AI mode does it: no border, no inset, a quiet track and a
+      solid fill under the active word. The state is legible at a glance and
+      nothing is drawn that is not information.
+
+   2. The left column. `.app-side` was glass — a 52%-opaque surface with an
+      18px blur behind it. Over a dark page that produced a smeared grey
+      rectangle whose text sat on top of blurred text, which is exactly the
+      "dark and foggy" the reader described. Navigation is not decoration, so
+      it is now opaque: the sheet is the surface, and the blur stays for the
+      floating things (menus, the header pill) where it belongs.
+   ====================================================================== */
+
+.mode,
+.tabs {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  border: 0;
+  box-shadow: none;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 999px;
+}
+[data-theme="dark"] .mode,
+[data-theme="dark"] .tabs { background: color-mix(in srgb, #ffffff 8%, transparent); }
+
+.mode-btn,
+.tab {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 999px;
+  color: var(--muted);
+  font-weight: 550;
+  transition: background-color .16s var(--ease-out), color .16s var(--ease-out);
+}
+.mode-btn:hover,
+.tab:hover { color: var(--text); background: color-mix(in srgb, var(--text) 5%, transparent); }
+
+.mode-btn.is-active,
+.tab.is-active,
+.tab[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 14%, transparent);
+}
+[data-theme="dark"] .mode-btn.is-active,
+[data-theme="dark"] .tab.is-active,
+[data-theme="dark"] .tab[aria-selected="true"] {
+  background: color-mix(in srgb, #ffffff 14%, transparent);
+  color: #fff;
+  box-shadow: none;
+}
+/* The hero on the home page carries its own tint; keep the same flat rule. */
+.dash-hero .mode { background: color-mix(in srgb, var(--text) 6%, transparent); border: 0; box-shadow: none; }
+.dash-hero .mode-btn.is-active { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 14%, transparent); }
+[data-theme="dark"] .dash-hero .mode { background: color-mix(in srgb, #ffffff 8%, transparent); }
+[data-theme="dark"] .dash-hero .mode-btn.is-active { background: color-mix(in srgb, #ffffff 14%, transparent); color: #fff; box-shadow: none; }
+
+/* Navigation is opaque: text over blurred text is not a design. */
+.app-side,
+[data-theme="dark"] .app-side,
+[data-theme="light"] .app-side {
+  background: var(--surface);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border: 1px solid var(--border-2);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 6%, transparent);
+}
+[data-theme="dark"] .app-side { border-color: var(--border-2); }
+.app-side .side-link:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
+.app-side .side-link[aria-current="page"] {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: none;
+}

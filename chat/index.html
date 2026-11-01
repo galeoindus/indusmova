@@ -46,8 +46,14 @@
 
 <div class="main">
   <header class="top">
+    <button id="railToggle" type="button" class="ico rail-toggle" aria-label="Hide chat list" aria-expanded="true" aria-controls="rail" title="Chat list (Ctrl+B)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+    </button>
     <h1 id="chatTitle">New chat</h1>
     <div class="top-right">
+      <button id="deleteChatBtn" type="button" class="ico" aria-label="Delete this chat" title="Delete this chat" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>
+      </button>
       <button id="savedAnswersBtn" type="button" class="ico" aria-label="Saved answers" title="Saved"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
       <button id="themeBtn" type="button" class="ico" aria-label="Switch theme" title="Light / dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3a9 9 0 1 0 9 9c0-.5-.4-.9-.9-.9a7 7 0 0 1-7.2-7.2c0-.5-.4-.9-.9-.9z"/></svg></button>
     </div>
@@ -56,7 +62,7 @@
   <div class="scroll" id="main" role="main" tabindex="-1">
     <div class="stage">
       <div class="empty" id="empty">
-        <h1>What do you want to <em>understand</em>?</h1>
+        <h2 class="empty-heading">What do you want to <em>understand</em>?</h2>
         <p>Ask in your own words. Every answer is written from Wikipedia's own passages, with the source behind each claim.</p>
         <div class="starters" id="suggestions"></div>
       </div>
@@ -68,32 +74,37 @@
     <div class="dock-in">
       <p class="offline" id="offline" role="status" hidden>You are offline. Answers need a connection.</p>
       <form class="composer" id="composer" autocomplete="off" action="javascript:void(0)" novalidate>
-        <button class="plus" id="plusBtn" type="button" aria-label="Answer options" title="Answer options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button class="plus" id="plusBtn" type="button" aria-label="Answer options" aria-expanded="false" aria-controls="optionsPanel" title="Answer options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         <label class="sr-only" for="prompt">Ask a question</label>
         <textarea id="prompt" rows="1" maxlength="800" placeholder="Ask anything…" spellcheck="true"></textarea>
         <button class="mic" id="voiceBtn" type="button" aria-label="Voice input" title="Voice input" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
         <button class="stop" id="stopBtn" type="button" hidden aria-label="Stop">Stop</button>
         <button class="send" id="send" type="button" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12 20 4l-4.5 16-4-6.5L4 12Z"/></svg></button>
       </form>
+      <div class="options-panel" id="optionsPanel" hidden>
+        <label class="opt"><span>Answer depth</span>
+          <select id="answerDepth" aria-label="Answer depth">
+            <option value="quick">Quick</option>
+            <option value="detailed" selected>Detailed</option>
+            <option value="deep">Deep</option>
+          </select>
+        </label>
+        <label class="opt"><span>Source language</span>
+          <select id="contentLanguage" aria-label="Source language">
+            <option value="en">English</option><option value="hi">हिन्दी</option><option value="bn">বাংলা</option>
+            <option value="ta">தமிழ்</option><option value="te">తెలుగు</option><option value="mr">मराठी</option>
+            <option value="gu">ગુજરાતી</option><option value="kn">ಕನ್ನಡ</option><option value="ml">മലയാളം</option>
+            <option value="pa">ਪੰਜਾਬੀ</option><option value="ur">اردو</option><option value="sa">संस्कृतम्</option>
+          </select>
+        </label>
+        <label class="opt"><span>Interface language</span>
+          <select id="uiLanguage" aria-label="Interface language">
+            <option value="en">English</option><option value="hi">हिंदी</option>
+          </select>
+        </label>
+      </div>
       <div class="meta-row">
-        <span class="mchip">Auto</span>
-        <label class="sr-only" for="contentLanguage">Source language</label>
-        <select id="contentLanguage" aria-label="Source language">
-          <option value="en">English</option><option value="hi">हिन्दी</option><option value="bn">বাংলা</option>
-          <option value="ta">தமிழ்</option><option value="te">తెలుగు</option><option value="mr">मराठी</option>
-          <option value="gu">ગુજરાતી</option><option value="kn">ಕನ್ನಡ</option><option value="ml">മലയാളം</option>
-          <option value="pa">ਪੰਜਾਬੀ</option><option value="ur">اردو</option><option value="sa">संस्कृतम्</option>
-        </select>
-        <label class="sr-only" for="answerDepth">Answer depth</label>
-        <select id="answerDepth" aria-label="Answer depth">
-          <option value="quick">Quick</option>
-          <option value="detailed" selected>Detailed</option>
-          <option value="deep">Deep</option>
-        </select>
-        <label class="sr-only" for="uiLanguage">Interface language</label>
-        <select id="uiLanguage" aria-label="Interface language">
-          <option value="en">EN</option><option value="hi">हिं</option>
-        </select>
+        <button type="button" class="mchip" id="optionsBtn" aria-expanded="false" aria-controls="optionsPanel">Detailed · English</button>
         <span class="grow"></span>
         <span class="hint" id="privacyHint">Sources from Wikipedia</span>
       </div>

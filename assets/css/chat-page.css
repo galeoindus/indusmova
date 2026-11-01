@@ -193,13 +193,13 @@ body.is-empty .thread { display: none; }
 body:not(.is-empty) .empty { display: none; }
 
 .empty { text-align: center; }
-.empty h1 {
+.empty .empty-heading {
   margin: 0 0 10px;
   font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Tiro Devanagari Hindi', serif;
   font-size: clamp(26px, 3.4vw, 34px);
   font-weight: 400; line-height: 1.2; letter-spacing: -0.02em;
 }
-.empty h1 em { font-style: normal; color: var(--accent); }
+.empty .empty-heading em { font-style: normal; color: var(--accent); }
 .empty p {
   margin: 0 auto 26px; max-width: 42ch;
   color: var(--muted); font-size: 14.5px;
@@ -501,7 +501,7 @@ body:not(.is-empty) .empty { display: none; }
   .dock { padding: 10px 16px max(14px, env(safe-area-inset-bottom)); }
   .q { max-width: 92%; }
   .jump { left: 50%; }
-  .empty h1 { font-size: 25px; }
+  .empty .empty-heading { font-size: 25px; }
   .starters { grid-template-columns: 1fr; }
   .hint { display: none; }
 }
@@ -564,4 +564,115 @@ body.is-empty .scroll { display: flex; align-items: center; justify-content: cen
 }
 @media (min-width: 1101px) {
   :root { --col: 720px; }
+}
+
+/* ── the chat list, and getting it out of the way ────────────────────────
+   The rail is a convenience, not the page. It now folds away to nothing and
+   comes back from the same button, and the choice is remembered — a reader
+   who works on a narrow screen should not have to hide it again on every
+   visit. */
+.rail { transition: transform .22s var(--ease-out, ease), opacity .18s ease; }
+body.rail-hidden { grid-template-columns: 0 minmax(0, 1fr); }
+body.rail-hidden .rail {
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-right: 0;
+}
+.rail-toggle { margin-right: 4px; }
+
+/* one row per chat: open it, or delete it */
+.rail-row { display: flex; align-items: center; gap: 2px; border-radius: 9px; }
+.rail-row:hover, .rail-row.is-active { background: var(--panel); }
+.rail-row.is-active { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.rail-row .rail-item {
+  flex: 1 1 auto; min-width: 0;
+  background: transparent; border-radius: 9px;
+}
+.rail-row:hover .rail-item, .rail-row.is-active .rail-item { background: transparent; }
+.rail-del {
+  flex: none;
+  width: 26px; height: 26px; margin-right: 4px;
+  display: grid; place-items: center;
+  border: 0; border-radius: 7px;
+  background: transparent; color: var(--muted);
+  cursor: pointer; opacity: 0;
+  transition: opacity .12s ease, background-color .12s ease, color .12s ease;
+}
+.rail-del svg { width: 13px; height: 13px; }
+.rail-row:hover .rail-del, .rail-row:focus-within .rail-del, .rail-del:focus-visible { opacity: 1; }
+.rail-del:hover { background: color-mix(in srgb, #b3261e 16%, transparent); color: #d2604f; }
+@media (hover: none) { .rail-del { opacity: .75; } }
+
+/* the undo offer after a chat is deleted */
+.chat-toast {
+  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+  z-index: 70;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px 10px 16px;
+  border: 1px solid var(--line-2); border-radius: 999px;
+  background: var(--panel); color: var(--ink);
+  font-size: 12.5px; box-shadow: 0 12px 32px -18px rgba(0, 0, 0, .55);
+}
+.chat-toast button {
+  border: 0; background: transparent; color: var(--accent);
+  font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
+  padding: 4px 8px; border-radius: 999px;
+}
+.chat-toast button:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+
+/* ── answer options: one panel instead of three loose controls ───────────
+   Depth and the two languages used to sit in a row under the question box,
+   competing with it. They are settings, not the question, so they live in a
+   panel that opens from the chip and closes when you look away. */
+.options-panel {
+  display: grid; gap: 10px;
+  margin-bottom: 10px;
+  padding: 13px 14px;
+  border: 1px solid var(--line-2); border-radius: 14px;
+  background: var(--panel);
+  box-shadow: 0 18px 40px -28px rgba(0, 0, 0, .5);
+}
+.options-panel[hidden] { display: none; }
+.options-panel .opt {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.options-panel .opt > span {
+  font-size: 12px; color: var(--muted);
+  font-weight: 600; letter-spacing: .01em;
+}
+.options-panel select {
+  appearance: none;
+  padding: 7px 26px 7px 10px;
+  border: 1px solid var(--line); border-radius: 9px;
+  background: var(--bg);
+  color: var(--ink); font: inherit; font-size: 12.5px; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 7px center; background-size: 12px;
+}
+.options-panel select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.meta-row { align-items: center; }
+.meta-row .mchip {
+  border: 1px solid var(--line); background: transparent;
+  color: var(--ink-2); font: inherit; font-size: 11.5px; font-weight: 600;
+  padding: 6px 11px; border-radius: 999px; cursor: pointer;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.meta-row .mchip:hover { border-color: var(--accent); color: var(--ink); }
+.meta-row .mchip[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+
+/* the working line: a turning wheel and a word, on one baseline */
+.working { gap: 11px; }
+.working .chakra-loader { width: 22px; height: 22px; }
+
+.top h1 {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: min(52ch, 62%);
+}
+.top-right .ico[hidden] { display: none; }
+@media (max-width: 900px) {
+  body.rail-hidden { grid-template-columns: minmax(0, 1fr); }
+  .top h1 { max-width: 58%; }
 }

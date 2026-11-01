@@ -37,7 +37,8 @@ const COPY = {
     copy: 'Copy', copied: 'Copied', save: 'Save', saved: 'Saved',
     speak: 'Read aloud', stopSpeak: 'Stop reading',
     followUp: 'Ask more',
-    newChat: 'New chat', savedTitle: 'Saved', noSaved: 'Nothing saved on this device yet.',
+    newChat: 'New chat', savedTitle: 'Saved', delete: 'Delete', deleted: 'Deleted', undo: 'Undo',
+    hideList: 'Hide chat list', showList: 'Show chat list', options: 'Answer options', noSaved: 'Nothing saved on this device yet.',
     remove: 'Remove', back: 'Back to the chat',
     offline: 'You are offline. Answers need a connection.',
     voice: 'Voice', listening: 'Listening…',
@@ -57,7 +58,8 @@ const COPY = {
     copy: 'कॉपी', copied: 'कॉपी हो गया', save: 'सहेजें', saved: 'सहेजा गया',
     speak: 'सुनें', stopSpeak: 'पढ़ना बंद करें',
     followUp: 'आगे पूछें',
-    newChat: 'नई चैट', savedTitle: 'सहेजे गए', noSaved: 'इस डिवाइस पर अभी कुछ सहेजा नहीं है।',
+    newChat: 'नई चैट', savedTitle: 'सहेजे गए', delete: 'हटाएँ', deleted: 'हटा दिया', undo: 'वापस लाएँ',
+    hideList: 'चैट सूची छिपाएँ', showList: 'चैट सूची दिखाएँ', options: 'उत्तर के विकल्प', noSaved: 'इस डिवाइस पर अभी कुछ सहेजा नहीं है।',
     remove: 'हटाएँ', back: 'चैट पर लौटें',
     offline: 'आप ऑफ़लाइन हैं। उत्तर के लिए इंटरनेट चाहिए।',
     voice: 'आवाज़', listening: 'सुन रहा है…',
@@ -456,7 +458,8 @@ async function ask(raw, depthOverride) {
   scrollDown();
 
   const working = el('div', 'working');
-  working.append(el('span', 'dot'));
+  working.setAttribute('role', 'status');
+  working.append(el('span', 'chakra-loader'));
   const label = el('span', null, t('searching'));
   working.append(label);
   $('#thread').append(working);
@@ -507,6 +510,7 @@ async function ask(raw, depthOverride) {
     };
     renderAnswer(finished, { store: true });
     attachAnswer(question, finished);
+    syncDeleteButton();
   } catch (err) {
     working.remove();
     if (err.name === 'AbortError') {
@@ -698,6 +702,7 @@ function openSaved(item) {
   if (titleEl) titleEl.textContent = item.q;
   setEmpty(false);
   renderRail();
+  syncDeleteButton();
   scrollDown();
   $('#prompt').focus();
 }
@@ -714,6 +719,9 @@ function renderRail() {
     return;
   }
   for (const item of shown) {
+    const row = el('div', 'rail-row');
+    if (item.q === activeQuestion) row.classList.add('is-active');
+
     const btn = el('button', 'rail-item', esc(item.q));
     btn.type = 'button';
     btn.title = item.q;
@@ -722,8 +730,82 @@ function renderRail() {
       if (busy) return;
       openSaved(item);
     });
-    list.append(btn);
+    row.append(btn);
+
+    // Deleting is one click and one undo — no dialog to dismiss first.
+    const del = el('button', 'rail-del');
+    del.type = 'button';
+    del.title = `${t('delete')}: ${item.q}`;
+    del.setAttribute('aria-label', `${t('delete')}: ${item.q}`);
+    del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>';
+    del.addEventListener('click', (event) => {
+      event.stopPropagation();
+      deleteChat(item);
+    });
+    row.append(del);
+    list.append(row);
   }
+}
+
+/* ── deleting a chat ──────────────────────────────────────────────────────
+   A chat lives in this browser and nowhere else, so deleting it is final.
+   The undo below is not decoration: it is the only way back, and it holds
+   the removed item in memory for six seconds before letting it go. */
+let undoBuffer = null;
+let undoTimer = null;
+
+function deleteChat(item) {
+  if (!item) return;
+  const index = recent.indexOf(item);
+  recent = recent.filter((r) => r !== item);
+  persistRecent();
+  undoBuffer = { item, index: index < 0 ? 0 : index };
+  renderRail();
+
+  const wasOpen = item.q === activeQuestion;
+  if (wasOpen) {
+    activeQuestion = '';
+    messages = [];
+    persist();
+    $('#thread').replaceChildren();
+    const titleEl = $('#chatTitle');
+    if (titleEl) titleEl.textContent = t('newChat');
+    setEmpty(true);
+    syncDeleteButton();
+  }
+  showUndoToast(item.q);
+}
+
+function showUndoToast(question) {
+  document.querySelector('.chat-toast')?.remove();
+  const toast = el('div', 'chat-toast');
+  toast.setAttribute('role', 'status');
+  toast.append(el('span', null, `${esc(t('deleted'))}: ${esc(question.slice(0, 40))}${question.length > 40 ? '…' : ''}`));
+  const undo = el('button', null, esc(t('undo')));
+  undo.type = 'button';
+  undo.addEventListener('click', () => {
+    if (!undoBuffer) return;
+    const { item, index } = undoBuffer;
+    recent = [...recent.slice(0, index), item, ...recent.slice(index)];
+    undoBuffer = null;
+    persistRecent();
+    renderRail();
+    toast.remove();
+  });
+  toast.append(undo);
+  document.body.append(toast);
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(() => {
+    toast.remove();
+    undoBuffer = null;
+  }, 6000);
+}
+
+/** The header's bin only exists while there is something to delete. */
+function syncDeleteButton() {
+  const btn = $('#deleteChatBtn');
+  if (!btn) return;
+  btn.hidden = !(activeQuestion || messages.length);
 }
 
 /* ── thread ─────────────────────────────────────────────────────────────── */
@@ -763,7 +845,7 @@ function renderSuggestions() {
 }
 
 function applyCopy() {
-  $('#empty h1').innerHTML = t('hello');
+  $('#empty .empty-heading').innerHTML = t('hello');
   $('#empty p').textContent = t('intro');
   $('#prompt').placeholder = t('ask');
   const ph = $('#privacyHint');
@@ -812,9 +894,62 @@ function startNewChat() {
   $('#thread').replaceChildren();
   setEmpty(true);
   renderRail();
+  syncDeleteButton();
   $('#prompt').focus();
 }
 $('#newChat')?.addEventListener('click', startNewChat);
+
+/* ── folding the chat list away ──────────────────────────────────────────
+   The list is useful until it is in the way. One button hides it, the same
+   button brings it back, and the choice is remembered per browser. */
+const RAIL_KEY = 'indusmova:chat:rail';
+function setRail(hidden, remember = true) {
+  document.body.classList.toggle('rail-hidden', hidden);
+  const btn = $('#railToggle');
+  if (btn) {
+    btn.setAttribute('aria-expanded', String(!hidden));
+    btn.setAttribute('aria-label', hidden ? t('showList') : t('hideList'));
+    btn.title = `${hidden ? t('showList') : t('hideList')} (Ctrl+B)`;
+  }
+  if (remember) { try { localStorage.setItem(RAIL_KEY, hidden ? 'hidden' : 'shown'); } catch { /* blocked */ } }
+}
+$('#railToggle')?.addEventListener('click', () => setRail(!document.body.classList.contains('rail-hidden')));
+try { setRail(localStorage.getItem(RAIL_KEY) === 'hidden', false); } catch { /* blocked */ }
+
+/* ── answer options, in one panel ────────────────────────────────────────*/
+const optionsPanel = $('#optionsPanel');
+const optionsBtn = $('#optionsBtn');
+const plusBtn = $('#plusBtn');
+function paintOptions() {
+  if (!optionsBtn) return;
+  const depth = $('#answerDepth')?.selectedOptions?.[0]?.textContent || 'Detailed';
+  const source = $('#contentLanguage')?.selectedOptions?.[0]?.textContent || 'English';
+  optionsBtn.textContent = `${depth} · ${source}`;
+}
+function setOptions(open) {
+  if (!optionsPanel) return;
+  optionsPanel.hidden = !open;
+  optionsBtn?.setAttribute('aria-expanded', String(open));
+  plusBtn?.setAttribute('aria-expanded', String(open));
+  if (open) optionsPanel.querySelector('select')?.focus();
+}
+optionsBtn?.addEventListener('click', () => setOptions(optionsPanel?.hidden ?? true));
+plusBtn?.addEventListener('click', () => setOptions(optionsPanel?.hidden ?? true));
+document.addEventListener('click', (event) => {
+  if (!optionsPanel || optionsPanel.hidden) return;
+  if (event.target.closest('#optionsPanel, #optionsBtn, #plusBtn')) return;
+  setOptions(false);
+});
+['#answerDepth', '#contentLanguage', '#uiLanguage'].forEach((sel) => {
+  $(sel)?.addEventListener('change', paintOptions);
+});
+paintOptions();
+
+$('#deleteChatBtn')?.addEventListener('click', () => {
+  const item = recent.find((r) => r.q === activeQuestion);
+  if (item) deleteChat(item);
+  else startNewChat();
+});
 $('#savedAnswersBtn')?.addEventListener('click', showSaved);
 $('#railSearch')?.addEventListener('input', () => renderRail());
 $('#voiceBtn')?.addEventListener('click', startVoice);
@@ -836,7 +971,13 @@ $('#uiLanguage')?.addEventListener('change', () => {
 });
 
 document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+    e.preventDefault();
+    setRail(!document.body.classList.contains('rail-hidden'));
+    return;
+  }
   if (e.key === 'Escape') {
+    if (optionsPanel && !optionsPanel.hidden) { setOptions(false); return; }
     if (controller) controller.abort();
     else if (speaking) stopSpeaking();
   }
