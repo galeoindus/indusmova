@@ -11,6 +11,39 @@
     return;
   }
 
+  /* An older version of this site shipped a service worker. A reader who
+   * visited then still has it registered, and it will keep answering with the
+   * shell it cached — for ever, whatever is deployed. Nothing in the current
+   * build registers one, so any registration found here is a leftover: remove
+   * it and empty the caches it filled, once per browser. */
+  const RESCUE_KEY = 'indusmova:cache-rescue:v1';
+  async function rescueFromOldWorker() {
+    let done = '';
+    try { done = localStorage.getItem(RESCUE_KEY) || ''; } catch { /* blocked */ }
+    if (done) return false;
+    let cleaned = false;
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (const reg of regs) {
+          await reg.unregister();
+          cleaned = true;
+        }
+      }
+    } catch { /* nothing registered */ }
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        for (const key of keys) {
+          await caches.delete(key);
+          cleaned = true;
+        }
+      }
+    } catch { /* no cache storage */ }
+    try { localStorage.setItem(RESCUE_KEY, cleaned ? 'cleaned' : 'none'); } catch { /* blocked */ }
+    return cleaned;
+  }
+
   const meta = document.querySelector('meta[name="indusmova-build"]');
   const versionMeta = document.querySelector('meta[name="indusmova-version"]');
   const pageBuild = String(meta?.content || versionMeta?.content || '').trim();
@@ -77,7 +110,13 @@
       }
       updating = true;
       showUpdateNotice();
-      window.setTimeout(() => window.location.reload(), 900);
+      // A plain reload() can be answered from the browser's own cache. Asking
+      // for the same page under a build-specific query string cannot be.
+      window.setTimeout(() => {
+        const url = new URL(window.location.href);
+        url.searchParams.set('v', commit || String(info.version));
+        window.location.replace(url.toString());
+      }, 900);
     } catch {
       // Offline or version endpoint temporarily unavailable; retry later.
     } finally {
@@ -85,7 +124,16 @@
     }
   }
 
-  checkForUpdate();
+  rescueFromOldWorker().then((cleaned) => {
+    if (cleaned) {
+      // The shell this page came from was the old worker's copy: fetch it again.
+      const url = new URL(window.location.href);
+      url.searchParams.set('v', pageBuild || 'fresh');
+      window.location.replace(url.toString());
+      return;
+    }
+    checkForUpdate();
+  });
   window.setInterval(checkForUpdate, 60_000);
   window.addEventListener('focus', checkForUpdate);
   document.addEventListener('visibilitychange', () => {

@@ -198,7 +198,6 @@ indusmova/
 ├── how-it-works/
 ├── help/
 ├── manifest.webmanifest       PWA manifest
-├── sw.js                      service worker (app shell offline)
 ├── robots.txt · sitemap.xml
 ├── _headers · _redirects      Cloudflare Pages configuration
 ├── assets/

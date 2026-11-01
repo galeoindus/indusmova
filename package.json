@@ -30,7 +30,8 @@
     "verify": "npm run check && npm run test",
     "articles": "python3 scripts/gen_articles.py",
     "stamp:build": "node scripts/stamp-build.mjs",
-    "audit:site": "node scripts/audit-site.mjs"
+    "audit:site": "node scripts/audit-site.mjs",
+    "audit:deep": "node scripts/deep-audit.mjs"
   },
   "dependencies": {
     "jsdom": "^29.1.1"

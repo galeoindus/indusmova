@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta name="indusmova-build" content="5.18.2-8893b21">
+  <meta name="indusmova-build" content="5.18.2-e40bbeb">
   <meta name="indusmova-version" content="5.18.2">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,17 +11,28 @@
   <link rel="preconnect" href="https://en.wikipedia.org">
   <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
   <link rel="canonical" href="https://indusmova.pages.dev/research/">
-  <link rel="stylesheet" href="/assets/css/research-desk.css?v=5.18.2-8893b21">
-  <link rel="stylesheet" href="/assets/css/research-morph.css?v=5.18.2-8893b21">
-  <script type="module" src="/assets/js/research-desk.js?v=5.18.2-8893b21"></script>
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Research Desk — indusmova">
+  <meta property="og:description" content="IndusMova Research Desk — ask a question and get the answer taken straight from the article, broken into its topics, with every source openable.">
+  <meta property="og:site_name" content="indusmova">
+  <meta property="og:url" content="https://indusmova.pages.dev/research/">
+  <meta property="og:locale" content="en_IN">
+  <meta property="og:image" content="https://indusmova.pages.dev/assets/img/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Research Desk — indusmova">
+  <meta name="twitter:description" content="IndusMova Research Desk — ask a question and get the answer taken straight from the article, broken into its topics, with every source openable.">
+  <meta name="twitter:image" content="https://indusmova.pages.dev/assets/img/og.png">
+  <link rel="stylesheet" href="/assets/css/research-desk.css?v=5.18.2-e40bbeb">
+  <link rel="stylesheet" href="/assets/css/research-morph.css?v=5.18.2-e40bbeb">
+  <script type="module" src="/assets/js/research-desk.js?v=5.18.2-e40bbeb"></script>
 <!-- INDUSMOVA-MULTIMORPHISM-OVERLAY:START -->
-<link rel="stylesheet" href="/assets/css/multimorphism-overlay.css?v=5.18.2-8893b21">
+<link rel="stylesheet" href="/assets/css/multimorphism-overlay.css?v=5.18.2-e40bbeb">
 <!-- INDUSMOVA-MULTIMORPHISM-OVERLAY:END -->
 <!-- INDUSMOVA-RESEARCH-CHAT:START -->
-<link rel="stylesheet" href="/assets/css/research-chat.css?v=5.18.2-8893b21">
+<link rel="stylesheet" href="/assets/css/research-chat.css?v=5.18.2-e40bbeb">
 <!-- INDUSMOVA-RESEARCH-CHAT:END -->
-<link rel="stylesheet" href="/assets/css/responsive.css?v=5.18.2-8893b21">
-  <link rel="stylesheet" href="/assets/css/system.css?v=5.18.2-8893b21">
+<link rel="stylesheet" href="/assets/css/responsive.css?v=5.18.2-e40bbeb">
+  <link rel="stylesheet" href="/assets/css/system.css?v=5.18.2-e40bbeb">
 </head>
 <body>
   <div class="app-shell" id="research-app" data-theme="light">
@@ -82,7 +93,7 @@
           </section>
 
           <section class="results-view" data-results-view hidden>
-            <div class="results-title-row"><div><div class="eyebrow">SOURCE EXPLORER</div><h1 data-results-heading>Search results</h1><p data-results-subtitle>Public articles matching your query.</p></div><button class="outline-button" type="button" data-action="new-search"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New search</button></div>
+            <div class="results-title-row"><div><div class="eyebrow">SOURCE EXPLORER</div><h2 data-results-heading>Search results</h2><p data-results-subtitle>Public articles matching your query.</p></div><button class="outline-button" type="button" data-action="new-search"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New search</button></div>
             <div class="query-summary"><span class="query-symbol"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg></span><strong data-current-query></strong><span class="summary-separator">·</span><span data-results-count>0 sources</span><span class="source-verified"><span></span> Public source</span></div>
             <div class="results-mobile-controls" aria-label="Change search options"><label>Article language <select data-language-results><option value="en">English</option><option value="hi">हिन्दी</option><option value="bn">বাংলা</option><option value="ta">தமிழ்</option><option value="te">తెలుగు</option><option value="mr">मराठी</option><option value="gu">ગુજરાતી</option><option value="kn">ಕನ್ನಡ</option><option value="ml">മലയാളം</option><option value="pa">ਪੰਜਾਬੀ</option><option value="ur">اردو</option><option value="sa">संस्कृतम्</option></select></label><label>Results <select data-limit-results><option value="3">3 sources</option><option value="5">5 sources</option><option value="10">10 sources</option></select></label></div>
             <div class="result-toolbar"><div class="view-switcher"><button class="view-switch is-active" data-result-view="cards" type="button">Cards</button><button class="view-switch" data-result-view="compact" type="button">Compact</button></div><div class="toolbar-right"><label class="sort-label">Sort <select data-sort><option value="relevance">Relevance</option><option value="title">Title A–Z</option><option value="longest">Longest article</option><option value="recent">Recently updated</option></select></label></div></div>
@@ -93,13 +104,13 @@
           </section>
 
           <section class="library-view" data-library-view hidden>
-            <div class="results-title-row"><div><div class="eyebrow" data-library-kicker>YOUR REFERENCE LIBRARY</div><h1 data-library-heading>Reading list</h1><p data-library-description>Sources saved in this browser for later.</p></div><button class="outline-button" type="button" data-action="new-search"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New search</button></div>
+            <div class="results-title-row"><div><div class="eyebrow" data-library-kicker>YOUR REFERENCE LIBRARY</div><h2 data-library-heading>Reading list</h2><p data-library-description>Sources saved in this browser for later.</p></div><button class="outline-button" type="button" data-action="new-search"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New search</button></div>
             <div class="library-tools"><label class="library-filter"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg><input data-library-filter type="search" placeholder="Filter saved sources…" aria-label="Filter saved sources"></label><button class="outline-button" data-action="export-library" type="button">Export library ↗</button></div>
             <div class="results-list" data-library-list></div>
           </section>
 
           <section class="history-view" data-history-view hidden>
-            <div class="results-title-row"><div><div class="eyebrow">ON THIS DEVICE</div><h1>Recent searches</h1><p>Your last searches, stored locally in this browser.</p></div><button class="outline-button" type="button" data-action="clear-history">Clear history</button></div>
+            <div class="results-title-row"><div><div class="eyebrow">ON THIS DEVICE</div><h2>Recent searches</h2><p>Your last searches, stored locally in this browser.</p></div><button class="outline-button" type="button" data-action="clear-history">Clear history</button></div>
             <div class="history-full-list" data-history-full></div>
           </section>
         </div>
@@ -131,9 +142,9 @@
     </div>
   </div>
 <!-- INDUSMOVA-RESEARCH-CHAT:START -->
-<script src="/assets/js/research-chat-enhance.js?v=5.18.2-8893b21"></script>
+<script src="/assets/js/research-chat-enhance.js?v=5.18.2-e40bbeb"></script>
 <!-- INDUSMOVA-RESEARCH-CHAT:END -->
-  <script type="module" src="/assets/js/build-watch.js?v=5.18.2-8893b21"></script>
-  <script src="/assets/js/chat-launcher.js?v=5.18.2-8893b21" defer></script>
+  <script type="module" src="/assets/js/build-watch.js?v=5.18.2-e40bbeb"></script>
+  <script src="/assets/js/chat-launcher.js?v=5.18.2-e40bbeb" defer></script>
 </body>
 </html>

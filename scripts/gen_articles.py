@@ -428,7 +428,13 @@ FOOT = """  </main>
 
 def page_html(art, related):
     canonical = f"{ORIGIN}/articles/{slug(art['title'])}/"
-    description = (art["description"] or art["leadText"] or art["title"])[:155]
+    # A one-line Wikidata description is too thin to be a search snippet;
+    # the lead sentence carries it when the description is short.
+    description = (art["description"] or "").strip()
+    if len(description) < 30:
+        lead_text = re.sub(r"\s+", " ", strip_noise(art["leadText"] or "")).strip()
+        description = (f"{description.rstrip('.')}. {lead_text}" if description else lead_text)
+    description = description[:155].strip()
     jsonld = json.dumps({
         "@context": "https://schema.org",
         "@type": "Article",
@@ -522,7 +528,55 @@ def page_html(art, related):
                    f'<div class="pill-row">{pills}</div></div></div>\n')
 
     out.append(FOOT.format(wikiUrl=art["wikiUrl"], lang=LANG, version=VERSION, points=POINTS_SCRIPT))
-    return "".join(out)
+    return ensure_image_alt("".join(out), art["title"])
+
+
+# ── every picture says what it shows ──────────────────────────────────────
+# Wikipedia's parsed HTML leaves alt off most figures; the caption beside the
+# picture is what describes it. Each <img> without alt takes the caption of its
+# own block, and a diagram that only redraws a table is marked decorative.
+
+_CAPTION = re.compile(r'<div[^>]*class="[^"]*thumbcaption[^"]*"[^>]*>(.*?)</div>'
+                      r'|<figcaption[^>]*>(.*?)</figcaption>', re.S | re.I)
+_IMG_TAG = re.compile(r'<img\b[^>]*>', re.I)
+
+
+def _plain(markup):
+    return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", markup))).strip()
+
+
+def _shorten(text, limit=110):
+    if len(text) <= limit:
+        return text
+    cut = text[:limit]
+    return (cut[:cut.rfind(" ")] if " " in cut else cut).rstrip(" ,.;:—-") + "…"
+
+
+def ensure_image_alt(markup, title):
+    captions = [(m.start(), m.end(), _plain(m.group(1) or m.group(2) or "")) for m in _CAPTION.finditer(markup)]
+    captions = [c for c in captions if c[2]]
+    if not captions:
+        return markup
+
+    def fix(m):
+        tag = m.group(0)
+        if re.search(r"\salt\s*=", tag, re.I):
+            return tag
+        after = [c for c in captions if c[0] >= m.end()]
+        before = [c for c in captions if c[1] <= m.start()]
+        caption = ""
+        if after and after[0][0] - m.end() < 1500:
+            caption = after[0][2]
+        elif before and m.start() - before[-1][1] < 400 and "</figure>" not in markup[before[-1][1]:m.start()]:
+            caption = before[-1][2]
+        if not caption:
+            context = markup[max(0, m.start() - 900):m.start()]
+            caption = "" if ("chess-pieces" in context[-600:] or "<table" in context) else title
+        closing = " />" if tag.endswith("/>") else ">"
+        body = tag[:-2].rstrip() if tag.endswith("/>") else tag[:-1].rstrip()
+        return f'{body} alt="{html.escape(_shorten(caption), quote=True)}"{closing}'
+
+    return _IMG_TAG.sub(fix, markup)
 
 
 # ── one picture, one place ────────────────────────────────────────────────
