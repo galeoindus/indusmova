@@ -1941,3 +1941,119 @@ form.panel .searchbar, form.panel .select, .feedback .fb-note textarea,
   background: color-mix(in srgb, var(--accent) 14%, transparent);
   box-shadow: none;
 }
+
+/* ======================================================================
+   · THE ARTICLE PAGE, SQUARED UP
+   ----------------------------------------------------------------------
+   Three things in the reader looked loose rather than designed:
+
+   1. The tab strip. It was a centred flex row inside a padded column, so
+      when the two labels were wider than the space the row overflowed and
+      the first pill was cut off at the left edge — "Full article" appeared
+      to start outside the page. It now starts where the text starts, wraps
+      instead of overflowing, and never clips.
+   2. The language bar. Its pills ran past the right edge of the card. The
+      inner row wraps now, and the bar keeps its own padding.
+   3. The action row. Five buttons of different widths wrapped into two
+      ragged lines. They share one height and one gap, and the row wraps as
+      a block rather than as a pile.
+   ====================================================================== */
+
+[data-view="article"] .tabs {
+  justify-content: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  flex-wrap: wrap;
+  overflow: visible;
+  margin-bottom: 18px;
+}
+.tabs { padding: 4px; }
+.tab {
+  min-height: 34px;
+  padding: 0 16px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.langbar {
+  overflow: visible;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.langbar-inner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.langbar-inner > span:first-child {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.langbar .pill-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.langbar .pill { white-space: nowrap; }
+
+.art-actions {
+  gap: 8px;
+  align-items: stretch;
+  margin-bottom: 14px;
+}
+.art-actions > .btn,
+.art-actions > .md-disclosure > .btn {
+  height: 38px;
+  min-height: 38px;
+  padding: 0 13px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* The facts table is read, not scanned: give the label column a fixed share
+   and let the value column breathe, instead of two ragged columns. */
+.factbox dl { display: grid; grid-template-columns: minmax(120px, 30%) minmax(0, 1fr); }
+.factbox .row { display: contents; }
+/* Two factbox shapes exist in the pages: rows wrapped in .row, and bare
+   dt/dd pairs. Both are laid out the same way here. */
+.factbox dl > dt,
+.factbox .row dt {
+  padding: 9px 12px 9px 0;
+  border-bottom: 1px solid var(--border-2);
+  font-size: 12.5px;
+  color: var(--muted);
+  align-self: stretch;
+}
+.factbox dl > dd,
+.factbox .row dd {
+  margin: 0;
+  padding: 9px 0 9px 12px;
+  border-bottom: 1px solid var(--border-2);
+  border-left: 1px solid var(--border-2);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.factbox dl > .row:last-child dt,
+.factbox dl > .row:last-child dd,
+.factbox dl > dt:last-of-type,
+.factbox dl > dd:last-of-type { border-bottom: 0; }
+
+/* A loading state is a sentence with a wheel, not a card the height of a
+   paragraph with nothing in it. */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 34px 20px;
+  min-height: 0;
+}
+.state .spinner { margin: 0; }
+.state p { margin: 0; font-size: 13.5px; }
+@media (max-width: 640px) {
+  .factbox dl { grid-template-columns: minmax(96px, 38%) minmax(0, 1fr); }
+  .factbox .row dt, .factbox .row dd { font-size: 12.5px; padding-top: 8px; padding-bottom: 8px; }
+  .art-actions > .btn span { display: inline; }
+}

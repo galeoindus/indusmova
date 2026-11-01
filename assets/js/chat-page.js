@@ -914,7 +914,13 @@ function setRail(hidden, remember = true) {
   if (remember) { try { localStorage.setItem(RAIL_KEY, hidden ? 'hidden' : 'shown'); } catch { /* blocked */ } }
 }
 $('#railToggle')?.addEventListener('click', () => setRail(!document.body.classList.contains('rail-hidden')));
-try { setRail(localStorage.getItem(RAIL_KEY) === 'hidden', false); } catch { /* blocked */ }
+try {
+  const remembered = localStorage.getItem(RAIL_KEY);
+  // On a phone the list is a drawer, so it starts closed unless the reader
+  // has said otherwise on this device.
+  const small = window.matchMedia('(max-width: 900px)').matches;
+  setRail(remembered ? remembered === 'hidden' : small, false);
+} catch { /* blocked */ }
 
 /* ── answer options, in one panel ────────────────────────────────────────*/
 const optionsPanel = $('#optionsPanel');
