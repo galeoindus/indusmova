@@ -367,6 +367,11 @@ function renderAnswer(a, { store = false, animate = true } = {}) {
   regen.type = 'button';
   regen.addEventListener('click', () => {
     if (!a.question || busy) return;
+    // The question bubble sitting above this answer belongs to it. Leaving it
+    // in place meant Regenerate re-asked the question and printed a second,
+    // identical bubble right under the first.
+    const asked = box.previousElementSibling;
+    if (asked && asked.classList.contains('q')) asked.remove();
     box.remove();
     messages = messages.filter((m) => !(m.type === 'a' && m.data === a));
     const lastQ = messages[messages.length - 1];

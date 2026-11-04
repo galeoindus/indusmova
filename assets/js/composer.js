@@ -124,7 +124,10 @@ export function composerForm(ctx, { placeholderKey = 'askPlaceholder', autofocus
     }
   });
 
-  ctx._composer = { form, textarea, mode: () => active };
+  // Read the mode live rather than from the `active` const captured above:
+  // clicking a mode button calls ctx.setMode(), which the const never saw, so
+  // this accessor reported the mode the form opened in for ever.
+  ctx._composer = { form, textarea, mode: () => ctx.state.mode };
   return form;
 }
 

@@ -32,7 +32,7 @@
     "stamp:build": "node scripts/stamp-build.mjs",
     "audit:site": "node scripts/audit-site.mjs",
     "audit:deep": "node scripts/deep-audit.mjs",
-    "check:browser": "node scripts/back-nav-check.mjs && node scripts/translate-check.mjs"
+    "check:browser": "node scripts/back-nav-check.mjs && node scripts/translate-check.mjs && node scripts/interaction-check.mjs"
   },
   "dependencies": {
     "jsdom": "^29.1.1"

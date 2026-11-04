@@ -284,6 +284,20 @@ function clearViewCache() {
   openView = null;
 }
 
+/**
+ * Drop every kept page of a given view.
+ *
+ * A page built out of local data must not be served from the cache after that
+ * data has changed. Saving an article from its own page and then pressing Back
+ * was putting the old, empty Bookmarks list back on screen, because the copy
+ * kept from the earlier visit was still the truth as far as the cache knew.
+ */
+function dropCachedView(name) {
+  for (const key of [...viewCache.keys()]) {
+    if (key.startsWith(`${name}:`)) viewCache.delete(key);
+  }
+}
+
 
 function markNav(route) {
   // Compare normalised paths, not raw hrefs. The old check used
@@ -475,6 +489,12 @@ function boot() {
   // was never deployed.
   const repo = document.getElementById('repoLink');
   if (repo) repo.href = SITE.repo;
+
+  // A page built from local data is only as fresh as the data was. When the
+  // reader saves, removes or clears something, drop the kept copies of the
+  // views that show it, so going Back cannot show a list that has moved on.
+  store.on('bookmarks', () => dropCachedView('bookmarks'));
+  store.on('history', () => dropCachedView('history'));
 
   router.onChange((route) => render(route));
   router.start();
