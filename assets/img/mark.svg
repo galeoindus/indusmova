@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" role="img" aria-label="indusmova">
+  <!-- The mark: a rising sun over two currents. The sun is the question; the
+       currents are the river the answer comes down. Drawn for this interface,
+       at 44 units so it stays crisp at 16px and at 96px. -->
+  <defs>
+    <linearGradient id="imMark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#123c3f"/>
+      <stop offset=".55" stop-color="#1f6f68"/>
+      <stop offset="1" stop-color="#c4762f"/>
+    </linearGradient>
+  </defs>
+  <rect width="44" height="44" rx="13" fill="url(#imMark)"/>
+  <circle cx="22" cy="12.6" r="3.7" fill="#fdf6e9"/>
+  <path d="M11.6 22.4c4.2 0 4.2-3.5 8.4-3.5s4.2 3.5 8.4 3.5 4-3.5 4-3.5"
+        fill="none" stroke="#fdf6e9" stroke-width="2.8" stroke-linecap="round" opacity=".95"/>
+  <path d="M11.6 30.4c4.2 0 4.2-3.5 8.4-3.5s4.2 3.5 8.4 3.5 4-3.5 4-3.5"
+        fill="none" stroke="#fdf6e9" stroke-width="2.8" stroke-linecap="round" opacity=".6"/>
+</svg>

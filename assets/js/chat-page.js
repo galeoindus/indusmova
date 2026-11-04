@@ -889,15 +889,16 @@ function startNewChat() {
   messages = [];
   persist();
   activeQuestion = '';
-  const t = $('#chatTitle');
-  if (t) t.textContent = 'New chat';
+  // Not `const t = …`: that shadowed the translation helper `t()` for the rest
+  // of this function, so the next `t('…')` added here would have thrown.
+  const titleEl = $('#chatTitle');
+  if (titleEl) titleEl.textContent = t('newChat');
   $('#thread').replaceChildren();
   setEmpty(true);
   renderRail();
   syncDeleteButton();
   $('#prompt').focus();
 }
-$('#newChat')?.addEventListener('click', startNewChat);
 
 /* ── folding the chat list away ──────────────────────────────────────────
    The list is useful until it is in the way. One button hides it, the same
@@ -962,7 +963,7 @@ $('#voiceBtn')?.addEventListener('click', startVoice);
 $('#themeBtn')?.addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = next;
-  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', next === 'dark' ? '#0d1411' : '#fbf9f4'));
+  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', next === 'dark' ? '#0b0f0e' : '#fbf8f2'));
   try { localStorage.setItem('indusmova:theme', next); } catch { /* blocked */ }
 });
 $('#contentLanguage')?.addEventListener('change', () => {
@@ -980,6 +981,13 @@ document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
     e.preventDefault();
     setRail(!document.body.classList.contains('rail-hidden'));
+    return;
+  }
+  // The rail advertises ⌘K on the New chat button, so it has to work — and
+  // on Windows and Linux the same keystroke is Ctrl+K.
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    startNewChat();
     return;
   }
   if (e.key === 'Escape') {

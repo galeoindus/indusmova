@@ -57,6 +57,10 @@ for (const file of await walk(ROOT)) {
   if (!isChat && !/assets\/js\/chat-launcher\.js/.test(html) && /<\/body>/i.test(html)) {
     html = html.replace(/<\/body>/i, `  <script src="/assets/js/chat-launcher.js?v=${build}" defer></script>\n</body>`);
   }
+  // The standalone article pages get the Translate control from
+  // article-points.js, the module they already load — a separate tag for it
+  // was fetched but never evaluated, so the button never appeared.
+  html = html.replace(/[ \t]*<script type="module" src="\/assets\/js\/article-translate-page\.js[^"]*"[^>]*><\/script>\r?\n?/gi, '');
   html = html.replace(/indusmova v\d+\.\d+\.\d+/gi, `indusmova v${version}`);
   // The footer prints the version inside a span, so "indusmova v5.0.0" alone
   // never matched it and the no-JS footer drifted a release behind.

@@ -1,16 +1,16 @@
 <!doctype html>
 <html lang="en" data-theme="dark">
 <head>
-  <meta name="indusmova-build" content="5.18.2-9228ad0">
-  <meta name="indusmova-version" content="5.18.2">
+  <meta name="indusmova-build" content="5.19.0-d2f4496">
+  <meta name="indusmova-version" content="5.19.0">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Ask — indusmova</title>
   <meta name="description" content="Ask a question and get a clear answer broken into topics, with the source behind every claim.">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <link rel="canonical" href="https://indusmova.pages.dev/chat/">
-  <meta name="theme-color" content="#0b100e" media="(prefers-color-scheme: dark)">
-  <meta name="theme-color" content="#fbf9f4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b0f0e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#fbf8f2" media="(prefers-color-scheme: light)">
   <meta name="color-scheme" content="light dark">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="indusmova">
@@ -20,30 +20,59 @@
   <meta property="og:image" content="https://indusmova.pages.dev/assets/img/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://indusmova.pages.dev/assets/img/og.png">
-  <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/assets/css/chat-page.css?v=5.18.2-9228ad0">
-  <link rel="stylesheet" href="/assets/css/system.css?v=5.18.2-9228ad0">
+  <link rel="icon" href="/assets/img/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/css/chat-page.css?v=5.19.0-d2f4496">
+  <link rel="stylesheet" href="/assets/css/system.css?v=5.19.0-d2f4496">
 </head>
 <body class="is-empty">
 <a class="skip-link" href="#prompt">Skip to the question box</a>
 
+<!-- The one mark, defined once. Every place the brand appears on this page
+     points at it with <use>, so the logo can never drift between the rail,
+     the answer avatar and the empty state. -->
+<svg class="mark-defs" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="markGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#123c3f"/>
+      <stop offset=".55" stop-color="#1f6f68"/>
+      <stop offset="1" stop-color="#c4762f"/>
+    </linearGradient>
+    <symbol id="indusMark" viewBox="0 0 44 44">
+      <rect width="44" height="44" rx="13" fill="url(#markGrad)"/>
+      <circle cx="22" cy="12.6" r="3.7" fill="#fdf6e9"/>
+      <path d="M11.6 22.4c4.2 0 4.2-3.5 8.4-3.5s4.2 3.5 8.4 3.5 4-3.5 4-3.5" fill="none" stroke="#fdf6e9" stroke-width="2.8" stroke-linecap="round" opacity=".95"/>
+      <path d="M11.6 30.4c4.2 0 4.2-3.5 8.4-3.5s4.2 3.5 8.4 3.5 4-3.5 4-3.5" fill="none" stroke="#fdf6e9" stroke-width="2.8" stroke-linecap="round" opacity=".6"/>
+    </symbol>
+    <symbol id="indusMarkFlat" viewBox="0 0 44 44">
+      <circle cx="22" cy="12.6" r="3.7" fill="currentColor"/>
+      <path d="M11.6 22.4c4.2 0 4.2-3.5 8.4-3.5s4.2 3.5 8.4 3.5 4-3.5 4-3.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/>
+      <path d="M11.6 30.4c4.2 0 4.2-3.5 8.4-3.5s4.2 3.5 8.4 3.5 4-3.5 4-3.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" opacity=".55"/>
+    </symbol>
+  </defs>
+</svg>
+
 <aside class="rail" id="rail" aria-label="Your chats">
   <a class="brand" href="/" aria-label="indusmova home">
-    <span class="mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 8.6l2 4.6 4.6 2-4.6 2-2 4.6-2-4.6-4.6-2 4.6-2z" fill="#f5f0e6"/><rect x="17.3" y="23.4" width="5.4" height="9.2" rx="2.7" fill="#f5f0e6" fill-opacity=".92"/></svg></span>
-    <b>indusmova</b>
+    <span class="mark" aria-hidden="true"><svg viewBox="0 0 44 44"><use href="#indusMark"/></svg></span>
+    <span class="brand-text"><b>indusmova</b><em>ask</em></span>
   </a>
+
   <button type="button" class="rail-new" id="railNew">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
     <span>New chat</span>
+    <kbd>⌘K</kbd>
   </button>
+
   <label class="rail-search" for="railSearch">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
     <input id="railSearch" type="search" placeholder="Search chats" autocomplete="off">
   </label>
+
   <div class="rail-scroll">
     <p class="rail-head">Recent</p>
     <div class="rail-list" id="railList"></div>
   </div>
+
   <p class="rail-foot"><span class="dot"></span><span id="railModel">Auto · OpenRouter + Workers AI</span></p>
 </aside>
 
@@ -65,6 +94,7 @@
   <div class="scroll" id="main" role="main" tabindex="-1">
     <div class="stage">
       <div class="empty" id="empty">
+        <span class="empty-mark" aria-hidden="true"><svg viewBox="0 0 44 44"><use href="#indusMark"/></svg></span>
         <h2 class="empty-heading">What do you want to <em>understand</em>?</h2>
         <p>Ask in your own words. Every answer is written from Wikipedia's own passages, with the source behind each claim.</p>
         <div class="starters" id="suggestions"></div>
@@ -117,7 +147,7 @@
 
 <noscript><p class="hint">The chat needs JavaScript. You can still read the entries at <a href="/articles/">the library</a>.</p></noscript>
 
-<script type="module" src="/assets/js/build-watch.js?v=5.18.2-9228ad0"></script>
-<script type="module" src="/assets/js/chat-page.js?v=5.18.2-9228ad0"></script>
+<script type="module" src="/assets/js/build-watch.js?v=5.19.0-d2f4496"></script>
+<script type="module" src="/assets/js/chat-page.js?v=5.19.0-d2f4496"></script>
 </body>
 </html>

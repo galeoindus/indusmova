@@ -1838,6 +1838,54 @@ form.panel .searchbar, form.panel .select, .feedback .fb-note textarea,
 
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 
+/* ── the Translate tab ──────────────────────────────────────────────────
+   One bar (language, button, stop), one status line, one progress track, then
+   the article itself. The translated copy is a clone of the reading layout,
+   so it inherits every rule below — only its text differs. */
+.tr-panel { margin: 4px 0 26px; }
+.tr-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-2); border-radius: var(--radius);
+  background: var(--surface);
+}
+.tr-pick { display: flex; flex: 1 1 260px; align-items: center; gap: 10px; min-width: 0; }
+.tr-pick > span { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.tr-select {
+  flex: 1 1 auto; min-width: 0; max-width: 340px;
+  min-height: 38px; padding: 6px 10px;
+  border: 1px solid var(--border-2); border-radius: 10px;
+  background: var(--surface-2, var(--surface)); color: var(--text);
+  font: inherit; font-size: 13.5px;
+}
+.tr-select:disabled { opacity: .6; }
+.tr-status { margin: 10px 2px 0; font-size: 12.5px; color: var(--muted); }
+.tr-track {
+  height: 3px; margin: 10px 2px 0; overflow: hidden;
+  border-radius: 999px; background: color-mix(in srgb, var(--text) 10%, transparent);
+}
+.tr-track span {
+  display: block; height: 100%; width: 0;
+  border-radius: inherit; background: var(--accent);
+  transition: width .25s var(--ease-out, ease);
+}
+.tr-track[hidden] { display: none; }
+.tr-body:not(:empty) { margin-top: 18px; }
+.tr-note {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  margin: 0 0 18px; padding: 12px 14px;
+  border: 1px solid var(--border-2); border-left: 3px solid var(--accent);
+  border-radius: var(--radius); background: var(--surface);
+}
+.tr-note p { margin: 0; flex: 1 1 320px; font-size: 13px; color: var(--text); }
+.tr-note .tr-partial { flex-basis: 100%; color: var(--muted); font-size: 12.5px; }
+.tr-body[dir="rtl"] { text-align: right; }
+@media (max-width: 640px) {
+  .tr-bar { padding: 12px; }
+  .tr-pick { flex-basis: 100%; }
+  .tr-select { max-width: none; }
+}
+
 /* Fuller translation offer */
 .translate-offer {
   display: flex; flex-wrap: wrap; align-items: center; gap: 12px;

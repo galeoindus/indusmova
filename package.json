@@ -1,9 +1,9 @@
 {
   "name": "indusmova",
-  "version": "5.18.2",
+  "version": "5.19.0",
   "private": true,
   "type": "module",
-  "description": "indusmova — a Wikimedia knowledge research and discovery platform. Ask a question or open a topic and get a direct answer, key points, infobox facts and the sources behind them, with an optional source-grounded AI explanation.",
+  "description": "indusmova \u2014 a Wikimedia knowledge research and discovery platform. Ask a question or open a topic and get a direct answer, key points, infobox facts and the sources behind them, with an optional source-grounded AI explanation.",
   "homepage": "https://indusmova.pages.dev/",
   "repository": {
     "type": "git",
@@ -31,9 +31,13 @@
     "articles": "python3 scripts/gen_articles.py",
     "stamp:build": "node scripts/stamp-build.mjs",
     "audit:site": "node scripts/audit-site.mjs",
-    "audit:deep": "node scripts/deep-audit.mjs"
+    "audit:deep": "node scripts/deep-audit.mjs",
+    "check:browser": "node scripts/back-nav-check.mjs && node scripts/translate-check.mjs"
   },
   "dependencies": {
     "jsdom": "^29.1.1"
+  },
+  "devDependencies": {
+    "ws": "^8.18.0"
   }
 }

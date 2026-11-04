@@ -64,7 +64,8 @@ const ctx = {
     store.setPref('contentLang', code);
     updateLangButton();
     toast(t('contentLangChanged', { lang: labelFor(code) }));
-    render(ctx.route);
+    clearViewCache();
+    render(ctx.route, { fresh: true });
   },
   setUiLang(code) {
     setDocumentLang(code);
@@ -73,13 +74,16 @@ const ctx = {
     setUiLang(code);
     applyI18n();
     updateLangButton();
-    render(ctx.route);
+    clearViewCache();
+    render(ctx.route, { fresh: true });
   },
 
   on: store.on,
   onCleanup: (fn) => { cleanups.push(fn); },
   // The open view sets this so a depth / meaning change re-renders it at once.
   optionsChanged: () => {},
+  // The open view sets this to re-arm itself when the reader comes back to it.
+  viewRestore: null,
 
   getBookmarks: store.getBookmarks,
   isBookmarked: store.isBookmarked,
@@ -130,21 +134,123 @@ const VIEWS = {
   notfound: () => renderNotFound(),
 };
 
-async function render(route) {
+/* ------------------------------------------------------- the view cache
+ *
+ * Going Back used to reload the article you had just left: the router saw a
+ * new key, threw the old page away, showed the spinner and asked Wikimedia
+ * for the same document again — losing the tab you were on, the section you
+ * had scrolled to and the reading position itself. On a slow connection that
+ * is a second wait for text that was already on the screen.
+ *
+ * So a rendered page is kept. Leaving a view detaches its node into this map
+ * together with the scroll offset, the title and description it published and
+ * a restore hook the view can supply; arriving back at that key puts the very
+ * same node back on the page and scrolls to where the reader was. Nothing is
+ * fetched, nothing is re-composed, no spinner appears.
+ *
+ * It is bounded, and it is not forever: at most a handful of pages, for
+ * twenty minutes. A deliberately fresh render (`{ fresh: true }`, used when
+ * the reader changes the source or interface language) skips it entirely.
+ */
+const VIEW_CACHE_MAX = 6;
+const VIEW_CACHE_TTL = 20 * 60e3;
+const viewCache = new Map(); // routeKey -> { node, scrollY, at, title, desc, restore }
+
+// The page currently on screen, so it can be stashed when the reader leaves.
+let openView = null; // { key, node, restore }
+
+function stashOpenView() {
+  if (!openView || !openView.node || !openView.node.isConnected) { openView = null; return; }
+  const desc = document.querySelector('meta[name="description"]')?.getAttribute('content') || '';
+  viewCache.set(openView.key, {
+    node: openView.node,
+    scrollY: window.scrollY || window.pageYOffset || 0,
+    at: Date.now(),
+    title: document.title,
+    desc,
+    restore: openView.restore,
+  });
+  // Keep the map small: the oldest entry goes first.
+  if (viewCache.size > VIEW_CACHE_MAX) {
+    const oldest = [...viewCache.entries()]
+      .sort((a, b) => a[1].at - b[1].at)
+      .slice(0, viewCache.size - VIEW_CACHE_MAX);
+    for (const [key] of oldest) viewCache.delete(key);
+  }
+  openView = null;
+}
+
+/** Put a kept page back, exactly as it was. Returns true when it did. */
+function restoreView(route, key, main) {
+  const hit = viewCache.get(key);
+  if (!hit) return false;
+  if (Date.now() - hit.at > VIEW_CACHE_TTL || !hit.node) {
+    viewCache.delete(key);
+    return false;
+  }
+  viewCache.delete(key);
+
+  document.documentElement.setAttribute('data-view', route.name);
+  main.innerHTML = '';
+  main.append(hit.node);
+  markNav(route);
+  // The view publishes its own title and description; put them back rather
+  // than letting the generic route title overwrite an article's.
+  updateRouteMetadata(route, { title: hit.title, description: hit.desc });
+  document.title = hit.title;
+
+  openView = { key, node: hit.node, restore: hit.restore };
+  // A view that needs listeners re-attached to the restored DOM (the article
+  // re-arms its contents button and its section watcher) does it here.
+  if (typeof hit.restore === 'function') {
+    try { hit.restore(); } catch (err) { console.error('restore failed', err); }
+  }
+
+  const tocBtn = document.getElementById('tocBtn');
+  if (tocBtn) tocBtn.hidden = typeof ctx.toggleToc !== 'function';
+
+  // The layout has to exist before a scroll offset can be applied to it, and
+  // the jump has to be instant: the stylesheet sets `scroll-behavior: smooth`
+  // on <html>, which `behavior: 'auto'` obeys — so restoring with 'auto'
+  // animated the page down from the top every time the reader came back.
+  const y = hit.scrollY;
+  requestAnimationFrame(() => {
+    const root = document.documentElement;
+    const previous = root.style.scrollBehavior;
+    root.style.scrollBehavior = 'auto';
+    window.scrollTo(0, y);
+    root.style.scrollBehavior = previous;
+  });
+  return true;
+}
+
+async function render(route, { fresh = false } = {}) {
   ctx.route = route;
+  const key = router.routeKey(route);
+  const main = document.getElementById('main');
+  if (!main) return;
+
+  // Keep the page being left before its cleanups run, so Back can have it.
+  stashOpenView();
+
   for (const fn of cleanups.splice(0)) {
     try { fn(); } catch { /* a failed cleanup must not block the render */ }
   }
   ctx.optionsChanged = () => {};
-  const main = document.getElementById('main');
-  if (!main) return;
+  ctx.toggleToc = null;
+
+  if (!fresh && restoreView(route, key, main)) return;
+
+  if (fresh) viewCache.delete(key);
+
   document.documentElement.setAttribute('data-view', route.name);
   main.innerHTML = '';
   markNav(route);
   updateRouteMetadata(route);
   const view = VIEWS[route.name] || VIEWS.notfound;
+  let node = null;
   try {
-    const node = await view(route);
+    node = await view(route);
     if (node) main.append(node);
   } catch (err) {
     console.error('view failed', err);
@@ -156,8 +262,26 @@ async function render(route) {
   const tocBtn = document.getElementById('tocBtn');
   if (tocBtn) tocBtn.hidden = typeof ctx.toggleToc !== 'function';
 
+  // The view may hand back a restore hook for when this page is revisited.
+  openView = { key, node: main.firstElementChild || node, restore: ctx.viewRestore || null };
+  ctx.viewRestore = null;
+
   main.focus({ preventScroll: true });
-  window.scrollTo({ top: 0, behavior: 'auto' });
+  // A new page opens at the top immediately, not after a smooth scroll down
+  // from wherever the reader was standing on the previous one.
+  {
+    const root = document.documentElement;
+    const previous = root.style.scrollBehavior;
+    root.style.scrollBehavior = 'auto';
+    window.scrollTo(0, 0);
+    root.style.scrollBehavior = previous;
+  }
+}
+
+/** Forget every kept page. Used when the language of the content changes. */
+function clearViewCache() {
+  viewCache.clear();
+  openView = null;
 }
 
 

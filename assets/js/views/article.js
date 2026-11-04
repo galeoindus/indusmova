@@ -28,6 +28,7 @@ import { articleHref, searchHref } from '../router.js';
 import { updateRouteMetadata, setArticleStructuredData, markContentLang, pathFor } from '../meta.js';
 import { CONTENT_LANGS } from '../config.js';
 import { offerFullerTranslation } from '../translate.js';
+import { translatePanel } from '../article-translate.js';
 
 const PROJECT_NAMES = {
   wikipedia: 'Wikipedia', wikiquote: 'Wikiquote', wikisource: 'Wikisource',
@@ -58,8 +59,15 @@ export async function renderArticle(ctx, route) {
     root: null,
     tabs: null,
   };
-  ctx.optionsChanged = () => { if (state.root) repaintFull(ctx, state); };
-  ctx.toggleToc = () => toggleToc(state);
+  // Re-arm this page. Called once now, and again by the router if the reader
+  // comes back to it from the cache — the node is the same, but the header
+  // hooks it needs are per-visit.
+  const arm = () => {
+    ctx.optionsChanged = () => { if (state.root) repaintFull(ctx, state); };
+    ctx.toggleToc = () => toggleToc(state);
+  };
+  arm();
+  ctx.viewRestore = arm;
   ctx.onCleanup(() => { ctx.optionsChanged = () => {}; ctx.toggleToc = null; });
 
   build(ctx, mount, state, title);
@@ -74,12 +82,16 @@ async function build(ctx, mount, state, title, retry = 0) {
       ctx.api.article(state.lang, title, { project: state.project }),
       ctx.api.pageImage(state.lang, title, { project: state.project }).catch(() => null),
     ]);
+    // The reader may have navigated away while this was in flight. Painting
+    // into a detached node would throw away their new page and record a
+    // history entry for a visit they never made.
+    if (!mount.isConnected) return;
     state.data = data;
     state.leadImage = lead;
     ctx.api.revisionInfo(state.lang, state.data.revid, { project: state.project })
       .then((rev) => {
         state.revision = rev;
-        renderRevisionLine(state);
+        if (mount.isConnected) renderRevisionLine(state);
       })
       .catch(() => {});
     state.root = clean(state.data.html);
@@ -91,11 +103,12 @@ async function build(ctx, mount, state, title, retry = 0) {
       title: state.data.title, lang: state.lang, url: articleHref(state.data.title, state.lang),
     });
   } catch (err) {
+    if (!mount.isConnected) return;
     mount.innerHTML = '';
     const message = err?.status === 404 ? t('notFoundBody') : err?.message;
     mount.append(errorBox(message, { onRetry: () => build(ctx, mount, state, title, retry + 1), query: title }));
     if (err?.name === 'ApiError' && err.status !== 404 && retry === 0) {
-      setTimeout(() => build(ctx, mount, state, title, 1), 600);
+      setTimeout(() => { if (mount.isConnected) build(ctx, mount, state, title, 1); }, 600);
     }
   }
 }
@@ -136,6 +149,7 @@ function render(ctx, mount, state) {
   state.tabs = tabs;
 
   const panelFull = el('div', { class: 'tabpanel', role: 'tabpanel', id: 'tab-panel-full', 'aria-labelledby': 'tab-full', tabindex: '0' });
+  const panelTr = el('div', { class: 'tabpanel', role: 'tabpanel', id: 'tab-panel-tr', 'aria-labelledby': 'tab-tr', hidden: true });
   const panelMd = el('div', { class: 'tabpanel', role: 'tabpanel', id: 'tab-panel-md', 'aria-labelledby': 'tab-md', hidden: true });
 
   // The article — filled by repaintFull, in the site's own architecture.
@@ -153,8 +167,13 @@ function render(ctx, mount, state) {
   }), pre);
   panelMd.append(md);
 
-  mount.append(panelFull, panelMd);
-  tabs.panels = { full: panelFull, md: panelMd };
+  // Translate — the whole article, in any language, pictures and all.
+  const translator = translatePanel(state);
+  panelTr.append(translator.panel);
+  ctx.onCleanup(() => translator.abort());
+
+  mount.append(panelFull, panelTr, panelMd);
+  tabs.panels = { full: panelFull, tr: panelTr, md: panelMd };
   tabs.show('full');
 
   repaintFull(ctx, state);
@@ -301,6 +320,7 @@ function observeSections(topics, links, bar, idPrefix = 'topic') {
 function buildTabs() {
   const TABS = [
     { name: 'full', label: t('fullArticle') },
+    { name: 'tr', label: t('translateTab') },
     { name: 'md', label: t('markdown') },
   ];
   const uid = 'tab';
