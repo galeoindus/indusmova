@@ -193,7 +193,9 @@ export function translatePanel(state, ctx) {
   edition.value = enTitle ? 'en' : 'current';
   bar.append(edition);
 
-  const run = el('button', { type: 'button', class: 'btn btn-primary', text: t('translateStart') });
+  // Choosing a language is the action. The button is only a retry path for
+  // when a translation failed, so it stays out of the way until then.
+  const run = el('button', { type: 'button', class: 'btn btn-primary', text: t('translateAgain'), hidden: true });
   const stop = el('button', { type: 'button', class: 'btn btn-ghost', text: t('stopReading'), hidden: true });
   bar.append(run, stop);
   panel.append(bar);
@@ -232,7 +234,6 @@ export function translatePanel(state, ctx) {
     edition.disabled = busy;
     stop.hidden = !busy;
     track.hidden = !busy;
-    run.textContent = busy ? t('translateWorking') : t('translateStart');
   };
 
   /** The DOM to translate: the English original, or the edition on screen. */
@@ -249,7 +250,7 @@ export function translatePanel(state, ctx) {
     return { root: clone, lang: state.lang, title: state?.data?.title, revid: state?.data?.revid };
   }
 
-  run.addEventListener('click', async () => {
+  async function translate() {
     const target = select.value;
     const record = langRecord(target);
     controller = new AbortController();
@@ -291,11 +292,27 @@ export function translatePanel(state, ctx) {
         : t('translateDone');
     } catch (err) {
       if (err?.name === 'AbortError') status.textContent = t('translateCancelled');
-      else status.textContent = t('translateFailed');
+      else {
+        status.textContent = t('translateFailed');
+        // Offer the one thing that helps after a failure.
+        run.hidden = false;
+      }
     } finally {
       setBusy(false);
     }
+  }
+
+  // Selecting a language translates the whole article at once — no second
+  // press. Changing the target mid-read starts the new language immediately,
+  // cancelling the old run first.
+  select.addEventListener('change', () => {
+    markRegion(select.value);
+    controller?.abort();
+    run.hidden = true;
+    translate();
   });
+  // The retry button repeats the last choice.
+  run.addEventListener('click', () => { run.hidden = true; translate(); });
 
   stop.addEventListener('click', () => controller?.abort());
 

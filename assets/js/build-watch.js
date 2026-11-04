@@ -61,6 +61,29 @@
     }
   }
 
+  /* Reload onto the new build with every stored copy cleared.
+   *
+   * A plain reload can be answered from the browser's cache, from a leftover
+   * service worker, or from the back/forward cache. Doing all three here is
+   * what makes "refresh to update" actually work the first time, every time. */
+  async function hardRefresh(tag) {
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((key) => caches.delete(key)));
+      }
+    } catch { /* no cache storage */ }
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((reg) => reg.unregister()));
+      }
+    } catch { /* no worker support */ }
+    const url = new URL(window.location.href);
+    url.searchParams.set('v', tag || String(Date.now()));
+    window.location.replace(url.toString());
+  }
+
   function showUpdateNotice() {
     let note = document.getElementById('indusmova-build-update');
     if (note) return;
@@ -75,7 +98,7 @@
     button.type = 'button';
     button.textContent = 'Refresh now';
     button.style.cssText = 'border:1px solid #ffffff80;border-radius:8px;padding:6px 10px;background:transparent;color:#fff;font:inherit;cursor:pointer';
-    button.addEventListener('click', () => window.location.reload());
+    button.addEventListener('click', () => { hardRefresh(String(Date.now())); });
     note.append(label, button);
     document.body.append(note);
   }
@@ -112,11 +135,7 @@
       showUpdateNotice();
       // A plain reload() can be answered from the browser's own cache. Asking
       // for the same page under a build-specific query string cannot be.
-      window.setTimeout(() => {
-        const url = new URL(window.location.href);
-        url.searchParams.set('v', commit || String(info.version));
-        window.location.replace(url.toString());
-      }, 900);
+      window.setTimeout(() => { hardRefresh(commit || String(info.version)); }, 900);
     } catch {
       // Offline or version endpoint temporarily unavailable; retry later.
     } finally {
@@ -136,6 +155,9 @@
   });
   window.setInterval(checkForUpdate, 60_000);
   window.addEventListener('focus', checkForUpdate);
+  // Coming back via Back can restore a snapshot of an older build without any
+  // network request at all; ask the version endpoint again in that case.
+  window.addEventListener('pageshow', (event) => { if (event.persisted) checkForUpdate(); });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') checkForUpdate();
   });

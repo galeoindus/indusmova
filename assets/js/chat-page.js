@@ -760,36 +760,62 @@ function renderRail() {
   if (!list) return;
   list.replaceChildren();
   const shown = filter ? recent.filter((r) => r.q.toLowerCase().includes(filter)) : recent;
+
+  const countEl = $('#railCount');
+  if (countEl) countEl.textContent = shown.length ? String(shown.length) : '';
+  const clearBtn = $('#railClear');
+  if (clearBtn) clearBtn.hidden = !recent.length;
+
   if (!shown.length) {
     list.append(el('p', 'rail-empty', filter ? 'No chats match that.' : 'Your questions will appear here.'));
     return;
   }
+
+  // Today first, then everything older — recency at a glance, without a date
+  // on every row.
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const groups = [
+    { label: filter ? 'Matches' : 'Today', items: [] },
+    { label: 'Earlier', items: [] },
+  ];
   for (const item of shown) {
-    const row = el('div', 'rail-row');
-    if (item.q === activeQuestion) row.classList.add('is-active');
+    const when = Number(item.at) || 0;
+    (when >= startOfToday.getTime() ? groups[0] : groups[1]).items.push(item);
+  }
 
-    const btn = el('button', 'rail-item', esc(item.q));
-    btn.type = 'button';
-    btn.title = item.q;
-    if (item.q === activeQuestion) btn.classList.add('is-active');
-    btn.addEventListener('click', () => {
-      if (busy) return;
-      openSaved(item);
-    });
-    row.append(btn);
+  for (const group of groups) {
+    if (!group.items.length) continue;
+    list.append(el('p', 'rail-group', group.label));
+    for (const item of group.items) {
+      const row = el('div', 'rail-row');
+      if (item.q === activeQuestion) row.classList.add('is-active');
 
-    // Deleting is one click and one undo — no dialog to dismiss first.
-    const del = el('button', 'rail-del');
-    del.type = 'button';
-    del.title = `${t('delete')}: ${item.q}`;
-    del.setAttribute('aria-label', `${t('delete')}: ${item.q}`);
-    del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>';
-    del.addEventListener('click', (event) => {
-      event.stopPropagation();
-      deleteChat(item);
-    });
-    row.append(del);
-    list.append(row);
+      const btn = el('button', 'rail-item', esc(item.q));
+      btn.type = 'button';
+      btn.title = item.q;
+      if (item.q === activeQuestion) btn.classList.add('is-active');
+      btn.addEventListener('click', () => {
+        if (busy) return;
+        openSaved(item);
+        // On a phone the rail is a drawer: opening a chat reveals the thread.
+        if (window.matchMedia('(max-width: 820px)').matches) setRail(true);
+      });
+      row.append(btn);
+
+      // One click deletes, one undo restores. No dialog to dismiss first.
+      const del = el('button', 'rail-del');
+      del.type = 'button';
+      del.title = `${t('delete')}: ${item.q}`;
+      del.setAttribute('aria-label', `${t('delete')}: ${item.q}`);
+      del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+      del.addEventListener('click', (event) => {
+        event.stopPropagation();
+        deleteChat(item);
+      });
+      row.append(del);
+      list.append(row);
+    }
   }
 }
 
@@ -1005,6 +1031,26 @@ $('#deleteChatBtn')?.addEventListener('click', () => {
 });
 $('#savedAnswersBtn')?.addEventListener('click', showSaved);
 $('#railSearch')?.addEventListener('input', () => renderRail());
+
+// Clear the whole list in one deliberate step. This is not undoable the way a
+// single delete is, so it asks first and then says what happened.
+$('#railClear')?.addEventListener('click', () => {
+  if (!recent.length) return;
+  if (!window.confirm(`Delete all ${recent.length} chats from this browser? Saved answers are kept.`)) return;
+  recent = [];
+  persistRecent();
+  undoBuffer = null;
+  activeQuestion = '';
+  messages = [];
+  persist();
+  $('#thread').replaceChildren();
+  const titleEl = $('#chatTitle');
+  if (titleEl) titleEl.textContent = t('newChat');
+  setEmpty(true);
+  syncDeleteButton();
+  renderRail();
+  $('#prompt').focus();
+});
 $('#voiceBtn')?.addEventListener('click', startVoice);
 $('#themeBtn')?.addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';

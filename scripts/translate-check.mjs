@@ -160,7 +160,14 @@ await sleep(300);
 const tabOpen = await ev(`!document.querySelector('#tab-panel-tr').hidden`);
 console.log('translate tab opens:', tabOpen);
 
-await ev(`document.querySelector('#tab-panel-tr .tr-bar button.btn-primary')?.click()`);
+// One step now: choosing a language starts the translation. There is no
+// second button to press.
+await ev(`(() => {
+  const select = document.querySelector('#tab-panel-tr #trLang');
+  if (!select) return;
+  select.value = 'hi';
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+})()`);
 
 let done = false;
 for (let i = 0; i < 40; i += 1) {
