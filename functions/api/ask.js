@@ -30,6 +30,9 @@ const MAX_TOTAL_PASSAGE_CHARS = 8_800;
 // One shared deadline for the complete six-key OpenRouter failover pool.
 // Leave time inside the browser's 30s request budget for Workers AI fallback.
 const OPENROUTER_BUDGET_MS = 18_000;
+// Bumped whenever the prompt or the answer shape changes, so an answer cached
+// under the old instructions is not served against the new ones.
+const PROMPT_VERSION = 'ask-v2';
 
 // Best-effort round-robin inside each isolate. Correctness does not depend on
 // this counter; every configured key is tried once when its predecessor fails.
@@ -431,6 +434,79 @@ function citedNumbers(answer) {
   return [...new Set([...String(answer).matchAll(/\[(\d{1,2})\]/g)].map((m) => Number(m[1])))];
 }
 
+/**
+ * Only the citations that point at a passage we actually supplied.
+ *
+ * Counting every bracketed number treated an answer with [99] as "cited"
+ * even when two passages were sent, so a broken reference passed as evidence
+ * and the reader got a marker that linked nowhere.
+ */
+function validCitations(answer, max) {
+  return citedNumbers(answer).filter((n) => Number.isInteger(n) && n >= 1 && n <= max);
+}
+
+/** Drop citation markers that have no source behind them. */
+function sanitiseCitations(answer, max) {
+  return String(answer).replace(/\[(\d{1,2})\]/g, (whole, digits) => {
+    const n = Number(digits);
+    return n >= 1 && n <= max ? whole : '';
+  }).replace(/[ \t]{2,}/g, ' ').replace(/ +([.,;:])/g, '$1');
+}
+
+/** SHA-256 of a string, hex encoded. Used to fingerprint the answer cache. */
+async function sha256Hex(value) {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/* ── request budget ──────────────────────────────────────────────────────
+ *
+ * Origin checking is a CSRF boundary, not abuse protection: a scripted client
+ * can send a same-origin-shaped request all day and spend the provider keys.
+ * This is a per-isolate sliding window plus a daily ceiling, which is the part
+ * an application can enforce by itself. It is deliberately conservative and
+ * cheap; a Cloudflare WAF rate-limit rule on /api/ask is still the right outer
+ * layer, and this stops a burst even where that rule is absent.
+ */
+const RATE_WINDOW_MS = 60_000;
+const RATE_MAX_PER_WINDOW = 12;
+const DAILY_MAX_REQUESTS = 600;
+const buckets = new Map(); // ip -> { count, resetAt }
+let day = { key: '', count: 0 };
+
+function clientBucket(request) {
+  const ip = request.headers.get('cf-connecting-ip')
+    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || 'anonymous';
+  return ip;
+}
+
+function overBudget(request) {
+  const now = Date.now();
+  const today = new Date(now).toISOString().slice(0, 10);
+  if (day.key !== today) day = { key: today, count: 0 };
+  if (day.count >= DAILY_MAX_REQUESTS) return { limited: true, retryAfter: 3600, reason: 'daily_budget' };
+
+  const key = clientBucket(request);
+  const hit = buckets.get(key);
+  if (!hit || now >= hit.resetAt) {
+    buckets.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    day.count += 1;
+    // Keep the map from growing without bound on a long-lived isolate.
+    if (buckets.size > 5000) {
+      for (const [k, v] of buckets) if (now >= v.resetAt) buckets.delete(k);
+    }
+    return { limited: false };
+  }
+  if (hit.count >= RATE_MAX_PER_WINDOW) {
+    return { limited: true, retryAfter: Math.max(1, Math.ceil((hit.resetAt - now) / 1000)), reason: 'rate' };
+  }
+  hit.count += 1;
+  day.count += 1;
+  return { limited: false };
+}
+
 function sameOriginAllowed(request) {
   const origin = request.headers.get('origin');
   if (!origin) return false; // The browser chat must send its same-origin request origin.
@@ -470,13 +546,34 @@ export async function onRequestPost({ request, env = {} }) {
     return json({ error: 'no_sources', message: 'At least one valid Wikipedia source passage is required.' }, 400);
   }
 
+  // ── request budget ─────────────────────────────────────────────────────
+  const budget = overBudget(request);
+  if (budget.limited) {
+    const res = json({
+      error: 'rate_limited',
+      message: budget.reason === 'daily_budget'
+        ? 'The free answer service has reached its daily limit. Please try again tomorrow.'
+        : 'Too many questions in a short time. Please wait a moment and try again.',
+    }, 429);
+    res.headers.set('retry-after', String(budget.retryAfter));
+    return res;
+  }
+
   // ── answer cache ───────────────────────────────────────────────────────
   // The same question over the same passages produces the same answer, so it
-  // is worth keeping at the edge. This is the single biggest cost saving:
-  // a repeated question never reaches a provider at all.
-  const cacheKeyUrl = `https://indusmova-cache.internal/ask?q=${encodeURIComponent(question)}`
-    + `&d=${depth}&s=${encodeURIComponent(passages.map((p) => p.title).join('|')).slice(0, 400)}`;
-  const cacheKey = new Request(cacheKeyUrl, { method: 'GET' });
+  // is worth keeping at the edge. The key has to cover the *evidence*, not
+  // just the titles: two editions of an article share a title, and an edited
+  // article shares one too, so a title-only key could serve an answer built
+  // from text that has since changed. Hashing the question, the depth, the
+  // ordered source records and the passage text, plus a prompt version, means
+  // any change to what was read produces a different key.
+  const digest = await sha256Hex(JSON.stringify({
+    v: PROMPT_VERSION,
+    q: question.toLowerCase().replace(/\s+/g, ' ').trim(),
+    d: depth,
+    s: passages.map((p) => [p.n, p.title, p.url, p.text]),
+  }));
+  const cacheKey = new Request(`https://indusmova-cache.internal/ask?k=${digest}`, { method: 'GET' });
   const edgeCache = typeof caches !== 'undefined' && caches.default ? caches.default : null;
   if (edgeCache) {
     try {
@@ -498,13 +595,16 @@ export async function onRequestPost({ request, env = {} }) {
   if (providerMode !== 'workers-ai') {
     result = await runOpenRouter(question, passages, depth, env);
   }
-  const thin = result.ok && citedNumbers(result.answer).length === 0;
+  // `thin` is decided on citations that map to a real passage, so [99] no
+  // longer counts as a cited answer.
+
+  const thin = result.ok && validCitations(result.answer, passages.length).length === 0;
   if ((!result.ok || thin) && providerMode !== 'openrouter') {
     const second = await runWorkersAI(question, passages, depth, env);
     if (second.ok) {
       // Keep whichever answer actually cites its sources; on a tie, the longer.
-      const firstScore = result.ok ? citedNumbers(result.answer).length * 10 + result.answer.length / 100 : -1;
-      const secondScore = citedNumbers(second.answer).length * 10 + second.answer.length / 100;
+      const firstScore = result.ok ? validCitations(result.answer, passages.length).length * 10 + result.answer.length / 100 : -1;
+      const secondScore = validCitations(second.answer, passages.length).length * 10 + second.answer.length / 100;
       if (!result.ok || secondScore > firstScore) result = second;
     }
   }
@@ -518,9 +618,12 @@ export async function onRequestPost({ request, env = {} }) {
     }, configured ? 503 : 503);
   }
 
-  const citations = citedNumbers(result.answer);
+  // A marker that points at no passage would render as a link to nothing, so
+  // it is removed before the answer is shown or cached.
+  const citations = validCitations(result.answer, passages.length);
+  const cleanAnswer = sanitiseCitations(result.answer, passages.length);
   const payload = {
-    answer: result.answer,
+    answer: cleanAnswer,
     provider: result.provider,
     model: result.model,
     depth,
@@ -567,6 +670,9 @@ export const __test = Object.freeze({
   isChatModel,
   getOpenRouterKeys,
   citedNumbers,
+  validCitations,
+  sanitiseCitations,
+  overBudget,
   isRetryableStatus,
   makeMessages,
   readBodyLimited,

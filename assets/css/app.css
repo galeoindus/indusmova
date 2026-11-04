@@ -1879,6 +1879,23 @@ form.panel .searchbar, form.panel .select, .feedback .fb-note textarea,
 }
 .tr-note p { margin: 0; flex: 1 1 320px; font-size: 13px; color: var(--text); }
 .tr-note .tr-partial { flex-basis: 100%; color: var(--muted); font-size: 12.5px; }
+
+/* Said before anything leaves the browser, so it is readable rather than fine
+   print, but quiet enough not to compete with the article. */
+.tr-disclosure {
+  margin: 10px 2px 0; padding: 9px 11px;
+  border: 1px solid var(--border-2); border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  font-size: 12px; line-height: 1.5; color: var(--muted);
+}
+
+/* A passage the provider could not translate keeps its original words; this
+   marks it so a reader can see which parts are still in the source language
+   instead of assuming the whole page was translated. */
+[data-untranslated="true"] {
+  border-left: 2px solid color-mix(in srgb, var(--accent-2, var(--accent)) 70%, transparent);
+  padding-left: 10px;
+}
 .tr-body[dir="rtl"] { text-align: right; }
 @media (max-width: 640px) {
   .tr-bar { padding: 12px; }

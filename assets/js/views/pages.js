@@ -313,7 +313,7 @@ const STATIC = {
     body: [
       'indusmova is an independent reader for the free knowledge published by the Wikimedia projects. It takes a question, finds the Wikipedia article that answers it, sifts the article down to the sentences that matter, and lays the result out so it can be read in a minute or studied in depth.',
       'It is not an encyclopedia and it does not write prose. Every sentence shown is quoted from a published article, and every answer links back to the page it came from. Where a claim is contested on Wikipedia, it stays contested here.',
-      'Search and article reading happen entirely in your browser: requests go straight from this page to the public Wikimedia APIs. There are no accounts and no tracking, and your bookmarks, reading history and preferences are stored only on your device. Chat is the one exception, and it is always your choice: when you send a message there, the question and the selected source excerpts go to this site\'s own /api/ask function and on to the configured AI provider (OpenRouter or Cloudflare Workers AI). Those providers process the request under their own terms. If you never open chat, nothing is sent to any server of ours.',
+      'Search and article reading happen in your browser: requests go straight from this page to the public Wikimedia APIs. There are no accounts and no tracking, and your bookmarks, reading history and preferences are stored only on your device. Two features do send text out, and both are your choice: Translate sends the article text to a machine-translation service, and Chat sends your question and the selected source excerpts to this site\'s own /api/ask function and on to the configured AI provider (OpenRouter or Cloudflare Workers AI). Those services process the request under their own terms. If you use neither, nothing is sent to any server of ours.'
     ],
   },
   privacy: {
@@ -321,7 +321,8 @@ const STATIC = {
     body: [
       'indusmova does not collect personal data. It sets no advertising or analytics cookies, and it does not fingerprint your device.',
       'When you ask a question, your browser contacts the Wikimedia APIs directly. Wikimedia may record that request under its own privacy policy, exactly as it would if you had visited Wikipedia yourself. indusmova never sees it.',
-      'Your bookmarks, reading history and preferences are kept in your browser’s local storage. Clearing site data removes them. Nothing is uploaded.',
+      'Your bookmarks, reading history and preferences are kept in your browser’s local storage. Clearing site data removes them. Nothing is uploaded to us for them.',
+      'Translation is the one reading feature that leaves your browser. When you press Translate, the article’s text is sent from this page directly to a machine-translation service — Google Translate first, and MyMemory if Google does not answer — and comes back translated. Those services receive the text you asked to translate and your network request, and they may keep the submitted text under their own terms; MyMemory states that segments may be stored and processed by partner services. Nothing about your bookmarks, history or reading list is sent with it. The original article is never modified, and if you do not use Translate, no text is sent anywhere.',
       'The optional “Understand meaning” feature downloads a small model from a public CDN the first time you switch it on. It runs entirely on your device; your questions are not sent anywhere for it.',
     ],
   },

@@ -173,3 +173,29 @@ test('uses one shared timeout signal for the whole six-key OpenRouter pool', asy
     assert.ok(signals.every((signal) => signal === signals[0]), 'all keys must share the same request deadline');
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test('citations that point at no passage are rejected, not counted', () => {
+  // Two passages were supplied, so only [1] and [2] can be real evidence.
+  assert.deepEqual(__test.validCitations('Fact one [1]. Fact two [2].', 2), [1, 2]);
+  assert.deepEqual(__test.validCitations('Made up [99] and [0].', 2), []);
+  assert.deepEqual(__test.validCitations('Mixed [1] and [99].', 2), [1]);
+});
+
+test('citation markers with no source are removed from the answer', () => {
+  const out = __test.sanitiseCitations('A fact [1]. A broken one [99].', 2);
+  assert.match(out, /\[1\]/);
+  assert.doesNotMatch(out, /\[99\]/);
+});
+
+test('the request budget refuses a burst from one client', () => {
+  const makeRequest = () => new Request('https://indusmova.pages.dev/api/ask', {
+    method: 'POST',
+    headers: { origin: 'https://indusmova.pages.dev', 'cf-connecting-ip': '203.0.113.9' },
+  });
+  let limited = false;
+  for (let i = 0; i < 40; i += 1) {
+    const verdict = __test.overBudget(makeRequest());
+    if (verdict.limited) { limited = true; break; }
+  }
+  assert.equal(limited, true, 'a burst should eventually be refused');
+});

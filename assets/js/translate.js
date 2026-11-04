@@ -6,6 +6,18 @@
  * translated into the language they chose, so the choice of language costs
  * them nothing in substance.
  *
+ * Two things this used to get wrong, both fixed here:
+ *
+ *   It stopped at sixty blocks. Everything after the sixtieth paragraph simply
+ *   was not sent, so a reader could be told they were reading "the full
+ *   article" while the later sections were missing. There is no ceiling now:
+ *   the whole article is translated, in order, and the offer reports how much
+ *   of it actually came back.
+ *
+ *   It dropped failures. A paragraph the provider refused was stored as an
+ *   empty string and vanished from the page. Failures now keep their English
+ *   text, are marked as untranslated, and are counted in the result.
+ *
  * The translation is machine-made and says so; the English original stays one
  * link away. Nothing is invented: only the English article's own sentences are
  * sent for translation.
@@ -13,54 +25,7 @@
 
 import { el, esc } from './ui.js';
 import { t } from './i18n.js';
-
-const ENDPOINT = 'https://translate.googleapis.com/translate_a/single';
-
-/** One request per chunk; the endpoint takes plain text, not markup. */
-async function translateText(text, target, signal) {
-  const url = new URL(ENDPOINT);
-  url.searchParams.set('client', 'gtx');
-  url.searchParams.set('sl', 'en');
-  url.searchParams.set('tl', target);
-  url.searchParams.set('dt', 't');
-  url.searchParams.set('q', text);
-  const res = await fetch(url.toString(), { signal });
-  if (!res.ok) throw new Error(`translate ${res.status}`);
-  const data = await res.json();
-  const parts = data?.[0];
-  if (!Array.isArray(parts)) throw new Error('translate shape');
-  return parts.map((p) => (Array.isArray(p) ? p[0] : '')).join('');
-}
-
-/** Split long text into pieces the endpoint will accept. */
-function chunks(text, size = 1200) {
-  const out = [];
-  let buf = '';
-  for (const sentence of String(text).split(/(?<=[.!?])\s+/)) {
-    if ((buf + sentence).length > size && buf) { out.push(buf.trim()); buf = sentence; }
-    else buf += ` ${sentence}`;
-  }
-  if (buf.trim()) out.push(buf.trim());
-  return out;
-}
-
-async function translateAll(paragraphs, target, signal, onProgress) {
-  const done = [];
-  for (let i = 0; i < paragraphs.length; i += 1) {
-    const source = paragraphs[i];
-    if (!source || source.length < 2) { done.push(source); continue; }
-    try {
-      const pieces = chunks(source);
-      let out = '';
-      for (const piece of pieces) out += `${await translateText(piece, target, signal)} `;
-      done.push(out.trim());
-    } catch {
-      done.push('');                       // a failed paragraph is dropped, not faked
-    }
-    if (onProgress) onProgress(i + 1, paragraphs.length);
-  }
-  return done;
-}
+import { translateTexts } from './translate-provider.js';
 
 /**
  * Offer a fuller translation when the chosen edition is materially shorter
@@ -100,25 +65,42 @@ export async function offerFullerTranslation(ctx, state) {
     try {
       const article = await ctx.api.article('en', title);
       const root = (await import('./parse.js')).clean(article.html);
+      // Every qualifying block, in reading order. No ceiling.
       const blocks = [...root.querySelectorAll('p, li')]
         .map((n) => n.textContent.replace(/\s+/g, ' ').trim())
-        .filter((s) => s.length > 60)
-        .slice(0, 60);
+        .filter((s) => s.length > 60);
       if (!blocks.length) throw new Error('nothing to translate');
 
-      const translated = await translateAll(blocks, lang, undefined, (done, total) => {
-        status.textContent = `${t('translating')} ${done}/${total}`;
+      const results = await translateTexts(blocks, lang, {
+        source: 'en',
+        onProgress: (done, total) => {
+          status.textContent = `${t('translating')} ${done}/${total}`;
+        },
       });
 
       const panel = el('section', { class: 'translated-article' });
+      panel.lang = lang;
       panel.append(el('h2', { text: title }));
       panel.append(el('p', {
         class: 'src-credit',
         html: `${esc(t('machineTranslated'))} — <a href="https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}" target="_blank" rel="noopener noreferrer">English original ↗</a>`,
       }));
-      for (const paragraph of translated) {
-        if (paragraph) panel.append(el('p', { text: paragraph }));
-      }
+
+      let failed = 0;
+      results.forEach((result, i) => {
+        if (result.status === 'translated') {
+          panel.append(el('p', { text: result.text }));
+        } else if (result.status === 'failed') {
+          // Keep the English words rather than leaving a hole, and say so.
+          failed += 1;
+          const p = el('p', { text: blocks[i], 'data-untranslated': 'true' });
+          panel.append(p);
+        } else {
+          panel.append(el('p', { text: blocks[i] }));
+        }
+      });
+      if (failed) panel.append(el('p', { class: 'tr-partial', text: t('translatePartial', { count: String(failed) }) }));
+
       box.replaceWith(panel);
       panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch {

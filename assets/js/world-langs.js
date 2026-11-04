@@ -133,6 +133,32 @@ export const WORLD_LANGS = [
   { code: 'zu', name: 'Zulu', native: 'isiZulu' },
 ];
 
+/*
+ * Capability tiers.
+ *
+ * A catalogue is not a capability matrix. This list says which languages a
+ * reader may *ask* for; it does not prove that a provider serves that exact
+ * source-to-target pair, and it must not imply it does. Nothing here has been
+ * through a reviewed quality test, so no entry is labelled `verified`.
+ *
+ *   limited       a provider answers, the output has not been reviewed
+ *   experimental  low-resource, script/region variant, or unstable support
+ *
+ * The Translate tab shows the tier next to the name, so a reader choosing
+ * Santali or Hmong knows what they are choosing rather than discovering it
+ * halfway down the article.
+ */
+const EXPERIMENTAL = new Set([
+  'sat', 'brx', 'mni', 'doi', 'kok', 'mai', 'ks', 'sd', 'dv', 'bo',
+  'ceb', 'haw', 'hmn', 'yi', 'xh', 'zu', 'yo', 'cy', 'gd', 'lb',
+  'mt', 'tg', 'uz', 'kk', 'ky', 'tk', 'ps', 'ku', 'am', 'ti',
+  'so', 'rw', 'ny', 'sn', 'st', 'tn', 'ts', 'lg', 'wo', 'ff',
+]);
+
+for (const lang of WORLD_LANGS) {
+  if (!lang.tier) lang.tier = EXPERIMENTAL.has(lang.code) ? 'experimental' : 'limited';
+}
+
 const BY_CODE = new Map(WORLD_LANGS.map((l) => [l.code.toLowerCase(), l]));
 
 /** The record for a language code, or a stand-in so a label is never blank. */

@@ -168,9 +168,9 @@ function render(ctx, mount, state) {
   panelMd.append(md);
 
   // Translate — the whole article, in any language, pictures and all.
-  const translator = translatePanel(state);
-  panelTr.append(translator.panel);
-  ctx.onCleanup(() => translator.abort());
+  const translator = translatePanel(state, ctx);
+  panelTr.append(translator);
+  ctx.onCleanup(() => translator.abortTranslation?.());
 
   mount.append(panelFull, panelTr, panelMd);
   tabs.panels = { full: panelFull, tr: panelTr, md: panelMd };

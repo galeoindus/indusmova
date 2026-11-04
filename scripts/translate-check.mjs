@@ -189,13 +189,18 @@ const after = await ev(`(() => {
 })()`);
 console.log('after:', JSON.stringify(after, null, 1));
 
+// The Translate tab now translates the *English original* by default (the
+// report's F-05), resolved through the article's interlanguage links, so the
+// structure of the result comes from that article rather than from the panel
+// on screen. What must still hold is that the pictures, tables and layout
+// survive the translation and that the page the reader was on is untouched.
 const pass = after.translated
   && after.dir === 'ltr'
   && after.lang === 'hi'
-  && after.figures === before.figures
-  && after.images === before.images
-  && after.tables === before.tables
-  && after.headings === before.headings
+  && after.figures >= 1
+  && after.images >= 1
+  && after.tables >= 1
+  && after.headings >= 1
   && after.imgSrcKept
   && after.originalUntouched;
 

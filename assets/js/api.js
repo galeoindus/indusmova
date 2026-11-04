@@ -66,48 +66,90 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * One network request per URL, shared by every caller that wants it.
+ *
+ * Two views can ask for the same article at once, and the second should not
+ * pay for a second download. But the *cancellation* must stay per caller: the
+ * shared request used to be created with the first caller's AbortSignal, so
+ * when that view unmounted it aborted the download the other view was still
+ * waiting on — an intermittent blank page while moving quickly between
+ * search and an article. The request now owns its own controller and is only
+ * aborted once every caller has given up on it.
+ */
 async function get(url, { ttl = 0, signal, as = 'json', retries = 1 } = {}) {
   const key = `${as}:${url}`;
   const cached = cacheGet(key);
   if (cached !== undefined) return cached;
-  if (inflight.has(key)) return inflight.get(key);
 
-  const run = (async () => {
-    let lastErr;
-    for (let attempt = 0; attempt <= retries; attempt++) {
-      try {
-        const res = await fetch(url, {
-          signal,
-          headers: { Accept: as === 'json' ? 'application/json' : 'text/html' },
-          referrerPolicy: 'no-referrer',
-        });
-        if (!res.ok) {
-          // A 404 from a summary/parse endpoint is a real answer, not a fault.
-          if (res.status === 404) throw new ApiError('not-found', { status: 404, url });
-          if (res.status === 429) throw new ApiError('rate-limited', { status: 429, url });
-          throw new ApiError(`HTTP ${res.status}`, { status: res.status, url });
-        }
-        const value = as === 'json' ? await res.json() : await res.text();
-        if (ttl) cacheSet(key, value, ttl);
-        return value;
-      } catch (err) {
-        lastErr = err;
-        if (err && err.name === 'AbortError') throw err;
-        if (err instanceof ApiError && err.status === 404) throw err;
-        if (attempt < retries) await new Promise((r) => setTimeout(r, 350 * (attempt + 1)));
-      }
-    }
-    throw lastErr instanceof ApiError
-      ? lastErr
-      : new ApiError('network', { url, cause: lastErr });
-  })();
-
-  inflight.set(key, run);
-  try {
-    return await run;
-  } finally {
-    inflight.delete(key);
+  let entry = inflight.get(key);
+  if (!entry) {
+    const controller = new AbortController();
+    entry = { controller, subscribers: 0, promise: null };
+    entry.promise = fetchJson(url, { as, retries, ttl, key, signal: controller.signal })
+      .finally(() => { if (inflight.get(key) === entry) inflight.delete(key); });
+    inflight.set(key, entry);
   }
+
+  entry.subscribers += 1;
+  let released = false;
+  const release = (aborted) => {
+    if (released) return;
+    released = true;
+    entry.subscribers -= 1;
+    // Only the last caller leaving stops the shared download.
+    if (aborted && entry.subscribers <= 0) entry.controller.abort();
+  };
+
+  if (!signal) {
+    try { return await entry.promise; } finally { release(false); }
+  }
+  if (signal.aborted) {
+    release(true);
+    throw new DOMException('Aborted', 'AbortError');
+  }
+  return await new Promise((resolve, reject) => {
+    const onAbort = () => {
+      signal.removeEventListener('abort', onAbort);
+      release(true);
+      reject(new DOMException('Aborted', 'AbortError'));
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+    entry.promise.then(
+      (value) => { signal.removeEventListener('abort', onAbort); release(false); resolve(value); },
+      (err) => { signal.removeEventListener('abort', onAbort); release(false); reject(err); },
+    );
+  });
+}
+
+async function fetchJson(url, { as, retries, ttl, key, signal }) {
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, {
+        signal,
+        headers: { Accept: as === 'json' ? 'application/json' : 'text/html' },
+        referrerPolicy: 'no-referrer',
+      });
+      if (!res.ok) {
+        // A 404 from a summary/parse endpoint is a real answer, not a fault.
+        if (res.status === 404) throw new ApiError('not-found', { status: 404, url });
+        if (res.status === 429) throw new ApiError('rate-limited', { status: 429, url });
+        throw new ApiError(`HTTP ${res.status}`, { status: res.status, url });
+      }
+      const value = as === 'json' ? await res.json() : await res.text();
+      if (ttl) cacheSet(key, value, ttl);
+      return value;
+    } catch (err) {
+      lastErr = err;
+      if (err && err.name === 'AbortError') throw err;
+      if (err instanceof ApiError && err.status === 404) throw err;
+      if (attempt < retries) await new Promise((r) => setTimeout(r, 350 * (attempt + 1)));
+    }
+  }
+  throw lastErr instanceof ApiError
+    ? lastErr
+    : new ApiError('network', { url, cause: lastErr });
 }
 
 function actionUrl(lang, params, project = 'wikipedia') {

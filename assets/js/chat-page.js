@@ -196,6 +196,7 @@ function markdown(src, prefix) {
   let list = null;      // 'ul' | 'ol' | null
   let para = [];
   let quote = [];
+  let code = null;      // { lang, lines } while inside a fenced block
 
   const flushPara = () => {
     if (para.length) { out.push(`<p>${inlineMd(para.join(' '), prefix)}</p>`); para = []; }
@@ -211,10 +212,28 @@ function markdown(src, prefix) {
   for (const raw of lines) {
     const line = raw.replace(/\s+$/, '');
 
+    // Inside a fenced block every line is code: keep it verbatim (already
+    // escaped) until the closing fence. Dropping the markers used to throw the
+    // code away entirely and leave prose where a snippet had been.
+    if (code) {
+      if (/^```/.test(line.trim())) {
+        const lang = code.lang ? ` class="language-${esc(code.lang)}"` : '';
+        out.push(`<pre><code${lang}>${code.lines.join('\n')}</code></pre>`);
+        code = null;
+      } else {
+        code.lines.push(raw);
+      }
+      continue;
+    }
+
     if (!line.trim()) { flushAll(); continue; }
 
     // fenced code
-    if (/^```/.test(line.trim())) { flushAll(); continue; }
+    if (/^```/.test(line.trim())) {
+      flushAll();
+      code = { lang: line.trim().slice(3).trim(), lines: [] };
+      continue;
+    }
 
     // horizontal rule
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) { flushAll(); out.push('<hr>'); continue; }
@@ -296,6 +315,10 @@ function typeOut(target, text, prefix) {
 function renderQuestion(text) {
   const row = el('div', 'q');
   row.textContent = text;
+  // The question is in whatever language it was typed in. Saying so lets a
+  // screen reader pronounce it correctly in a bilingual thread.
+  row.lang = lang();
+  row.dir = 'auto';
   $('#thread').append(row);
 }
 
@@ -304,6 +327,11 @@ function renderAnswer(a, { store = false, animate = true } = {}) {
   const box = el('article', 'a');
   const inner = el('div', 'a-body');
   box.append(inner);
+
+  // The answer follows the question's language, so it carries its own lang and
+  // direction rather than inheriting the page's English.
+  box.lang = lang();
+  box.dir = 'auto';
 
   const meta = el('div', 'a-meta');
   meta.append(el('span', 'dot'));
@@ -634,7 +662,20 @@ function startVoice() {
     autoGrow();
   };
   rec.onerror = rec.onend = () => { btn.setAttribute('aria-label', t('voice')); btn.classList.remove('is-listening'); };
-  rec.start();
+  // start() throws when the microphone permission is denied, when another
+  // recognition is already running, or when the browser has no microphone at
+  // all. Left unguarded that surfaced as an uncaught error and the button
+  // stayed stuck in its listening state with no way back.
+  try {
+    rec.start();
+  } catch {
+    btn.setAttribute('aria-label', t('voice'));
+    btn.classList.remove('is-listening');
+    // `toast` is a DOM node in this file, not a helper — the status line under
+    // the composer is the right place to say this.
+    const hint = $('#privacyHint');
+    if (hint) hint.textContent = t('voiceUnsupported');
+  }
 }
 
 /* ── saved ──────────────────────────────────────────────────────────────── */

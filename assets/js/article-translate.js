@@ -2,34 +2,35 @@
  *
  * Wikipedia's own "translate this page" tool only ever machine-translates a
  * lead paragraph, so a reader who picks Hindi gets a summary of a summary.
- * This does the opposite: it takes the article that is already rendered on the
- * page — every heading, every paragraph, every list, every table cell and
- * every picture caption — and translates the *text inside it*, in place.
+ * This does the opposite: it translates every heading, paragraph, list, table
+ * cell and picture caption of the article — in place.
  *
  * Working on the live DOM rather than on a rebuilt page is the whole trick:
  * because only text nodes are replaced, the figures stay where they were, the
  * tables keep their shape, the infobox keeps its two columns, and the article
  * reads in the target language without being re-composed into something else.
- * Nothing is summarised, nothing is dropped, and nothing is invented — the
- * only thing that changes is the language.
  *
- * Two endpoints, both keyless and both already allowed by the site's CSP:
- * Google's gtx endpoint (fast, many languages) and MyMemory (slower, but it
- * answers when Google does not). Results are memoised for the session, so
- * going back to a language you have already read is instant.
+ * Three things this is careful about, because a reader has to be able to trust
+ * the result:
+ *
+ *   Source edition. "Translate the English original" resolves through the
+ *   article's own interlanguage links, so the same subject gives the same
+ *   English page whatever edition you arrived from. When no English page
+ *   exists, the current edition is offered and labelled as such.
+ *
+ *   Disclosure. The text leaves the browser for a translation service. That is
+ *   said on the panel itself, before anything is sent, not buried in a policy.
+ *
+ *   Honesty about failure. A passage the provider could not translate keeps its
+ *   original text and is marked, never blanked and never passed off as
+ *   translated.
  */
 
-import { el } from './ui.js';
+import { el, esc } from './ui.js';
 import { t } from './i18n.js';
 import { WORLD_LANGS, langRecord, isRtlLang } from './world-langs.js';
-
-const GOOGLE_BATCH = 'https://translate.googleapis.com/translate_a/t';
-const GOOGLE_SINGLE = 'https://translate.googleapis.com/translate_a/single';
-const MEMORY = 'https://api.mymemory.translated.net/get';
-
-/** target|source-text -> translation. Survives tab switches, not reloads. */
-const memo = new Map();
-const memoKey = (target, text) => `${target}\u0000${text}`;
+import { translateTexts } from './translate-provider.js';
+import { clean } from './parse.js';
 
 /** Elements whose text is not prose and must not be sent anywhere. */
 const SKIP = 'script, style, code, pre, kbd, samp, var, math, svg, button, input, select, textarea, [aria-hidden="true"]';
@@ -41,107 +42,6 @@ function worthTranslating(text) {
   if (!/\p{L}/u.test(value)) return false;              // digits and punctuation only
   if (/^[\d\s.,;:%°+\-/()[\]]+$/u.test(value)) return false;
   return true;
-}
-
-/* ------------------------------------------------------------- endpoints */
-
-/** Google's batch endpoint takes repeated `q` and answers one string per q. */
-async function googleBatch(texts, target, signal) {
-  const url = new URL(GOOGLE_BATCH);
-  url.searchParams.set('client', 'gtx');
-  url.searchParams.set('sl', 'auto');
-  url.searchParams.set('tl', target);
-  for (const text of texts) url.searchParams.append('q', text);
-  const res = await fetch(url.toString(), { signal });
-  if (!res.ok) throw new Error(`translate ${res.status}`);
-  const data = await res.json();
-  if (Array.isArray(data) && data.length === texts.length) {
-    return data.map((item) => (Array.isArray(item) ? String(item[0] ?? '') : String(item ?? '')));
-  }
-  throw new Error('translate shape');
-}
-
-/** One request, one string — the shape both fallbacks agree on. */
-async function googleSingle(text, target, signal) {
-  const url = new URL(GOOGLE_SINGLE);
-  url.searchParams.set('client', 'gtx');
-  url.searchParams.set('sl', 'auto');
-  url.searchParams.set('tl', target);
-  url.searchParams.set('dt', 't');
-  url.searchParams.set('q', text);
-  const res = await fetch(url.toString(), { signal });
-  if (!res.ok) throw new Error(`translate ${res.status}`);
-  const data = await res.json();
-  const parts = data?.[0];
-  if (!Array.isArray(parts)) throw new Error('translate shape');
-  return parts.map((p) => (Array.isArray(p) ? p[0] : '')).join('');
-}
-
-/** MyMemory answers when Google's keyless endpoint is rate-limited. */
-async function myMemory(text, target, signal) {
-  const url = new URL(MEMORY);
-  url.searchParams.set('q', text.slice(0, 480));
-  url.searchParams.set('langpair', `en|${String(target).split('-')[0]}`);
-  const res = await fetch(url.toString(), { signal });
-  if (!res.ok) throw new Error(`mymemory ${res.status}`);
-  const data = await res.json();
-  const out = data?.responseData?.translatedText;
-  if (!out || /MYMEMORY WARNING|QUERY LENGTH LIMIT/i.test(out)) throw new Error('mymemory refused');
-  return out;
-}
-
-/**
- * Translate a list of strings, in order, with the answer for each.
- *
- * Batching keeps a long article to a handful of requests. If the batch call
- * fails the same texts go one at a time; if Google refuses entirely, MyMemory
- * is tried. A single string that still fails comes back as `null` so the
- * caller can leave that passage in the original language rather than showing
- * a blank or a guess.
- */
-async function translateMany(texts, target, signal) {
-  const out = new Array(texts.length).fill(null);
-  const pending = [];
-
-  texts.forEach((text, index) => {
-    const hit = memo.get(memoKey(target, text));
-    if (hit != null) out[index] = hit;
-    else pending.push({ index, text });
-  });
-  if (!pending.length) return out;
-
-  const apply = (index, text, value) => {
-    if (typeof value !== 'string' || !value.trim()) return false;
-    out[index] = value;
-    memo.set(memoKey(target, text), value);
-    return true;
-  };
-
-  // One batched call per group of twenty, run one group at a time so the
-  // progress count the reader sees is honest and the endpoint is not flooded.
-  const GROUP = 20;
-  for (let start = 0; start < pending.length; start += GROUP) {
-    const slice = pending.slice(start, start + GROUP);
-    if (signal?.aborted) break;
-    try {
-      const answers = await googleBatch(slice.map((p) => p.text), target, signal);
-      slice.forEach((p, i) => apply(p.index, p.text, answers[i]));
-    } catch (err) {
-      if (err?.name === 'AbortError') throw err;
-      // Fall through to the per-string path below.
-      for (const p of slice) {
-        if (signal?.aborted) break;
-        try {
-          apply(p.index, p.text, await googleSingle(p.text, target, signal));
-        } catch (inner) {
-          if (inner?.name === 'AbortError') throw inner;
-          try { apply(p.index, p.text, await myMemory(p.text, target, signal)); }
-          catch (last) { if (last?.name === 'AbortError') throw last; /* leave null */ }
-        }
-      }
-    }
-  }
-  return out;
 }
 
 /* -------------------------------------------------------- the DOM walk */
@@ -166,12 +66,14 @@ function collectTextNodes(root) {
  * Translate a detached article fragment in place.
  *
  * Text is replaced node by node, so `<b>`, links, `<sup>` citation markers and
- * everything structural survive exactly as they were. `onProgress` is called
- * with (done, total) after every batch.
+ * everything structural survive exactly as they were. A node the provider
+ * could not translate keeps its original text and is marked with
+ * `data-untranslated`, so the reader can see what is still in the source
+ * language instead of silently reading a half-translated page.
  */
-export async function translateFragment(root, target, { signal, onProgress } = {}) {
+export async function translateFragment(root, target, { source = 'auto', signal, onProgress } = {}) {
   const nodes = collectTextNodes(root);
-  if (!nodes.length) return { translated: 0, failed: 0, total: 0 };
+  if (!nodes.length) return { translated: 0, failed: 0, total: 0, failedNodes: [] };
 
   // Preserve the whitespace either side of each string, so inline text does
   // not run together after translation.
@@ -179,13 +81,18 @@ export async function translateFragment(root, target, { signal, onProgress } = {
   const leads = nodes.map((node) => (/^\s/.test(node.nodeValue) ? ' ' : ''));
   const trails = nodes.map((node) => (/\s$/.test(node.nodeValue) ? ' ' : ''));
 
-  const results = await translateMany(payload, target, signal);
+  const results = await translateTexts(payload, target, { source, signal, onProgress });
 
   let translated = 0;
-  let failed = 0;
-  results.forEach((value, i) => {
-    if (value == null) { failed += 1; return; }
-    nodes[i].nodeValue = `${leads[i]}${value}${trails[i]}`;
+  const failedNodes = [];
+  results.forEach((result, i) => {
+    if (result.status !== 'translated') {
+      // Keep the original words on screen, and say so in the markup.
+      nodes[i].parentElement?.setAttribute('data-untranslated', 'true');
+      failedNodes.push(i);
+      return;
+    }
+    nodes[i].nodeValue = `${leads[i]}${result.text}${trails[i]}`;
     translated += 1;
   });
 
@@ -200,12 +107,23 @@ export async function translateFragment(root, target, { signal, onProgress } = {
     if (title && worthTranslating(title)) attrs.push({ node, name: 'title', text: title });
   });
   if (attrs.length) {
-    const answers = await translateMany(attrs.map((a) => a.text), target, signal).catch(() => []);
-    answers.forEach((value, i) => { if (value) attrs[i].node.setAttribute(attrs[i].name, value); });
+    const answers = await translateTexts(attrs.map((a) => a.text), target, { source, signal }).catch(() => []);
+    answers.forEach((result, i) => {
+      if (result?.status === 'translated') attrs[i].node.setAttribute(attrs[i].name, result.text);
+    });
   }
 
-  if (onProgress) onProgress(nodes.length, nodes.length);
-  return { translated, failed, total: nodes.length };
+  onProgress?.(nodes.length, nodes.length);
+  return { translated, failed: failedNodes.length, total: nodes.length, failedNodes };
+}
+
+/* --------------------------------------------------------- source edition */
+
+/** The English title for this article, via its own interlanguage links. */
+function englishTitle(state) {
+  const links = state?.data?.langlinks || [];
+  const en = links.find((l) => String(l?.lang || '').toLowerCase() === 'en');
+  return en?.title || (String(state?.lang || '').toLowerCase() === 'en' ? state?.data?.title : '') || '';
 }
 
 /* ------------------------------------------------------------- the panel */
@@ -213,10 +131,11 @@ export async function translateFragment(root, target, { signal, onProgress } = {
 /**
  * The Translate tab: pick a language, translate the whole article, read it.
  *
- * The source is the article's own Full-article panel — the one the reader is
- * already looking at — cloned so the original is never touched.
+ * The source is either the English original (resolved through the article's
+ * interlanguage links) or the edition on screen. Both are cloned, so the page
+ * the reader is looking at is never touched.
  */
-export function translatePanel(state) {
+export function translatePanel(state, ctx) {
   const panel = el('div', { class: 'tr-panel' });
 
   const bar = el('div', { class: 'tr-bar' });
@@ -225,7 +144,9 @@ export function translatePanel(state) {
 
   const select = el('select', { id: 'trLang', class: 'tr-select', 'aria-label': t('translatePick') });
   // Grouped so a reader can find their own language without scrolling a
-  // hundred entries: India first, then the world.
+  // hundred entries: India first, then the world. A language whose provider
+  // support has not been reviewed says so, rather than looking identical to
+  // one that has.
   const groups = [
     { label: t('translateIndia'), items: WORLD_LANGS.slice(0, 31) },
     { label: t('translateWorld'), items: WORLD_LANGS.slice(31) },
@@ -234,7 +155,9 @@ export function translatePanel(state) {
     const optgroup = el('optgroup', { label: group.label });
     for (const lang of group.items) {
       const option = el('option', { value: lang.code });
-      option.textContent = `${lang.native} — ${lang.name}`;
+      option.textContent = lang.tier === 'experimental'
+        ? `${lang.native} — ${lang.name} · ${t('tierExperimental')}`
+        : `${lang.native} — ${lang.name}`;
       optgroup.append(option);
     }
     select.append(optgroup);
@@ -246,10 +169,39 @@ export function translatePanel(state) {
   label.append(select);
   bar.append(label);
 
+  // Which article is being translated. Explicit, because "the same article in
+  // my language" has to mean the same English page, not whichever edition the
+  // reader happened to open.
+  const enTitle = englishTitle(state);
+  const onEnglish = String(state?.lang || '').toLowerCase().startsWith('en');
+  const edition = el('select', { id: 'trEdition', class: 'tr-select', 'aria-label': t('translateSource') });
+  if (enTitle) {
+    const option = el('option', { value: 'en' });
+    option.textContent = t('translateSourceEnglish');
+    edition.append(option);
+  }
+  if (!onEnglish) {
+    const option = el('option', { value: 'current' });
+    option.textContent = t('translateSourceCurrent', { lang: langRecord(state?.lang).name });
+    edition.append(option);
+  }
+  if (!edition.options.length) {
+    const option = el('option', { value: 'current' });
+    option.textContent = t('translateSourceCurrent', { lang: langRecord(state?.lang).name });
+    edition.append(option);
+  }
+  edition.value = enTitle ? 'en' : 'current';
+  bar.append(edition);
+
   const run = el('button', { type: 'button', class: 'btn btn-primary', text: t('translateStart') });
   const stop = el('button', { type: 'button', class: 'btn btn-ghost', text: t('stopReading'), hidden: true });
   bar.append(run, stop);
   panel.append(bar);
+
+  // Said before anything is sent, not buried in a policy page.
+  const disclosure = el('p', { class: 'tr-disclosure' });
+  disclosure.textContent = t('translateDisclosure');
+  panel.append(disclosure);
 
   const status = el('p', { class: 'tr-status', role: 'status', 'aria-live': 'polite' });
   status.textContent = t('translateEmpty');
@@ -262,20 +214,42 @@ export function translatePanel(state) {
   const body = el('div', { class: 'tr-body' });
   panel.append(body);
 
+  // The translated region announces its own language and direction as soon as
+  // a language is chosen, so assistive technology switches voice before the
+  // text arrives rather than reading Hindi in an English voice.
+  const markRegion = (target) => {
+    body.lang = target;
+    body.dir = isRtlLang(target) ? 'rtl' : 'ltr';
+  };
+  select.addEventListener('change', () => markRegion(select.value));
+  markRegion(select.value);
+
   let controller = null;
 
   const setBusy = (busy) => {
     run.disabled = busy;
     select.disabled = busy;
+    edition.disabled = busy;
     stop.hidden = !busy;
     track.hidden = !busy;
     run.textContent = busy ? t('translateWorking') : t('translateStart');
   };
 
-  run.addEventListener('click', async () => {
-    const source = state?.fullMount?.querySelector('.panel-wide');
-    if (!source) { status.textContent = t('translateFailed'); return; }
+  /** The DOM to translate: the English original, or the edition on screen. */
+  async function sourceRoot() {
+    if (edition.value === 'en' && enTitle) {
+      const article = await ctx.api.article('en', enTitle);
+      return { root: clean(article.html), lang: 'en', title: article.title || enTitle, revid: article.revid };
+    }
+    const live = state?.fullMount?.querySelector('.panel-wide');
+    if (!live) throw new Error('no article');
+    const clone = live.cloneNode(true);
+    // Interactive chrome has no business inside a reading copy.
+    clone.querySelectorAll('button, .md-disclosure, .fb-row, .toc-jump, [role="status"]').forEach((n) => n.remove());
+    return { root: clone, lang: state.lang, title: state?.data?.title, revid: state?.data?.revid };
+  }
 
+  run.addEventListener('click', async () => {
     const target = select.value;
     const record = langRecord(target);
     controller = new AbortController();
@@ -284,52 +258,49 @@ export function translatePanel(state) {
     status.textContent = `${t('translateWorking')} — ${record.native}`;
     track.querySelector('span').style.width = '4%';
 
-    const clone = source.cloneNode(true);
-    // Interactive chrome has no business inside a reading copy.
-    clone.querySelectorAll('button, .md-disclosure, .fb-row, .toc-jump, [role="status"]').forEach((n) => n.remove());
-
     try {
-      const result = await translateFragment(clone, target, {
+      const origin = await sourceRoot();
+      const result = await translateFragment(origin.root, target, {
+        source: origin.lang || 'auto',
         signal: controller.signal,
         onProgress: (done, total) => {
           const pct = total ? Math.round((done / total) * 100) : 100;
           track.querySelector('span').style.width = `${Math.max(4, pct)}%`;
-          status.textContent = `${t('translateWorking')} — ${record.native} · ${done}/${total}`;
+          status.textContent = `${t('translateWorking')} ${done}/${total}`;
         },
       });
 
-      body.setAttribute('lang', target);
-      body.setAttribute('dir', isRtlLang(target) ? 'rtl' : 'ltr');
-
+      // Language and direction belong on the translated block, so assistive
+      // technology reads it in the right voice and the right way round.
+      const out = el('div', { class: 'translated-article' });
+      out.lang = target;
+      out.dir = isRtlLang(target) ? 'rtl' : 'ltr';
       const note = el('div', { class: 'tr-note' });
       note.append(el('p', {
-        html: `<strong>${esc(t('translateDone'))}</strong> ${esc(t('translateNote', { lang: record.native }))}`,
+        html: `${esc(t('translateNote', { lang: record.native }))} <span class="tr-partial">${esc(t('machineTranslated'))}</span>`,
       }));
       if (result.failed) {
         note.append(el('p', { class: 'tr-partial', text: t('translatePartial', { count: String(result.failed) }) }));
       }
-      const again = el('button', { type: 'button', class: 'btn btn-ghost btn-sm', text: t('translateAgain') });
-      again.addEventListener('click', () => run.click());
-      note.append(again);
-      body.append(note, clone);
-
-      status.textContent = `${t('translateDone')} — ${record.native}`;
+      out.append(note);
+      out.append(origin.root);
+      body.append(out);
       track.querySelector('span').style.width = '100%';
+      status.textContent = result.failed
+        ? t('translatePartial', { count: String(result.failed) })
+        : t('translateDone');
     } catch (err) {
       if (err?.name === 'AbortError') status.textContent = t('translateCancelled');
       else status.textContent = t('translateFailed');
     } finally {
-      controller = null;
       setBusy(false);
-      track.hidden = true;
     }
   });
 
-  stop.addEventListener('click', () => { if (controller) controller.abort(); });
+  stop.addEventListener('click', () => controller?.abort());
 
-  return { panel, abort: () => controller?.abort() };
-}
+  // The view calls this when the reader leaves the page or switches tabs.
+  panel.abortTranslation = () => controller?.abort();
 
-function esc(value) {
-  return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  return panel;
 }
