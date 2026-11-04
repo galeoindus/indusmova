@@ -1,6 +1,6 @@
 {
   "name": "indusmova",
-  "version": "5.19.0",
+  "version": "5.20.0",
   "private": true,
   "type": "module",
   "description": "indusmova \u2014 a Wikimedia knowledge research and discovery platform. Ask a question or open a topic and get a direct answer, key points, infobox facts and the sources behind them, with an optional source-grounded AI explanation.",
@@ -32,7 +32,8 @@
     "stamp:build": "node scripts/stamp-build.mjs",
     "audit:site": "node scripts/audit-site.mjs",
     "audit:deep": "node scripts/deep-audit.mjs",
-    "check:browser": "node scripts/back-nav-check.mjs && node scripts/translate-check.mjs && node scripts/interaction-check.mjs"
+    "check:browser": "node scripts/back-nav-check.mjs && node scripts/translate-check.mjs && node scripts/interaction-check.mjs",
+    "release": "node scripts/release.mjs"
   },
   "dependencies": {
     "jsdom": "^29.1.1"
