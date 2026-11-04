@@ -1,0 +1,31 @@
+version: 2
+# Added by the automation maintenance run (WF-04, task 20261103-F03).
+# indusmova declares jsdom and runs three workflows (ci, deploy, version),
+# so both ecosystems are tracked. Updates are grouped and weekly; a major
+# npm bump stays on its own PR because it can change test behaviour.
+
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "05:00"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "05:15"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns: ["*"]
