@@ -5,8 +5,8 @@
 # this file on load, so a stale cached copy can no longer masquerade as the
 # current site.
 #
-# Why this opens a pull request instead of pushing to main
-# -------------------------------------------------------
+# Why this does not push at main
+# ------------------------------
 # `main` is protected by the `protect-main` ruleset: changes must arrive
 # through a pull request, and history must stay linear. The old job committed
 # the stamp and ran `git push` straight at main, so GitHub rejected it every
@@ -15,15 +15,18 @@
 #   remote: error: GH013: Repository rule violations found for refs/heads/main
 #   remote: - Changes must be made through a pull request.
 #
-# and the workflow went red on every single push, even though nothing was
-# wrong with the stamp itself. The bot cannot be given a bypass on the ruleset
-# from inside a workflow, so it does the one thing the rules allow: it commits
-# the stamp to a short-lived branch, opens a pull request, and squash-merges it
-# (which is what `required_linear_history` asks for). The stamp lands, the
-# rules hold, and the run goes green.
+# and the workflow went red on every push, even though the stamp itself was
+# fine.
 #
-# The push and the merge are made with the default GITHUB_TOKEN, so they do not
-# re-trigger workflows; the `if:` guard below is belt and braces.
+# The bot therefore commits the stamp to a short-lived branch and tries to
+# land it through a pull request, which is what the rules ask for. Whether it
+# *can* open that pull request is a repository setting the workflow cannot
+# change from inside a run ("Allow GitHub Actions to create and approve pull
+# requests", under Settings → Actions → General). When that setting is off, or
+# when the branch protection refuses the merge, this job says so in the run
+# summary and finishes green — the stamp is still published, because `deploy`
+# re-stamps every page before it uploads, so the live site is never stale. A
+# red X on every push for a cosmetic commit is worse than a notice.
 name: version
 
 on:
@@ -56,12 +59,12 @@ jobs:
           BUILD_COMMIT: ${{ github.sha }}
         run: npm run stamp:build
 
-      - name: Commit the stamp on a build branch and merge it through a pull request
+      - name: Land the stamp through a pull request
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SHA: ${{ github.sha }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
           git add -- '*.html' assets/js/config.js assets/version.json
           if git diff --cached --quiet; then
             echo "already current — nothing to stamp"
@@ -76,17 +79,26 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m "chore: stamp build ${VERSION}-${SHORT}"
 
-          # A branch that already exists means a previous run got this far and
-          # stopped before merging. Reuse it rather than failing the push.
-          git push --force origin "HEAD:refs/heads/${BRANCH}"
+          # Reuse the branch when a previous run got this far and stopped
+          # before merging, rather than failing the push.
+          git push --force origin "HEAD:refs/heads/${BRANCH}" || {
+            echo "::notice title=Stamp not committed::Could not push ${BRANCH}. The deployed site is still stamped by the deploy job."
+            exit 0
+          }
 
-          gh pr create \
-            --base main \
-            --head "${BRANCH}" \
-            --title "chore: stamp build ${VERSION}-${SHORT}" \
-            --body "Automated build stamp for ${SHA}. Opened by the \`version\` workflow because \`main\` requires changes to arrive through a pull request." \
-            || echo "a pull request for ${BRANCH} already exists"
+          if ! gh pr create \
+              --base main \
+              --head "${BRANCH}" \
+              --title "chore: stamp build ${VERSION}-${SHORT}" \
+              --body "Automated build stamp for ${SHA}. Opened by the \`version\` workflow because \`main\` requires changes to arrive through a pull request." ; then
+            echo "::notice title=Stamp branch ready::Committed the stamp to ${BRANCH}, but this repository does not let GitHub Actions open pull requests. Enable Settings → Actions → General → 'Allow GitHub Actions to create and approve pull requests', or merge ${BRANCH} by hand. The live site is already stamped by the deploy job."
+            exit 0
+          fi
 
           # Squash keeps the history linear, which the ruleset requires.
-          gh pr merge "${BRANCH}" --squash --delete-branch \
-            || gh pr merge "${BRANCH}" --squash --delete-branch --admin
+          if ! gh pr merge "${BRANCH}" --squash --delete-branch; then
+            gh pr merge "${BRANCH}" --squash --delete-branch --admin || {
+              echo "::notice title=Stamp pull request open::${BRANCH} has an open pull request that could not be merged automatically. Merge it by hand; the live site is already stamped by the deploy job."
+              exit 0
+            }
+          fi
