@@ -18,6 +18,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: npm
+      # The tests import jsdom, and the job never installed it — so `verify`
+      # died with ERR_MODULE_NOT_FOUND before a single assertion ran. The
+      # dependency step was simply missing.
+      - name: Install dependencies
+        run: npm ci
       - name: Stamp every page and verify the repository
         env:
           BUILD_COMMIT: ${{ github.sha }}

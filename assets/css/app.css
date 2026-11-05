@@ -2303,3 +2303,161 @@ form.panel .searchbar, form.panel .select, .feedback .fb-note textarea,
 
 /* The search skeleton uses a shorter first line than the card grid does. */
 .sres-row .sk-40 { width: 40%; }
+
+/* ======================================================================
+   20 · THE COMPOSER, SIZED LIKE A SEARCH BOX AND NOT A FORM
+   ======================================================================
+   The composer had grown into a four-row panel: an uppercase label, the
+   field, a control row, then a line of help text. On the home page and on
+   the results page that read as a card bigger than the content under it,
+   and the text a reader typed sat in a thin strip in the middle of it —
+   nothing like the one-line box an AI search page puts in front of you.
+
+   So: one rounded box, the field is the box, and the controls sit inside
+   its lower edge at their natural size. The label stays in the document
+   for screen readers (it is the field's only visible name) but it no
+   longer takes a row of its own. */
+
+.searchbar:has(> .composer-tools) {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  padding: 8px 10px 8px 14px;
+  border-radius: 26px;
+}
+
+/* The label is still there for assistive technology; it is not a heading
+   a sighted reader needs to see above a search box. */
+.searchbar:has(> .composer-tools) > .composer-label {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.searchbar:has(> .composer-tools) > textarea,
+.sresults .searchbar:has(> .composer-tools) > textarea {
+  min-height: 46px;
+  padding: 11px 2px 6px;
+  font-size: 16.5px;
+  line-height: 1.5;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  resize: none;
+}
+.searchbar:has(> .composer-tools) > textarea:focus { outline: none; }
+
+/* The controls sit on the box's own baseline, small and out of the way. */
+.searchbar:has(> .composer-tools) > .composer-tools {
+  gap: 6px;
+  padding: 0 0 2px;
+  align-items: center;
+}
+.searchbar:has(> .composer-tools) > .composer-tools > .btn-icon {
+  width: 34px; height: 34px; min-height: 34px; padding: 7px;
+}
+.searchbar:has(> .composer-tools) > .composer-tools > .mode {
+  margin-left: 0;
+  padding: 2px;
+}
+.searchbar:has(> .composer-tools) > .composer-tools > .mode .mode-btn {
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+.searchbar:has(> .composer-tools) > .composer-tools > button[type="submit"] {
+  margin-left: auto;
+  min-height: 36px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-size: 14px;
+}
+
+/* The help line was a third row of prose under a search box. It stays
+   available to a screen reader through aria-describedby, and is shown
+   only when the field is focused, where it explains the two modes. */
+.searchbar:has(> .composer-tools) > .mode-help {
+  grid-column: 1 / -1;
+  margin: 0;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  font-size: 12px;
+  transition: max-height .18s ease, opacity .18s ease;
+}
+.searchbar:has(> .composer-tools):focus-within > .mode-help {
+  max-height: 40px;
+  opacity: 1;
+  padding: 2px 2px 4px;
+}
+
+@media (max-width: 700px) {
+  .searchbar:has(> .composer-tools) { padding: 6px 8px 6px 12px; border-radius: 22px; }
+  .searchbar:has(> .composer-tools) > textarea { min-height: 42px; font-size: 16px; padding: 10px 2px 4px; }
+  .searchbar:has(> .composer-tools) > .composer-tools > .mode .mode-btn { padding: 0 10px; }
+  .searchbar:has(> .composer-tools) > .composer-tools > button[type="submit"] { padding: 0 14px; }
+}
+
+/* The "ask this instead" card was a second panel above the results; it is
+   now one compact line that does not compete with the list. */
+.sres-ask {
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+}
+.sres-ask-ic { width: 30px; height: 30px; border-radius: 9px; }
+.sres-ask-ic svg { width: 16px; height: 16px; }
+.sres-ask-text { flex-direction: row; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.sres-ask-text strong { font-size: 14px; }
+.sres-ask-text span { font-size: 12.5px; }
+
+/* ======================================================================
+   21 · THE READING COLUMN USES THE SCREEN
+   ======================================================================
+   On a desktop the article was a 74-character column inside a 1160px
+   frame, which left a hand's width of empty space on both sides and made
+   every paragraph look like a footnote. The column is wider now, and the
+   frame widens with it, so the text fills the page the way a reading app
+   does — while still stopping short of a line so long the eye loses its
+   place. */
+
+[data-view="article"] .wrap {
+  max-width: 1320px;
+  padding: 18px 26px 84px;
+}
+.panel.panel-wide { padding: 32px clamp(20px, 3vw, 44px) 40px; }
+.panel.panel-wide > * { max-width: 86ch; }
+.art-body > ul > li,
+.topic-block .line-list > li,
+.point-block .line-list > li { max-width: 86ch; }
+.reference-list { max-width: 92ch; }
+.lead-figure { max-width: min(760px, 100%); }
+.lead-figure img { max-height: 420px; }
+
+@media (min-width: 1440px) {
+  [data-view="article"] .wrap { max-width: 1400px; }
+  .panel.panel-wide > * { max-width: 90ch; }
+}
+
+/* Nothing in the reading view may push the page sideways: long chemical
+   names, URLs and wide tables stay inside the column. */
+[data-view="article"] .art-body,
+[data-view="article"] .panel-wide { overflow-wrap: anywhere; }
+[data-view="article"] .art-body table { max-width: 100%; }
+[data-view="article"] .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 700px) {
+  [data-view="article"] .wrap { padding: 10px 12px 72px; max-width: 100%; }
+  .panel.panel-wide { padding: 16px 14px 22px; }
+  .panel.panel-wide > * { max-width: 100%; }
+  .art-body > ul > li,
+  .topic-block .line-list > li,
+  .point-block .line-list > li { max-width: 100%; }
+}
+
+/* A last guard against a sideways scrollbar anywhere in the shell. */
+html, body { max-width: 100%; overflow-x: hidden; }
+.app-main, #main { min-width: 0; max-width: 100%; }

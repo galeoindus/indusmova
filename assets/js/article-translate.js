@@ -30,7 +30,9 @@ import { el, esc } from './ui.js';
 import { t } from './i18n.js';
 import { WORLD_LANGS, langRecord, isRtlLang } from './world-langs.js';
 import { translateTexts } from './translate-provider.js';
-import { clean } from './parse.js';
+import { clean, splitArticle, paragraphsToPoints } from './parse.js';
+import { factsFromInfobox } from './answer.js';
+import { factsBox, referencesBlock, sourcesGroup } from './answerui.js';
 
 /** Elements whose text is not prose and must not be sent anywhere. */
 const SKIP = 'script, style, code, pre, kbd, samp, var, math, svg, button, input, select, textarea, [aria-hidden="true"]';
@@ -245,6 +247,18 @@ export function translatePanel(state, ctx) {
   let controller = null;
   let lastCode = '';
 
+  /* Warm the source before the reader has chosen a language.
+   *
+   * Picking a language used to start with a network round trip for the
+   * English article, and only then begin translating — so the first second
+   * of every translation was spent waiting for text the page could have
+   * asked for the moment the tab was opened. The request is issued now and
+   * the api layer keeps it, so the press finds it already answered.
+   */
+  if (enTitle) {
+    ctx.api.article('en', enTitle).catch(() => {});
+  }
+
   filter.addEventListener('input', () => {
     const q = filter.value.trim().toLowerCase();
     let shown = 0;
@@ -264,11 +278,66 @@ export function translatePanel(state, ctx) {
     noMatch.hidden = shown > 0;
   });
 
+  /**
+   * The English original, composed the way this site reads an article.
+   *
+   * The panel used to translate the *raw* parsed article, so a reader who
+   * picked Hindi got the plain body and nothing else: no facts box, no
+   * numbered references, no source list — the three things that make the
+   * page trustworthy. It is built here with the same pieces the Full article
+   * tab uses, so translating changes the language and nothing else.
+   */
+  function buildReadingPanel(article, lang, project) {
+    const root = clean(article.html);
+    const parts = splitArticle(root, article.sections || []);
+    const panel = el('div', { class: 'panel panel-wide' });
+
+    const factbox = factsBox(factsFromInfobox(parts.infoboxHtml), article.title);
+    if (factbox) panel.append(factbox);
+
+    const section = (html, id, title, number) => {
+      const wrap = el('section', { class: 'art-section', id });
+      if (title) {
+        const head = el('h2', { class: 'art-section-head' });
+        if (number) head.append(el('span', { class: 'topic-num', text: String(number) }));
+        head.append(el('span', { text: title }));
+        wrap.append(head);
+      }
+      const body = el('div', { class: 'prose art-body' });
+      body.innerHTML = html;
+      body.querySelectorAll('table.infobox, .infobox').forEach((node) => node.remove());
+      paragraphsToPoints(body);
+      body.querySelectorAll('table').forEach((table) => {
+        const scroll = el('div', { class: 'table-scroll', tabindex: '0' });
+        table.replaceWith(scroll);
+        scroll.append(table);
+      });
+      wrap.append(body);
+      return wrap;
+    };
+
+    if (parts.leadHtml.trim()) panel.append(section(parts.leadHtml, 'tr-lead'));
+    for (const part of parts.sections) {
+      panel.append(section(part.html, `tr-${part.id}`, part.line, part.number));
+    }
+
+    const references = referencesBlock(root.references || []);
+    if (references) panel.append(references);
+
+    const wikiUrl = `https://${lang}.${project}.org/wiki/${encodeURIComponent(String(article.title || '').replace(/ /g, '_'))}`;
+    panel.append(sourcesGroup({
+      lang, title: article.title, wikiUrl, citations: parts.citations, project,
+    }));
+
+    return panel;
+  }
+
   /** The DOM to translate: the English original, or the edition on screen. */
   async function sourceRoot() {
     if (edition.value === 'en' && enTitle) {
       const article = await ctx.api.article('en', enTitle);
-      return { root: clean(article.html), lang: 'en', title: article.title || enTitle, revid: article.revid };
+      const root = buildReadingPanel(article, 'en', 'wikipedia');
+      return { root, lang: 'en', title: article.title || enTitle, revid: article.revid };
     }
     const live = state?.fullMount?.querySelector('.panel-wide');
     if (!live) throw new Error('no article');

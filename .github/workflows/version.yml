@@ -5,8 +5,25 @@
 # this file on load, so a stale cached copy can no longer masquerade as the
 # current site.
 #
-# The push is made with the default GITHUB_TOKEN, so it does not re-trigger
-# workflows; the guard below is belt and braces.
+# Why this opens a pull request instead of pushing to main
+# -------------------------------------------------------
+# `main` is protected by the `protect-main` ruleset: changes must arrive
+# through a pull request, and history must stay linear. The old job committed
+# the stamp and ran `git push` straight at main, so GitHub rejected it every
+# time with
+#
+#   remote: error: GH013: Repository rule violations found for refs/heads/main
+#   remote: - Changes must be made through a pull request.
+#
+# and the workflow went red on every single push, even though nothing was
+# wrong with the stamp itself. The bot cannot be given a bypass on the ruleset
+# from inside a workflow, so it does the one thing the rules allow: it commits
+# the stamp to a short-lived branch, opens a pull request, and squash-merges it
+# (which is what `required_linear_history` asks for). The stamp lands, the
+# rules hold, and the run goes green.
+#
+# The push and the merge are made with the default GITHUB_TOKEN, so they do not
+# re-trigger workflows; the `if:` guard below is belt and braces.
 name: version
 
 on:
@@ -15,6 +32,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: version-${{ github.ref }}
@@ -29,18 +47,46 @@ jobs:
         with:
           fetch-depth: 2
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Stamp every page and asset URL
         env:
           BUILD_COMMIT: ${{ github.sha }}
         run: npm run stamp:build
 
-      - name: Commit if the build stamp changed
+      - name: Commit the stamp on a build branch and merge it through a pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ github.sha }}
         run: |
+          set -euo pipefail
           git add -- '*.html' assets/js/config.js assets/version.json
           if git diff --cached --quiet; then
-            echo "already current"; exit 0
+            echo "already current — nothing to stamp"
+            exit 0
           fi
+
+          VERSION="$(node -p "require('./package.json').version")"
+          SHORT="$(git rev-parse --short HEAD)"
+          BRANCH="build/stamp-${SHORT}"
+
           git config user.name  'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m "chore: stamp build $(node -p "require('./package.json').version")-$(git rev-parse --short HEAD)"
-          git push
+          git commit -m "chore: stamp build ${VERSION}-${SHORT}"
+
+          # A branch that already exists means a previous run got this far and
+          # stopped before merging. Reuse it rather than failing the push.
+          git push --force origin "HEAD:refs/heads/${BRANCH}"
+
+          gh pr create \
+            --base main \
+            --head "${BRANCH}" \
+            --title "chore: stamp build ${VERSION}-${SHORT}" \
+            --body "Automated build stamp for ${SHA}. Opened by the \`version\` workflow because \`main\` requires changes to arrive through a pull request." \
+            || echo "a pull request for ${BRANCH} already exists"
+
+          # Squash keeps the history linear, which the ruleset requires.
+          gh pr merge "${BRANCH}" --squash --delete-branch \
+            || gh pr merge "${BRANCH}" --squash --delete-branch --admin
