@@ -27,8 +27,17 @@ const GOOGLE_SINGLE = 'https://translate.googleapis.com/translate_a/single';
 const MEMORY = 'https://api.mymemory.translated.net/get';
 
 /** Google accepts far more, but a small batch keeps a failure cheap to retry. */
-const BATCH_MAX_ITEMS = 12;
-const BATCH_MAX_CHARS = 1_500;
+const BATCH_MAX_ITEMS = 24;
+const BATCH_MAX_CHARS = 3_200;
+/**
+ * How many batches are in flight at once.
+ *
+ * Translating a long article one batch at a time meant a reader waited for
+ * every round trip in turn — a sixty-section article was sixty waits end to
+ * end. Four at a time turns that into fifteen, and the results are still
+ * applied by index, so the text lands in the same order it would have.
+ */
+const BATCH_CONCURRENCY = 4;
 /** MyMemory documents a 500-byte ceiling per query; stay under it. */
 const MEMORY_MAX_BYTES = 450;
 const MAX_RETRIES = 2;
@@ -37,6 +46,61 @@ const BREAKER_FAILURES = 3;
 
 const memo = new Map();
 const memoKey = (source, target, text) => `${source}\u0000${target}\u0000${text}`;
+
+/* -------------------------------------------------- the kept translations
+ *
+ * A reader who translates an article, changes their mind, picks another
+ * language and comes back was paying for every passage twice. The memo below
+ * only lived as long as the page did, so a reload started from nothing and
+ * the same article took the same half-minute again.
+ *
+ * Finished translations are now kept in the browser, keyed by source, target
+ * and the passage itself. Nothing else is stored — no titles, no addresses,
+ * no identifiers — and the whole store is capped and evicted oldest-first, so
+ * it cannot grow without bound. A cache miss behaves exactly as before.
+ */
+const STORE_KEY = 'indusmova:tr-cache:v1';
+const STORE_MAX_ENTRIES = 900;
+let storeLoaded = false;
+let storeDirty = false;
+
+function hashKey(value) {
+  // FNV-1a over the memo key: short, stable, and good enough to avoid a
+  // collision on a few thousand distinct passages.
+  let h = 0x811c9dc5;
+  for (let i = 0; i < value.length; i += 1) {
+    h ^= value.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(36);
+}
+
+function loadStore() {
+  if (storeLoaded) return;
+  storeLoaded = true;
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return;
+    for (const [key, value] of Object.entries(parsed)) {
+      if (typeof value === 'string' && value) memo.set(key, value);
+    }
+  } catch { /* a blocked or corrupt store is simply an empty one */ }
+}
+
+function saveStore() {
+  if (!storeDirty) return;
+  storeDirty = false;
+  try {
+    // Keep the most recently written entries; the map's insertion order is
+    // the order they were translated in.
+    const entries = [...memo.entries()].slice(-STORE_MAX_ENTRIES);
+    const out = {};
+    for (const [key, value] of entries) out[key.length > 120 ? hashKey(key) : key] = value;
+    localStorage.setItem(STORE_KEY, JSON.stringify(out));
+  } catch { /* quota or private mode: the cache is a bonus, never a blocker */ }
+}
 
 const breaker = new Map(); // provider -> { failures, openUntil }
 
@@ -189,6 +253,7 @@ async function myMemory(text, source, target, signal) {
 export async function translateTexts(texts, target, {
   source = 'auto', signal, onProgress, maxRequests = 120,
 } = {}) {
+  loadStore();
   const out = texts.map((text) => ({ text, provider: '', status: 'unchanged' }));
   const pending = [];
 
@@ -212,21 +277,29 @@ export async function translateTexts(texts, target, {
     if (typeof value !== 'string' || !value.trim()) return false;
     out[item.index] = { text: value, provider, status: 'translated' };
     memo.set(memoKey(source, target, item.text), value);
+    storeDirty = true;
     return true;
   };
 
-  for (let start = 0; start < pending.length; start += BATCH_MAX_ITEMS) {
-    if (signal?.aborted) break;
-    const slice = pending.slice(start, start + BATCH_MAX_ITEMS);
-    // Keep each batch inside the character budget as well as the item count.
-    let chars = 0;
+  // Cut the pending text into batches first, so they can be issued together.
+  const batches = [];
+  for (let start = 0; start < pending.length;) {
     const batch = [];
-    for (const item of slice) {
+    let chars = 0;
+    // Keep each batch inside the character budget as well as the item count.
+    while (start < pending.length && batch.length < BATCH_MAX_ITEMS) {
+      const item = pending[start];
       if (batch.length && chars + item.text.length > BATCH_MAX_CHARS) break;
       batch.push(item);
       chars += item.text.length;
+      start += 1;
     }
+    batches.push(batch);
+  }
 
+  /** One batch: the parallel endpoint first, then the singles for stragglers. */
+  const runBatch = async (batch) => {
+    if (signal?.aborted) return;
     if (!isOpen('google') && requests < maxRequests) {
       requests += 1;
       try {
@@ -236,9 +309,11 @@ export async function translateTexts(texts, target, {
         advance(batch.length);
         // Anything the batch did not return goes through the single path.
         for (const item of batch) {
-          if (out[item.index].status !== 'translated') await translateOne(item, source, target, signal, apply, () => requests++);
+          if (out[item.index].status !== 'translated') {
+            await translateOne(item, source, target, signal, apply, () => { requests += 1; });
+          }
         }
-        continue;
+        return;
       } catch (err) {
         if (err?.name === 'AbortError') throw err;
         noteFailure('google');
@@ -246,17 +321,31 @@ export async function translateTexts(texts, target, {
     }
 
     for (const item of batch) {
-      if (signal?.aborted) break;
+      if (signal?.aborted) return;
       await translateOne(item, source, target, signal, apply, () => { requests += 1; });
       advance(1);
     }
-  }
+  };
+
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < batches.length) {
+      if (signal?.aborted) return;
+      const batch = batches[cursor];
+      cursor += 1;
+      await runBatch(batch);
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(BATCH_CONCURRENCY, batches.length) }, worker),
+  );
 
   // Everything the providers could not do stays as the original text, marked
   // so the caller can show it as untranslated rather than pretending.
   for (const item of pending) {
     if (out[item.index].status !== 'translated') out[item.index].status = 'failed';
   }
+  saveStore();
   onProgress?.(texts.length, texts.length);
   return out;
 }
@@ -289,4 +378,6 @@ async function translateOne(item, source, target, signal, apply, countRequest) {
 export function resetTranslationState() {
   memo.clear();
   breaker.clear();
+  storeLoaded = true;
+  storeDirty = false;
 }

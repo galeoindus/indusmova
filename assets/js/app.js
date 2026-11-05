@@ -481,8 +481,9 @@ function boot() {
   initTheme();
   updateLangButton();
   wireHeader();
-  router.initLinkBehaviour();
-  prefetchArticles();
+  // The router owns the hover/touch/focus listeners; it is handed the one
+  // function that actually warms a page, so a link is only ever warmed once.
+  router.initLinkBehaviour({ prefetch: prefetchArticle });
 
   // #appVersion and #appBuild are painted by assets/js/build-watch.js from the
   // one authoritative /assets/version.json response. Writing SITE.version here
@@ -540,32 +541,19 @@ function boot() {
  * Nothing is fetched twice (the API cache answers the second call) and a
  * failed warm-up is swallowed: it is an optimisation, never a requirement.
  */
-function prefetchArticles() {
-  const seen = new Set();
-  const warm = (anchor) => {
-    let title;
-    let params;
-    try {
-      const m = String(anchor.getAttribute('href') || '').match(/^#\/article\/([^?]+)(?:\?(.*))?$/);
-      if (!m) return;
-      title = decodeURIComponent(m[1]).replace(/_/g, ' ');
-      params = new URLSearchParams(m[2] || '');
-    } catch { return; }
-    if (!title) return;
-    const lang = params.get('lang') || ctx.state.contentLang;
-    const project = params.get('project') || 'wikipedia';
-    const key = `${lang}:${project}:${title}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    api.article(lang, title, { project }).catch(() => {});
-    api.pageImage(lang, title, { project }).catch(() => {});
-  };
-  const onEnter = (event) => {
-    const anchor = event.target?.closest?.('a[href^="#/article/"]');
-    if (anchor) warm(anchor);
-  };
-  document.addEventListener('pointerover', onEnter, { passive: true });
-  document.addEventListener('focusin', onEnter);
+/**
+ * Warm one article.
+ *
+ * Called by the router when the reader points at, focuses or touches an
+ * article link, so the press itself lands on a warm cache and the page paints
+ * without a spinner. Both requests the article view needs are started, since
+ * it asks for the body and the lead picture together.
+ */
+function prefetchArticle({ title, lang, project = 'wikipedia' }) {
+  const code = lang || ctx.state.contentLang;
+  if (!title) return;
+  api.article(code, title, { project }).catch(() => {});
+  api.pageImage(code, title, { project }).catch(() => {});
 }
 
 function esc(value) {

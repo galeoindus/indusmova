@@ -29,7 +29,7 @@
   --user: #16302a;
   --shadow: 0 18px 44px -26px rgba(0, 0, 0, .75);
 
-  --col: 700px;
+  --col: 768px;
   --rail-w: 264px;
   --r: 14px;
   --r-sm: 10px;
@@ -810,3 +810,103 @@ body.rail-hidden .rail {
   .mic.is-listening svg { animation: none; }
   .rail, .composer, .starters button, .composer .send { transition: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE ASSISTANT SURFACE, SETTLED
+   ══════════════════════════════════════════════════════════════════════════
+   Four things a reader asked for after using the page for a while, all of
+   them about the same complaint — that it read like a form rather than like
+   an assistant:
+
+     · the answer column was narrower than the reading column elsewhere on
+       the site, so long answers wrapped early and scrolled for ever;
+     · the question bubble was a heavy block of colour;
+     · the sources under an answer were chips in a row that pushed the page
+       sideways on a phone;
+     · the composer sat in its own tray with a visible seam.
+
+   None of these change what the page does. They change how much of the
+   screen the reading gets. */
+
+/* The answer column matches the site's reading measure. */
+.stage { max-width: var(--col); padding: 26px 0 16px; gap: 30px; }
+
+/* The question is a quiet mark in the margin, the way an assistant app
+   shows what you asked without shouting it. */
+.q {
+  max-width: min(78%, 46ch);
+  padding: 10px 16px;
+  border-radius: 18px 18px 6px 18px;
+  background: color-mix(in srgb, var(--user) 78%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--line));
+  font-size: 14.5px;
+  line-height: 1.55;
+}
+
+/* The answer itself: more air between blocks, a real heading rhythm. */
+.a { gap: 14px; }
+.a-body { padding-bottom: 4px; }
+.md { gap: 14px; font-size: 15px; line-height: 1.72; }
+.md p { line-height: 1.72; }
+.md h2 { font-size: 12px; letter-spacing: .08em; margin-top: 12px; }
+.md ul, .md ol { padding-left: 1.15em; }
+.md li { margin: 5px 0; line-height: 1.65; }
+.md li::marker { color: var(--brass); }
+
+/* Sources wrap instead of running off the side of a phone. */
+.src-chips, .a-sources, .chips {
+  display: flex; flex-wrap: wrap; gap: 7px;
+  max-width: 100%;
+}
+.src-chips > *, .a-sources > * {
+  max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* The composer: one surface, no tray, and it stays put while the answer
+   scrolls. The seam under it was the dock's padding showing through. */
+.dock {
+  position: sticky; bottom: 0;
+  padding: 10px 24px 18px;
+  background: linear-gradient(to top, var(--bg) 62%, color-mix(in srgb, var(--bg) 0%, transparent));
+}
+.dock-in { max-width: var(--col); }
+.composer {
+  border-radius: 26px;
+  padding: 9px 9px 9px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  box-shadow: 0 14px 40px -30px rgba(0, 0, 0, .9);
+}
+.composer:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--line-2));
+  box-shadow: 0 18px 46px -28px rgba(0, 0, 0, .95);
+}
+.composer textarea { font-size: 15px; padding: 8px 2px; }
+.composer .send { width: 36px; height: 36px; }
+.composer .send svg { width: 16px; height: 16px; }
+
+/* The empty state is the first thing anyone sees: give the heading room. */
+.empty .empty-heading { font-size: clamp(29px, 3.8vw, 40px); }
+.empty > p { max-width: 48ch; font-size: 15px; }
+.starters { gap: 11px; }
+.starters button { padding: 15px 16px; border-radius: 15px; }
+.starters span { font-size: 13px; }
+
+/* ── phones ────────────────────────────────────────────────────────────── */
+@media (max-width: 760px) {
+  .stage { padding: 16px 0 10px; gap: 24px; }
+  .q { max-width: 88%; }
+  .dock { padding: 8px 12px 14px; }
+  .composer { padding: 7px 7px 7px 12px; border-radius: 22px; }
+  .composer textarea { font-size: 15.5px; }
+  .md { font-size: 14.5px; }
+  .empty .empty-heading { font-size: clamp(25px, 7vw, 32px); }
+  .starters { grid-template-columns: 1fr; }
+  .top { padding: 10px 14px; }
+  .scroll { padding: 0 14px; }
+}
+
+/* Nothing on this page may scroll sideways. */
+html, body { max-width: 100%; overflow-x: hidden; }
+.main, .scroll, .stage, .thread, .a, .a-body { min-width: 0; }

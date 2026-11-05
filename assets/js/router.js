@@ -156,8 +156,31 @@ export function searchHref(q, { mode = 'search', lang } = {}) {
   return `#/${mode === 'ask' ? 'ask' : 'search'}?${params.toString()}`;
 }
 
+/**
+ * Move the reader's current entry into the app's own document before a new
+ * in-app address is pushed.
+ *
+ * A shared link opens as a real path — /articles/ISRO/ — which is its own
+ * document. Navigating from it to #/article/Chess left the *previous* history
+ * entry pointing at that other document, so pressing Back did not restore the
+ * page the reader had been on: the browser threw the app away, loaded the
+ * article document from the network again, and the reader watched a spinner
+ * for text that had been on screen a second earlier.
+ *
+ * Rewriting the entry to its equivalent fragment first keeps the whole session
+ * inside one document, so Back is a hash change and nothing is fetched.
+ */
+export function adoptPath() {
+  const fromPath = parsePath();
+  if (!fromPath || window.location.hash) return;
+  const params = new URLSearchParams(fromPath.query || {});
+  const qs = params.toString();
+  history.replaceState(null, '', `#${fromPath.path}${qs ? `?${qs}` : ''}`);
+}
+
 export function navigate(path, { replace = false } = {}) {
   const target = href(path);
+  adoptPath();
   if (replace) history.replaceState(null, '', target);
   else window.location.hash = target;
   if (replace) dispatch();
@@ -196,12 +219,55 @@ export function start() {
   dispatch();
 }
 
-/** Intercept clicks on in-app links so they scroll to the top like a page. */
-export function initLinkBehaviour() {
+/** The article an in-app link points at, or null. */
+function articleOf(link) {
+  const raw = String(link.getAttribute('href') || '');
+  const m = raw.match(/^#\/article\/([^?]+)(?:\?([^#]*))?$/);
+  if (!m) return null;
+  try {
+    const query = Object.fromEntries(new URLSearchParams(m[2] || ''));
+    return {
+      title: decodeURIComponent(m[1]).replace(/_/g, ' '),
+      lang: query.lang || '',
+      project: query.project || 'wikipedia',
+    };
+  } catch { return null; }
+}
+
+/** Addresses already asked for, so a hover does not fire the same fetch twice. */
+const prefetched = new Set();
+
+/**
+ * Intercept clicks on in-app links.
+ *
+ * Three jobs: warm the article the reader is pointing at, adopt a real
+ * article path into the app document before the click navigates (so Back can
+ * return to it), and scroll to the top like a page.
+ *
+ * The warming is what makes a press feel instant: by the time the finger
+ * lands, the request is already out and often already answered, so the view
+ * paints from a warm cache instead of showing a spinner.
+ */
+export function initLinkBehaviour({ prefetch = null } = {}) {
+  const warm = (event) => {
+    const a = event.target?.closest?.('a[href^="#/article/"]');
+    if (!a) return;
+    const address = a.getAttribute('href');
+    if (prefetched.has(address)) return;
+    const target = articleOf(a);
+    if (!target) return;
+    prefetched.add(address);
+    try { prefetch?.(target); } catch { /* warming is best effort */ }
+  };
+  document.addEventListener('pointerover', warm, { passive: true });
+  document.addEventListener('focusin', warm);
+  document.addEventListener('touchstart', warm, { passive: true });
+
   document.addEventListener('click', (event) => {
     const a = event.target.closest?.('a[href^="#/"]');
     if (!a) return;
     if (a.target === '_blank' || event.metaKey || event.ctrlKey || event.shiftKey) return;
+    adoptPath();
     requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' }));
   });
 }
