@@ -15,8 +15,14 @@ import { DEPTHS } from './config.js';
 /** The three depth presets, in the reader's interface language. */
 const DEPTH_KEYS = { quick: 'quickAnswer', detailed: 'detailed', deep: 'deepDive' };
 
-/** The text field + tools. `ctx.onSubmit(text)` fires on submit. */
-export function composerForm(ctx, { placeholderKey = 'askPlaceholder', autofocus = false, initialMode = null, labelled = false } = {}) {
+/**
+ * The text field + tools. `ctx.onSubmit(text)` fires on submit.
+ *
+ * `onSubmit` overrides that for one form only. The search page needs it: its
+ * box must always search, even when the reader last used Ask somewhere else,
+ * and it must not change the reader's saved preference to get that.
+ */
+export function composerForm(ctx, { placeholderKey = 'askPlaceholder', autofocus = false, initialMode = null, labelled = false, onSubmit = null } = {}) {
   const form = el('form', { class: 'searchbar glass', id: 'searchForm', role: 'search', autocomplete: 'off' });
 
   // A visible label, not a placeholder doing the work of one.
@@ -102,7 +108,8 @@ export function composerForm(ctx, { placeholderKey = 'askPlaceholder', autofocus
       return;
     }
     prompt.setAttribute('hidden', '');
-    ctx.onSubmit(value);
+    if (typeof onSubmit === 'function') onSubmit(value);
+    else ctx.onSubmit(value);
   });
 
   // Grow the textarea with its content, up to a cap.

@@ -335,7 +335,8 @@ function renderAnswer(a, { store = false, animate = true } = {}) {
 
   const meta = el('div', 'a-meta');
   meta.append(el('span', 'dot'));
-  meta.append(el('span', null, esc(a.provider === 'workers-ai' ? 'Workers AI' : (a.provider || 'AI'))));
+  meta.append(el('span', 'who', 'indusmova'));
+  meta.append(el('span', 'badge', esc(a.provider === 'workers-ai' ? 'Workers AI' : (a.provider || 'AI'))));
   if (a.title) meta.append(el('span', 'src-name', esc(a.title)));
   inner.append(meta);
 
@@ -349,18 +350,27 @@ function renderAnswer(a, { store = false, animate = true } = {}) {
 
   const sources = (a.sources || []).filter((s) => s.url && wikiUrl(s.url));
   if (sources.length) {
-    const row = el('div', 'src-row');
+    // Sources as cards, not as a row of pills that truncate every title to
+    // "Chandray…". A reader checking a claim needs the whole name of the
+    // article and the site it came from, side by side.
+    const panel = el('div', 'src-panel');
+    panel.append(el('p', 'src-head', esc(t('sources'))));
+    const grid = el('div', 'src-cards');
     for (const s of sources) {
-      const chip = el('a', 'src-chip');
-      chip.id = `${prefix}-${Number(s.n)}`;
-      chip.href = wikiUrl(s.url);
-      chip.target = '_blank';
-      chip.rel = 'noopener noreferrer';
-      chip.append(el('span', 'n', `[${Number(s.n)}]`));
-      chip.append(el('span', 't', esc(s.title)));
-      row.append(chip);
+      const card = el('a', 'src-card');
+      card.id = `${prefix}-${Number(s.n)}`;
+      card.href = wikiUrl(s.url);
+      card.target = '_blank';
+      card.rel = 'noopener noreferrer';
+      card.append(el('span', 'src-n', String(Number(s.n))));
+      const body = el('span', 'src-body');
+      body.append(el('span', 'src-t', esc(s.title)));
+      body.append(el('span', 'src-d', `${lang()}.wikipedia.org`));
+      card.append(body);
+      grid.append(card);
     }
-    inner.append(row);
+    panel.append(grid);
+    inner.append(panel);
   }
 
   const actions = el('div', 'a-actions');

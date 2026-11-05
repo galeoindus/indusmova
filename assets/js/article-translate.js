@@ -136,44 +136,34 @@ function englishTitle(state) {
  * the reader is looking at is never touched.
  */
 export function translatePanel(state, ctx) {
-  const panel = el('div', { class: 'tr-panel' });
+  const panel = el('div', { class: 'tr-panel', dataset: { state: 'choosing' } });
 
-  const bar = el('div', { class: 'tr-bar' });
-  const label = el('label', { class: 'tr-pick', for: 'trLang' });
-  label.append(el('span', { text: t('translatePick') }));
+  const enTitle = englishTitle(state);
+  const onEnglish = String(state?.lang || '').toLowerCase().startsWith('en');
 
-  const select = el('select', { id: 'trLang', class: 'tr-select', 'aria-label': t('translatePick') });
-  // Grouped so a reader can find their own language without scrolling a
-  // hundred entries: India first, then the world. A language whose provider
-  // support has not been reviewed says so, rather than looking identical to
-  // one that has.
-  const groups = [
-    { label: t('translateIndia'), items: WORLD_LANGS.slice(0, 31) },
-    { label: t('translateWorld'), items: WORLD_LANGS.slice(31) },
-  ];
-  for (const group of groups) {
-    const optgroup = el('optgroup', { label: group.label });
-    for (const lang of group.items) {
-      const option = el('option', { value: lang.code });
-      option.textContent = lang.tier === 'experimental'
-        ? `${lang.native} — ${lang.name} · ${t('tierExperimental')}`
-        : `${lang.native} — ${lang.name}`;
-      optgroup.append(option);
-    }
-    select.append(optgroup);
-  }
-  // Sensible default: a reader on an English article most likely wants their
-  // own language; a reader already in Hindi most likely wants English.
-  const preferred = String(state?.lang || 'en').toLowerCase().startsWith('en') ? 'hi' : 'en';
-  select.value = preferred;
-  label.append(select);
-  bar.append(label);
+  /* ── 1. the language chooser ────────────────────────────────────────────
+   * The tab opens on the languages themselves. A reader presses Translate to
+   * read the article in their language, so the list of languages is the
+   * first thing on the panel and picking one is the whole action: no second
+   * button, no dropdown to open first, no "translate" step after the choice.
+   */
+  const choose = el('div', { class: 'tr-choose' });
+  choose.append(el('h2', { class: 'tr-title', text: t('translateReadIn') }));
+  choose.append(el('p', { class: 'tr-sub', text: t('translateOneStep') }));
+
+  const tools = el('div', { class: 'tr-tools' });
+
+  const filter = el('input', {
+    type: 'search', class: 'tr-filter', id: 'trFilter', autocomplete: 'off',
+    placeholder: t('translateFilter'), 'aria-label': t('translateFilter'),
+  });
+  tools.append(filter);
 
   // Which article is being translated. Explicit, because "the same article in
   // my language" has to mean the same English page, not whichever edition the
   // reader happened to open.
-  const enTitle = englishTitle(state);
-  const onEnglish = String(state?.lang || '').toLowerCase().startsWith('en');
+  const editionWrap = el('label', { class: 'tr-edition', for: 'trEdition' });
+  editionWrap.append(el('span', { text: t('translateFrom') }));
   const edition = el('select', { id: 'trEdition', class: 'tr-select', 'aria-label': t('translateSource') });
   if (enTitle) {
     const option = el('option', { value: 'en' });
@@ -191,50 +181,88 @@ export function translatePanel(state, ctx) {
     edition.append(option);
   }
   edition.value = enTitle ? 'en' : 'current';
-  bar.append(edition);
+  editionWrap.append(edition);
+  tools.append(editionWrap);
+  choose.append(tools);
 
-  // Choosing a language is the action. The button is only a retry path for
-  // when a translation failed, so it stays out of the way until then.
-  const run = el('button', { type: 'button', class: 'btn btn-primary', text: t('translateAgain'), hidden: true });
-  const stop = el('button', { type: 'button', class: 'btn btn-ghost', text: t('stopReading'), hidden: true });
-  bar.append(run, stop);
-  panel.append(bar);
+  // The languages, India first, each as its own button in its own script.
+  const grid = el('div', { class: 'tr-langs', role: 'group', 'aria-label': t('translatePick') });
+  const groups = [
+    { label: t('translateIndia'), items: WORLD_LANGS.slice(0, 31) },
+    { label: t('translateWorld'), items: WORLD_LANGS.slice(31) },
+  ];
+  const buttons = [];
+  const preferred = String(state?.lang || 'en').toLowerCase().startsWith('en') ? 'hi' : 'en';
+  for (const group of groups) {
+    const head = el('p', { class: 'tr-group', text: group.label });
+    const row = el('div', { class: 'tr-group-grid' });
+    for (const lang of group.items) {
+      const btn = el('button', {
+        type: 'button',
+        class: `tr-lang${lang.code === preferred ? ' is-suggested' : ''}`,
+        dataset: { code: lang.code, search: `${lang.code} ${lang.name} ${lang.native}`.toLowerCase() },
+        'aria-label': `${lang.native} — ${lang.name}`,
+      });
+      btn.append(el('b', { text: lang.native }));
+      btn.append(el('span', { text: lang.name }));
+      if (lang.tier === 'experimental') btn.append(el('em', { class: 'tr-tier', text: t('tierExperimental') }));
+      btn.addEventListener('click', () => runTranslation(lang.code));
+      row.append(btn);
+      buttons.push(btn);
+    }
+    grid.append(head, row);
+  }
+  choose.append(grid);
+
+  const noMatch = el('p', { class: 'tr-empty', hidden: true, text: t('translateNoMatch') });
+  choose.append(noMatch);
 
   // Said before anything is sent, not buried in a policy page.
-  const disclosure = el('p', { class: 'tr-disclosure' });
-  disclosure.textContent = t('translateDisclosure');
-  panel.append(disclosure);
+  choose.append(el('p', { class: 'tr-disclosure', text: t('translateDisclosure') }));
+
+  /* ── 2. the article, once a language is chosen ─────────────────────────── */
+  const read = el('div', { class: 'tr-read', hidden: true });
+  const bar = el('div', { class: 'tr-readbar' });
+  const current = el('p', { class: 'tr-current', role: 'status', 'aria-live': 'polite' });
+  const change = el('button', { type: 'button', class: 'btn btn-ghost', text: t('translateChange') });
+  const stop = el('button', { type: 'button', class: 'btn btn-ghost', text: t('stopReading'), hidden: true });
+  const again = el('button', { type: 'button', class: 'btn btn-primary', text: t('translateAgain'), hidden: true });
+  bar.append(current, el('span', { class: 'tr-grow' }), again, stop, change);
+  read.append(bar);
 
   const status = el('p', { class: 'tr-status', role: 'status', 'aria-live': 'polite' });
-  status.textContent = t('translateEmpty');
-  panel.append(status);
+  read.append(status);
 
   const track = el('div', { class: 'tr-track', 'aria-hidden': 'true' }, [el('span')]);
   track.hidden = true;
-  panel.append(track);
+  read.append(track);
 
   const body = el('div', { class: 'tr-body' });
-  panel.append(body);
+  read.append(body);
 
-  // The translated region announces its own language and direction as soon as
-  // a language is chosen, so assistive technology switches voice before the
-  // text arrives rather than reading Hindi in an English voice.
-  const markRegion = (target) => {
-    body.lang = target;
-    body.dir = isRtlLang(target) ? 'rtl' : 'ltr';
-  };
-  select.addEventListener('change', () => markRegion(select.value));
-  markRegion(select.value);
+  panel.append(choose, read);
 
   let controller = null;
+  let lastCode = '';
 
-  const setBusy = (busy) => {
-    run.disabled = busy;
-    select.disabled = busy;
-    edition.disabled = busy;
-    stop.hidden = !busy;
-    track.hidden = !busy;
-  };
+  filter.addEventListener('input', () => {
+    const q = filter.value.trim().toLowerCase();
+    let shown = 0;
+    for (const btn of buttons) {
+      const hit = !q || btn.dataset.search.includes(q);
+      btn.hidden = !hit;
+      if (hit) shown += 1;
+    }
+    // Group headings with nothing under them go away too, so the list does
+    // not read as a set of empty shelves.
+    grid.querySelectorAll('.tr-group-grid').forEach((row) => {
+      const any = [...row.children].some((b) => !b.hidden);
+      row.hidden = !any;
+      const head = row.previousElementSibling;
+      if (head?.classList.contains('tr-group')) head.hidden = !any;
+    });
+    noMatch.hidden = shown > 0;
+  });
 
   /** The DOM to translate: the English original, or the edition on screen. */
   async function sourceRoot() {
@@ -250,36 +278,65 @@ export function translatePanel(state, ctx) {
     return { root: clone, lang: state.lang, title: state?.data?.title, revid: state?.data?.revid };
   }
 
-  async function translate() {
-    const target = select.value;
-    const record = langRecord(target);
-    controller = new AbortController();
-    setBusy(true);
+  function showChooser() {
+    controller?.abort();
+    controller = null;
+    panel.dataset.state = 'choosing';
+    choose.hidden = false;
+    read.hidden = true;
+    track.hidden = true;
     body.replaceChildren();
+    filter.focus();
+  }
+
+  /**
+   * Choose a language, get the article.
+   *
+   * One press. The old panel asked for a language in a dropdown and then for
+   * a second press on a button — a two-step that made the tab look like a
+   * form rather than a reading choice.
+   */
+  async function runTranslation(code) {
+    const record = langRecord(code);
+    lastCode = code;
+    controller?.abort();
+    controller = new AbortController();
+    const signal = controller.signal;
+
+    panel.dataset.state = 'reading';
+    choose.hidden = true;
+    read.hidden = false;
+    body.replaceChildren();
+    current.textContent = `${record.native} · ${record.name}`;
     status.textContent = `${t('translateWorking')} — ${record.native}`;
+    track.hidden = false;
     track.querySelector('span').style.width = '4%';
+    stop.hidden = false;
+    again.hidden = true;
 
     try {
       const origin = await sourceRoot();
-      const result = await translateFragment(origin.root, target, {
+      const result = await translateFragment(origin.root, code, {
         source: origin.lang || 'auto',
-        signal: controller.signal,
+        signal,
         onProgress: (done, total) => {
           const pct = total ? Math.round((done / total) * 100) : 100;
           track.querySelector('span').style.width = `${Math.max(4, pct)}%`;
           status.textContent = `${t('translateWorking')} ${done}/${total}`;
         },
       });
+      if (signal.aborted) return;
 
       // Language and direction belong on the translated block, so assistive
       // technology reads it in the right voice and the right way round.
       const out = el('div', { class: 'translated-article' });
-      out.lang = target;
-      out.dir = isRtlLang(target) ? 'rtl' : 'ltr';
+      out.lang = code;
+      out.dir = isRtlLang(code) ? 'rtl' : 'ltr';
       const note = el('div', { class: 'tr-note' });
       note.append(el('p', {
         html: `${esc(t('translateNote', { lang: record.native }))} <span class="tr-partial">${esc(t('machineTranslated'))}</span>`,
       }));
+      note.append(el('p', { class: 'tr-hint', text: t('translateOriginalNote') }));
       if (result.failed) {
         note.append(el('p', { class: 'tr-partial', text: t('translatePartial', { count: String(result.failed) }) }));
       }
@@ -291,30 +348,30 @@ export function translatePanel(state, ctx) {
         ? t('translatePartial', { count: String(result.failed) })
         : t('translateDone');
     } catch (err) {
-      if (err?.name === 'AbortError') status.textContent = t('translateCancelled');
-      else {
+      if (err?.name === 'AbortError') {
+        status.textContent = t('translateCancelled');
+      } else {
         status.textContent = t('translateFailed');
         // Offer the one thing that helps after a failure.
-        run.hidden = false;
+        again.hidden = false;
       }
     } finally {
-      setBusy(false);
+      if (controller?.signal === signal) {
+        controller = null;
+        stop.hidden = true;
+        track.hidden = true;
+      }
     }
   }
 
-  // Selecting a language translates the whole article at once — no second
-  // press. Changing the target mid-read starts the new language immediately,
-  // cancelling the old run first.
-  select.addEventListener('change', () => {
-    markRegion(select.value);
+  change.addEventListener('click', showChooser);
+  again.addEventListener('click', () => runTranslation(lastCode));
+  stop.addEventListener('click', () => {
     controller?.abort();
-    run.hidden = true;
-    translate();
+    controller = null;
+    stop.hidden = true;
+    track.hidden = true;
   });
-  // The retry button repeats the last choice.
-  run.addEventListener('click', () => { run.hidden = true; translate(); });
-
-  stop.addEventListener('click', () => controller?.abort());
 
   // The view calls this when the reader leaves the page or switches tabs.
   panel.abortTranslation = () => controller?.abort();

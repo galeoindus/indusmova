@@ -1839,24 +1839,82 @@ form.panel .searchbar, form.panel .select, .feedback .fb-note textarea,
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 
 /* ── the Translate tab ──────────────────────────────────────────────────
-   One bar (language, button, stop), one status line, one progress track, then
-   the article itself. The translated copy is a clone of the reading layout,
-   so it inherits every rule below — only its text differs. */
+   The tab opens on the languages themselves, in their own scripts, with a
+   filter for the reader who knows what they are looking for. Choosing one
+   replaces the list with the translated article — one press, no second step.
+   The translated copy is a clone of the reading layout, so it inherits every
+   rule below; only its text differs. */
 .tr-panel { margin: 4px 0 26px; }
-.tr-bar {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
-  padding: 14px 16px;
+
+.tr-choose {
+  padding: 20px 20px 18px;
+  border: 1px solid var(--border-2); border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.tr-title {
+  margin: 0 0 6px;
+  font-family: var(--font-head);
+  font-size: clamp(19px, 2.3vw, 23px);
+  line-height: 1.25;
+}
+.tr-sub { margin: 0 0 16px; max-width: 68ch; font-size: 13.5px; line-height: 1.6; color: var(--muted); }
+
+.tr-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 16px; }
+.tr-filter {
+  flex: 1 1 240px; min-width: 0; min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-2); border-radius: 999px;
+  background: var(--surface-2, var(--surface)); color: var(--text);
+  font: inherit; font-size: 13.5px;
+}
+.tr-filter:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.tr-edition { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.tr-edition > span { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+
+.tr-group {
+  margin: 16px 0 8px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--faint);
+}
+.tr-group:first-child { margin-top: 0; }
+.tr-group-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+.tr-lang {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-2); border-radius: var(--radius-xs);
+  background: var(--surface-2, var(--surface)); color: var(--text);
+  font: inherit; text-align: left; cursor: pointer;
+  transition: border-color .14s ease, background-color .14s ease, transform .14s ease;
+}
+.tr-lang:hover { border-color: var(--accent); transform: translateY(-1px); }
+.tr-lang[hidden] { display: none; }
+.tr-lang b { font-size: 15px; font-weight: 600; line-height: 1.3; }
+.tr-lang span { font-size: 11.5px; color: var(--muted); }
+.tr-lang .tr-tier { font-size: 10px; font-style: normal; color: var(--faint); }
+.tr-lang.is-suggested { border-color: color-mix(in srgb, var(--accent) 55%, var(--border-2)); }
+.tr-empty { margin: 14px 0 0; font-size: 13px; color: var(--muted); }
+.tr-empty[hidden] { display: none; }
+
+/* The reading state: what is on screen, and the way out of it. */
+.tr-readbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 12px 14px;
   border: 1px solid var(--border-2); border-radius: var(--radius);
   background: var(--surface);
 }
-.tr-pick { display: flex; flex: 1 1 260px; align-items: center; gap: 10px; min-width: 0; }
-.tr-pick > span { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.tr-current { margin: 0; font-size: 14px; font-weight: 600; }
+.tr-grow { flex: 1 1 auto; }
+
 .tr-select {
-  flex: 1 1 auto; min-width: 0; max-width: 340px;
-  min-height: 38px; padding: 6px 10px;
+  flex: 0 1 auto; min-width: 0; max-width: 320px;
+  min-height: 36px; padding: 6px 10px;
   border: 1px solid var(--border-2); border-radius: 10px;
   background: var(--surface-2, var(--surface)); color: var(--text);
-  font: inherit; font-size: 13.5px;
+  font: inherit; font-size: 13px;
 }
 .tr-select:disabled { opacity: .6; }
 .tr-status { margin: 10px 2px 0; font-size: 12.5px; color: var(--muted); }
@@ -1879,11 +1937,12 @@ form.panel .searchbar, form.panel .select, .feedback .fb-note textarea,
 }
 .tr-note p { margin: 0; flex: 1 1 320px; font-size: 13px; color: var(--text); }
 .tr-note .tr-partial { flex-basis: 100%; color: var(--muted); font-size: 12.5px; }
+.tr-note .tr-hint { flex-basis: 100%; color: var(--muted); font-size: 12px; }
 
 /* Said before anything leaves the browser, so it is readable rather than fine
    print, but quiet enough not to compete with the article. */
 .tr-disclosure {
-  margin: 10px 2px 0; padding: 9px 11px;
+  margin: 14px 2px 0; padding: 9px 11px;
   border: 1px solid var(--border-2); border-radius: 10px;
   background: color-mix(in srgb, var(--accent) 6%, transparent);
   font-size: 12px; line-height: 1.5; color: var(--muted);
@@ -1898,9 +1957,10 @@ form.panel .searchbar, form.panel .select, .feedback .fb-note textarea,
 }
 .tr-body[dir="rtl"] { text-align: right; }
 @media (max-width: 640px) {
-  .tr-bar { padding: 12px; }
-  .tr-pick { flex-basis: 100%; }
-  .tr-select { max-width: none; }
+  .tr-choose { padding: 16px 14px; }
+  .tr-group-grid { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); }
+  .tr-edition { flex-basis: 100%; }
+  .tr-select { max-width: none; flex: 1 1 auto; }
 }
 
 /* Fuller translation offer */
@@ -2122,3 +2182,124 @@ form.panel .searchbar, form.panel .select, .feedback .fb-note textarea,
   .factbox .row dt, .factbox .row dd { font-size: 12.5px; padding-top: 8px; padding-bottom: 8px; }
   .art-actions > .btn span { display: inline; }
 }
+
+/* ======================================================================
+   Search results — a result is a row, not a thin card
+   ======================================================================
+   The results used to be the same four-column card grid the dashboard uses
+   for browsing. In a grid each card is only a thumb wide, so the title broke
+   over three lines and the snippet was cut to a hundred characters: eighteen
+   matches read as eighteen thin strips. A row gives the title a full line,
+   the snippet a readable measure and the picture a fixed square, so the list
+   scans top to bottom the way a search page should. */
+
+.sresults { max-width: 980px; }
+[data-view="search"] .sresults { max-width: 980px; }
+
+.sresults .sbar { margin: 0 0 20px; }
+.sresults .composer { margin: 0; }
+/* A taller field on the results page: the query is long here, and a one-line
+   strip of text in the middle of the page was the complaint. */
+.sresults .searchbar:has(> .composer-tools) > textarea { min-height: 56px; padding: 10px 4px; font-size: 16px; }
+
+.sres-head { margin: 0 0 14px; }
+.sres-head h1 {
+  margin: 0;
+  font-family: var(--font-head);
+  font-size: clamp(22px, 2.8vw, 30px);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.sres-sub { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+.sres-sub .mono { font-family: var(--mono); font-size: 12.5px; }
+
+.sres-count {
+  margin: 18px 0 6px;
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--faint);
+}
+
+.sres-list { display: flex; flex-direction: column; gap: 2px; }
+.sres-row {
+  display: flex; align-items: flex-start; gap: 18px;
+  padding: 16px 16px 16px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: inherit;
+  transition: background-color .14s ease, border-color .14s ease;
+}
+.sres-row:hover, .sres-row:focus-visible {
+  background: var(--surface);
+  border-color: var(--border);
+  text-decoration: none;
+}
+.sres-row.is-skeleton { pointer-events: none; }
+
+.sres-thumb {
+  flex: 0 0 auto;
+  width: 84px; height: 84px;
+  display: grid; place-items: center;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--surface-2);
+  box-shadow: var(--shadow-sm);
+}
+.sres-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.sres-thumb.placeholder svg { width: 100%; height: 100%; display: block; opacity: .55; }
+
+.sres-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 auto; }
+.sres-src {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px; letter-spacing: 0.03em; text-transform: uppercase;
+  color: var(--faint);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sres-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex: none; }
+.sres-title {
+  font-family: var(--font-head);
+  font-size: 18.5px; font-weight: 600; line-height: 1.32;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.sres-row:hover .sres-title { color: var(--accent); }
+.sres-snippet {
+  font-size: 14px; line-height: 1.62; color: var(--muted);
+  max-width: 74ch;
+}
+
+/* The one offer above the list: the same query, answered. */
+.sres-ask {
+  display: flex; align-items: center; gap: 14px;
+  padding: 15px 16px;
+  margin: 0 0 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  color: inherit;
+  transition: border-color .14s ease, background-color .14s ease;
+}
+.sres-ask:hover { border-color: var(--accent); text-decoration: none; }
+.sres-ask-ic {
+  flex: 0 0 auto; width: 38px; height: 38px;
+  display: grid; place-items: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--copper-ink);
+}
+.sres-ask-ic svg { width: 19px; height: 19px; }
+.sres-ask-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.sres-ask-text strong { font-size: 14.5px; }
+.sres-ask-text span { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.sres-ask-go { flex: 0 0 auto; font-size: 13px; font-weight: 600; color: var(--copper-ink); white-space: nowrap; }
+
+@media (max-width: 640px) {
+  .sres-row { gap: 12px; padding: 12px 6px; }
+  .sres-thumb { width: 62px; height: 62px; border-radius: 11px; }
+  .sres-title { font-size: 16px; }
+  .sres-snippet { font-size: 13px; }
+  .sres-ask { flex-wrap: wrap; gap: 10px; }
+  .sres-ask-go { width: 100%; }
+}
+
+/* The search skeleton uses a shorter first line than the card grid does. */
+.sres-row .sk-40 { width: 40%; }

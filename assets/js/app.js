@@ -152,8 +152,8 @@ const VIEWS = {
  * twenty minutes. A deliberately fresh render (`{ fresh: true }`, used when
  * the reader changes the source or interface language) skips it entirely.
  */
-const VIEW_CACHE_MAX = 6;
-const VIEW_CACHE_TTL = 20 * 60e3;
+const VIEW_CACHE_MAX = 12;
+const VIEW_CACHE_TTL = 45 * 60e3;
 const viewCache = new Map(); // routeKey -> { node, scrollY, at, title, desc, restore }
 
 // The page currently on screen, so it can be stashed when the reader leaves.
@@ -482,6 +482,7 @@ function boot() {
   updateLangButton();
   wireHeader();
   router.initLinkBehaviour();
+  prefetchArticles();
 
   // #appVersion and #appBuild are painted by assets/js/build-watch.js from the
   // one authoritative /assets/version.json response. Writing SITE.version here
@@ -526,6 +527,45 @@ function boot() {
   window.addEventListener('online', sync);
   window.addEventListener('offline', sync);
   sync();
+}
+
+/* --------------------------------------------------------------- prefetch
+ *
+ * A card is a promise: the reader will most likely open it. Warming the
+ * article the moment the pointer or the keyboard focus reaches the link means
+ * the page they land on is painted from the API cache instead of waiting on
+ * Wikimedia — and, together with the view cache, it is what makes Back feel
+ * like a step backwards rather than a fresh page load.
+ *
+ * Nothing is fetched twice (the API cache answers the second call) and a
+ * failed warm-up is swallowed: it is an optimisation, never a requirement.
+ */
+function prefetchArticles() {
+  const seen = new Set();
+  const warm = (anchor) => {
+    let title;
+    let params;
+    try {
+      const m = String(anchor.getAttribute('href') || '').match(/^#\/article\/([^?]+)(?:\?(.*))?$/);
+      if (!m) return;
+      title = decodeURIComponent(m[1]).replace(/_/g, ' ');
+      params = new URLSearchParams(m[2] || '');
+    } catch { return; }
+    if (!title) return;
+    const lang = params.get('lang') || ctx.state.contentLang;
+    const project = params.get('project') || 'wikipedia';
+    const key = `${lang}:${project}:${title}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    api.article(lang, title, { project }).catch(() => {});
+    api.pageImage(lang, title, { project }).catch(() => {});
+  };
+  const onEnter = (event) => {
+    const anchor = event.target?.closest?.('a[href^="#/article/"]');
+    if (anchor) warm(anchor);
+  };
+  document.addEventListener('pointerover', onEnter, { passive: true });
+  document.addEventListener('focusin', onEnter);
 }
 
 function esc(value) {

@@ -185,6 +185,11 @@ function dispatch() {
 }
 
 export function start() {
+  // The app restores the reader's own reading position from the view cache,
+  // to the pixel. Letting the browser also try to restore it (or, worse,
+  // restore it to the top first) is what made Back look like a reload: the
+  // page appeared, jumped, and only then settled. One owner for scrolling.
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   window.addEventListener('hashchange', dispatch);
   // A bare /articles/<slug> has no fragment to normalise.
   if (!parsePath() && !window.location.hash) history.replaceState(null, '', '#/');
