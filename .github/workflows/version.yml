@@ -91,7 +91,11 @@ jobs:
               --head "${BRANCH}" \
               --title "chore: stamp build ${VERSION}-${SHORT}" \
               --body "Automated build stamp for ${SHA}. Opened by the \`version\` workflow because \`main\` requires changes to arrive through a pull request." ; then
-            echo "::notice title=Stamp branch ready::Committed the stamp to ${BRANCH}, but this repository does not let GitHub Actions open pull requests. Enable Settings → Actions → General → 'Allow GitHub Actions to create and approve pull requests', or merge ${BRANCH} by hand. The live site is already stamped by the deploy job."
+            # Leave nothing behind. A branch per push accumulates for ever, and
+            # it holds nothing the deployed site needs — `deploy` stamps every
+            # page again before it uploads.
+            git push --quiet origin --delete "${BRANCH}" || true
+            echo "::notice title=Stamp not committed::This repository does not let GitHub Actions open pull requests, so the stamp stays out of git. The live site is still stamped: the deploy job stamps every page before it uploads. Enable Settings → Actions → General → 'Allow GitHub Actions to create and approve pull requests' to have it committed too."
             exit 0
           fi
 
