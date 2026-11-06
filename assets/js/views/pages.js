@@ -354,8 +354,212 @@ export function renderStatic(name) {
   for (const para of data.body) page.append(el('p', { text: para }));
   if (name === 'about') {
     page.append(el('p', { html: `Version <strong>${esc(SITE.version)}</strong> · <a href="${SITE.repo}" target="_blank" rel="noopener noreferrer">Source on GitHub</a>` }));
+    page.append(el('p', { html: `Who made it, when, and what it stands on: <a href="#/credits">credits</a>.` }));
   }
   wrap.append(page);
+  return wrap;
+}
+
+/* ----------------------------------------------------------------- credits */
+
+/*
+ * One page that answers the questions a reader reasonably asks of a site like
+ * this: who made it, when, on whose shoulders, and what may I reuse.
+ *
+ * Two rules keep it honest. Every name here is either the maintainer or a
+ * project that is genuinely used, and no one is listed who has not agreed to
+ * be listed — a credit is not something you can hand someone without asking.
+ * The numbers are a snapshot: they were read off the repository on the date in
+ * CREDITS_ASOF and are not computed at runtime, because a static page has no
+ * business calling the GitHub API to tell you its own history.
+ */
+
+const CREDITS_ASOF = '6 November 2026';
+
+const CREDIT_TIMELINE = [
+  { date: '20 October 2026', title: 'The first commit', detail: 'The design system is scaffolded and indusmova starts as a folder of plain HTML, CSS and ES modules.' },
+  { date: '23 October 2026', title: 'v3.0.0, first public release', detail: 'Ask, Search, Article, On this day, Explore and the Sources page go live on Cloudflare Pages.' },
+  { date: '6 November 2026', title: `v${SITE.version}`, detail: '265 commits later: the chat surface, reading progress, thirteen published article pages and the audit fixes.' },
+];
+
+const CREDIT_STACK = [
+  {
+    name: 'Wikipedia',
+    what: 'Every sentence the site shows is quoted from a published article. Search, article text and images are fetched live in the browser.',
+    licence: 'Text CC BY-SA 4.0 · images per file',
+    href: 'https://www.wikipedia.org/',
+  },
+  {
+    name: 'Wikidata',
+    what: 'The facts, labels and cross-language titles behind the article cards and the factbox.',
+    licence: 'CC0 1.0',
+    href: 'https://www.wikidata.org/',
+  },
+  {
+    name: 'Wikimedia Commons',
+    what: 'Article images, each shown with the licence it carries on Commons.',
+    licence: 'Per file',
+    href: 'https://commons.wikimedia.org/',
+  },
+  {
+    name: 'Cloudflare Pages',
+    what: 'Hosting, headers and the /api/ask function. The site is static, so there is no build step to deploy.',
+    licence: 'Service',
+    href: 'https://pages.cloudflare.com/',
+  },
+  {
+    name: 'Cloudflare Workers AI',
+    what: 'The optional chat explanation. When it is bound, Cloudflare runs the model and no API key reaches the browser.',
+    licence: 'Service',
+    href: 'https://developers.cloudflare.com/workers-ai/',
+  },
+  {
+    name: 'OpenRouter',
+    what: 'The other, configurable provider for the same optional chat. Its credentials are Cloudflare encrypted secrets.',
+    licence: 'Service',
+    href: 'https://openrouter.ai/',
+  },
+  {
+    name: 'Transformers.js',
+    what: 'Runs the small sentence-embedding model for “Understand meaning” entirely on the reader’s device.',
+    licence: 'Apache-2.0',
+    href: 'https://github.com/huggingface/transformers.js',
+  },
+  {
+    name: 'Xenova/all-MiniLM-L6-v2',
+    what: 'The roughly 23 MB embedding model that re-orders sentences by meaning. Nothing is generated; only the order changes.',
+    licence: 'Apache-2.0',
+    href: 'https://huggingface.co/Xenova/all-MiniLM-L6-v2',
+  },
+  {
+    name: 'Google Translate & MyMemory',
+    what: 'The optional Translate button. Article text goes from the browser straight to one of these services, and back translated.',
+    licence: 'Service',
+    href: 'https://translate.google.com/',
+  },
+  {
+    name: 'GitHub',
+    what: 'The public repository, the issue and pull-request trail, and the Actions that stamp the build and deploy it.',
+    licence: 'Service · code MIT',
+    href: SITE.repo,
+  },
+];
+
+const CREDIT_PEOPLE = [
+  { name: 'Bhola Kumar', role: 'Design, code, writing and maintenance', commits: '122 commits', href: 'https://github.com/galeoindus' },
+  { name: 'indusmova audit', role: 'The repository’s own audit passes, committed by the maintainer', commits: '22 commits' },
+  { name: 'github-actions[bot]', role: 'Stamps the build version on every push to main', commits: '110 commits' },
+  { name: 'dependabot[bot]', role: 'Dependency updates', commits: '1 commit' },
+];
+
+export function renderCredits() {
+  const wrap = el('div', { class: 'wrap-narrow' });
+  wrap.append(head(t('credits'), 'Who made indusmova, when, and what it stands on.'));
+
+  /* --- the maker ------------------------------------------------------- */
+  const maker = el('section', { class: 'credit-maker' });
+  const avatar = el('div', { class: 'credit-avatar', 'aria-hidden': 'true' });
+  // A photograph is optional. Drop /assets/img/author.jpg into the repository
+  // and it appears here; until then the initials stand in, so the page never
+  // shows a broken image or an empty circle.
+  const photo = el('img', { src: '/assets/img/author.jpg', alt: '', width: '96', height: '96', loading: 'lazy', decoding: 'async' });
+  photo.addEventListener('error', () => photo.remove());
+  avatar.append(photo, el('span', { class: 'credit-initials', text: 'BK' }));
+  maker.append(avatar);
+
+  const who = el('div', { class: 'credit-who' });
+  who.append(el('span', { class: 'kicker', text: 'Built and maintained by' }));
+  who.append(el('h2', { class: 'credit-name', text: 'Bhola Kumar' }));
+  who.append(el('p', { text: 'One person, writing in the open. The site is a reader for free knowledge, not a business: no accounts, no tracking, no advertising.' }));
+  const links = el('p', { class: 'credit-links' });
+  links.append(el('a', { href: SITE.repo, target: '_blank', rel: 'noopener noreferrer', text: 'Source on GitHub' }));
+  links.append(el('span', { text: ' · ' }));
+  links.append(el('a', { href: '#/feedback', text: 'Send a correction' }));
+  who.append(links);
+  maker.append(who);
+  wrap.append(maker);
+
+  /* --- the facts ------------------------------------------------------- */
+  const facts = el('dl', { class: 'credit-facts' });
+  for (const [label, value] of [
+    ['Started', '20 October 2026'],
+    ['First public release', 'v3.0.0, 23 October 2026'],
+    ['Running now', `v${SITE.version}`],
+    ['Commits', '265'],
+    ['Code licence', 'MIT'],
+  ]) {
+    facts.append(el('div', {}, [el('dt', { text: label }), el('dd', { text: value })]));
+  }
+  wrap.append(facts);
+
+  /* --- the timeline ---------------------------------------------------- */
+  const history = el('section', { class: 'sec' });
+  history.append(sectionHead({ title: 'How it was made' }));
+  const ol = el('ol', { class: 'credit-timeline' });
+  for (const step of CREDIT_TIMELINE) {
+    const li = el('li');
+    li.append(el('span', { class: 'credit-when', text: step.date }));
+    li.append(el('strong', { text: step.title }));
+    li.append(el('p', { text: step.detail }));
+    ol.append(li);
+  }
+  history.append(ol);
+  wrap.append(history);
+
+  /* --- the stack ------------------------------------------------------- */
+  const stack = el('section', { class: 'sec' });
+  stack.append(sectionHead({ title: 'What it stands on' }));
+  stack.append(el('p', { text: 'indusmova writes none of its own facts. Everything below is a project or a service the site actually uses, and each is credited for what it actually does.' }));
+  const grid = el('div', { class: 'src-grid' });
+  for (const item of CREDIT_STACK) {
+    const group = el('div', { class: 'src-group' });
+    group.append(el('h3', { html: `<a href="${item.href}" target="_blank" rel="noopener noreferrer">${esc(item.name)}</a>` }));
+    group.append(el('p', { text: item.what }));
+    group.append(el('p', { class: 'credit-licence', text: item.licence }));
+    grid.append(group);
+  }
+  stack.append(grid);
+  wrap.append(stack);
+
+  /* --- AI assistance --------------------------------------------------- */
+  const ai = el('section', { class: 'sec' });
+  ai.append(sectionHead({ title: 'AI assistance, stated plainly' }));
+  ai.append(el('p', { text: 'Parts of the code, the copy and the audits were written with AI assistants, including Sarvam AI. Every change was read, tested and accepted by the maintainer before it was committed, and the maintainer is the author of record and takes responsibility for what the site says.' }));
+  ai.append(el('p', { text: 'The AI is credited here for the work it did. It is not credited as an author, because it cannot check a claim, answer for a mistake, or hold a licence.' }));
+  wrap.append(ai);
+
+  /* --- the people ------------------------------------------------------ */
+  const people = el('section', { class: 'sec' });
+  people.append(sectionHead({ title: 'Everyone who has contributed' }));
+  people.append(el('p', { text: `Read off the repository’s own history on ${CREDITS_ASOF}. Most of the entries are automation; no outside human has contributed code yet.` }));
+  const list = el('ul', { class: 'credit-people' });
+  for (const person of CREDIT_PEOPLE) {
+    const li = el('li');
+    const name = person.href
+      ? el('a', { href: person.href, target: '_blank', rel: 'noopener noreferrer', text: person.name })
+      : el('strong', { text: person.name });
+    li.append(el('span', { class: 'credit-person-name' }, [name]));
+    li.append(el('span', { class: 'credit-person-role', text: person.role }));
+    li.append(el('span', { class: 'credit-person-count', text: person.commits }));
+    list.append(li);
+  }
+  people.append(list);
+  people.append(el('p', { class: 'ask-note', text: 'A pull request that lands is credited in the commit history and can be added to this list on request. Nobody is listed here without agreeing to it, and anyone can ask to be removed.' }));
+  wrap.append(people);
+
+  /* --- licences and independence --------------------------------------- */
+  const legal = el('section', { class: 'sec' });
+  legal.append(sectionHead({ title: 'Licences and independence' }));
+  legal.append(el('ul', { class: 'line-list', html: [
+    '<li><strong>indusmova’s own code</strong> — MIT. Copy it, change it, ship it; keep the notice.</li>',
+    '<li><strong>Wikipedia article text</strong> — CC BY-SA 4.0, and it stays under that licence wherever you reuse it.</li>',
+    '<li><strong>Wikidata</strong> — CC0 1.0.</li>',
+    '<li><strong>Wikimedia Commons files</strong> — each file’s own licence, shown with the image.</li>',
+    '<li><strong>Not affiliated</strong> — indusmova is an independent reader. It is not endorsed by or connected to the Wikimedia Foundation, Cloudflare, OpenRouter or any AI provider named above.</li>',
+  ].join('') }));
+  legal.append(el('p', { class: 'ask-note', text: 'Something missing, wrong, or listed without permission? Use the Feedback page and it will be corrected.' }));
+  wrap.append(legal);
+
   return wrap;
 }
 

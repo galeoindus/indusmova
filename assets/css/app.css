@@ -2530,3 +2530,104 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .depth { flex-wrap: nowrap; }
   .depth .depth-btn { padding: 0 10px; font-size: 12.5px; }
 }
+
+/* ---------------------------------------------------------------- credits */
+
+/* One page that says who made the site and what it stands on. It reuses the
+   clay surfaces the rest of the site already speaks, and adds only the shapes
+   that are particular to it: the maker card, the timeline and the contributor
+   rows. Nothing here is a new colour or a new radius. */
+
+.credit-maker {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 18px 22px;
+  align-items: center;
+  margin: 6px 0 22px;
+  padding: 22px;
+  background: var(--clay-face, var(--surface));
+  border-radius: var(--clay-r-lg, var(--radius-lg));
+  box-shadow: var(--clay-hi, var(--shadow-sm)), var(--clay-lo, none), var(--clay-drop, var(--shadow));
+}
+
+.credit-avatar {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--forest), var(--copper));
+  color: var(--ivory);
+  flex: 0 0 auto;
+}
+
+.credit-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.credit-initials { font-family: var(--font-head); font-size: 30px; letter-spacing: .02em; }
+.credit-avatar img + .credit-initials { opacity: 0; }
+
+.credit-who .kicker { display: block; margin-bottom: 4px; }
+.credit-name { font-family: var(--font-head); font-size: 27px; line-height: 1.15; margin: 0 0 6px; }
+.credit-who p { margin: 0 0 8px; color: var(--muted); font-size: 14.5px; line-height: 1.55; max-width: 60ch; }
+.credit-links { font-size: 13.5px; color: var(--muted); }
+
+.credit-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin: 0 0 26px;
+  padding: 0;
+}
+
+.credit-facts > div {
+  padding: 12px 14px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+.credit-facts dt { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); margin-bottom: 4px; }
+.credit-facts dd { margin: 0; font-size: 14.5px; font-weight: 600; color: var(--text); }
+
+.credit-timeline { list-style: none; margin: 0; padding: 0 0 0 18px; border-left: 2px solid var(--border-2); }
+.credit-timeline li { position: relative; padding: 0 0 18px 14px; }
+.credit-timeline li::before {
+  content: "";
+  position: absolute;
+  left: -25px;
+  top: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--bg);
+}
+.credit-timeline .credit-when { display: block; font-size: 12.5px; color: var(--faint); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 2px; }
+.credit-timeline strong { display: block; font-size: 15.5px; margin-bottom: 3px; }
+.credit-timeline p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; max-width: 62ch; }
+
+.credit-licence { margin: 6px 0 0; font-size: 12.5px; color: var(--faint); }
+
+.credit-people { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.credit-people li {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.1fr) minmax(0, 2fr) auto;
+  gap: 4px 16px;
+  align-items: baseline;
+  padding: 11px 14px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+.credit-person-name { font-weight: 600; font-size: 14.5px; }
+.credit-person-role { color: var(--muted); font-size: 13.5px; line-height: 1.45; }
+.credit-person-count { font-size: 12.5px; color: var(--faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+@media (max-width: 620px) {
+  .credit-maker { grid-template-columns: 1fr; justify-items: start; padding: 18px; }
+  .credit-avatar { width: 76px; height: 76px; }
+  .credit-name { font-size: 23px; }
+  .credit-people li { grid-template-columns: 1fr auto; }
+  .credit-person-role { grid-column: 1 / -1; }
+}

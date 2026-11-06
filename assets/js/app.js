@@ -23,6 +23,7 @@ import { renderLibrary, renderWork } from './views/library.js';
 import {
   renderExplore, renderToday, renderBookmarks, renderHistory,
   renderSources, renderTopics, renderStatic, renderSupport, renderFeedback, renderNotFound,
+  renderCredits,
 } from './views/pages.js';
 
 /* --------------------------------------------------------------- the context */
@@ -126,6 +127,7 @@ const VIEWS = {
   library: (route) => renderLibrary(ctx, route),
   work: (route) => renderWork(ctx, route),
   about: () => renderStatic('about'),
+  credits: () => renderCredits(),
   privacy: () => renderStatic('privacy'),
   terms: () => renderStatic('terms'),
   accessibility: () => renderStatic('accessibility'),

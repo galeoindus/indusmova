@@ -26,6 +26,7 @@ const ROUTES = [
   { name: 'search', pattern: /^\/search\/?$/ },
   { name: 'article', pattern: /^\/article\/(.+)$/ },
   { name: 'about', pattern: /^\/about\/?$/ },
+  { name: 'credits', pattern: /^\/credits\/?$/ },
   { name: 'privacy', pattern: /^\/privacy\/?$/ },
   { name: 'terms', pattern: /^\/terms\/?$/ },
   { name: 'accessibility', pattern: /^\/accessibility\/?$/ },
