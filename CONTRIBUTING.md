@@ -37,6 +37,34 @@ There is no build step. Edit a file, reload.
 3. Keyboard-only navigation still reaches every control.
 4. Nothing personal is stored anywhere but `localStorage`.
 
+## Branches, `main`, and the build stamp
+
+`main` is protected by the `protect-main` ruleset: deletions and force-pushes
+are refused, history must stay linear, and a change is expected to arrive
+through a pull request.
+
+Repository admins are a bypass actor on that ruleset, so a direct
+`git push origin main` from an admin account is accepted even though the
+remote prints the rule text back at you:
+
+```
+remote: error: GH013: Repository rule violations found for refs/heads/main
+remote: - Changes must be made through a pull request.
+```
+
+Read the line after that block before assuming it failed — if it says
+`<old>..<new>  main -> main`, the push landed. Check with
+`git rev-parse HEAD` against `gh api repos/galeoindus/indusmova/commits/main --jq .sha`
+rather than trusting the warning.
+
+The `version` workflow is a different identity (the `github-actions[bot]`
+token), and it is **not** a bypass actor. It therefore commits the stamp to a
+short-lived `build/stamp-*` branch and tries to land it through a pull
+request; when the repository is not configured to let Actions open pull
+requests, it deletes that branch again and exits green, because `deploy`
+re-stamps every page before it uploads. Nothing about the live site depends on
+the stamp reaching git.
+
 ## Reporting a problem
 
 Use the Feedback page in the app, or open an issue. For an accessibility
