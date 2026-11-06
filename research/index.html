@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta name="indusmova-build" content="5.21.0-7d47b8b">
-  <meta name="indusmova-version" content="5.21.0">
+  <meta name="indusmova-build" content="5.22.0-5c34289">
+  <meta name="indusmova-version" content="5.22.0">
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f7f8fc">
   <meta name="description" content="IndusMova Research Desk — ask a question and get the answer taken straight from the article, broken into its topics, with every source openable.">
   <title>Research Desk — indusmova</title>
@@ -22,17 +22,19 @@
   <meta name="twitter:title" content="Research Desk — indusmova">
   <meta name="twitter:description" content="IndusMova Research Desk — ask a question and get the answer taken straight from the article, broken into its topics, with every source openable.">
   <meta name="twitter:image" content="https://indusmova.pages.dev/assets/img/og.png">
-  <link rel="stylesheet" href="/assets/css/research-desk.css?v=5.21.0-7d47b8b">
-  <link rel="stylesheet" href="/assets/css/research-morph.css?v=5.21.0-7d47b8b">
-  <script type="module" src="/assets/js/research-desk.js?v=5.21.0-7d47b8b"></script>
+  <link rel="stylesheet" href="/assets/css/research-desk.css?v=5.22.0-5c34289">
+  <link rel="stylesheet" href="/assets/css/research-morph.css?v=5.22.0-5c34289">
+  <script type="module" src="/assets/js/research-desk.js?v=5.22.0-5c34289"></script>
 <!-- INDUSMOVA-MULTIMORPHISM-OVERLAY:START -->
-<link rel="stylesheet" href="/assets/css/multimorphism-overlay.css?v=5.21.0-7d47b8b">
+<link rel="stylesheet" href="/assets/css/multimorphism-overlay.css?v=5.22.0-5c34289">
 <!-- INDUSMOVA-MULTIMORPHISM-OVERLAY:END -->
 <!-- INDUSMOVA-RESEARCH-CHAT:START -->
-<link rel="stylesheet" href="/assets/css/research-chat.css?v=5.21.0-7d47b8b">
+<link rel="stylesheet" href="/assets/css/research-chat.css?v=5.22.0-5c34289">
 <!-- INDUSMOVA-RESEARCH-CHAT:END -->
-<link rel="stylesheet" href="/assets/css/responsive.css?v=5.21.0-7d47b8b">
-  <link rel="stylesheet" href="/assets/css/system.css?v=5.21.0-7d47b8b">
+<link rel="stylesheet" href="/assets/css/responsive.css?v=5.22.0-5c34289">
+  <link rel="stylesheet" href="/assets/css/system.css?v=5.22.0-5c34289">
+  <link rel="stylesheet" href="/assets/css/article-layout.css?v=5.22.0-5c34289">
+  <link rel="stylesheet" href="/assets/css/mobile.css?v=5.22.0-5c34289">
 </head>
 <body>
   <div class="app-shell" id="research-app" data-theme="light">
@@ -142,9 +144,16 @@
     </div>
   </div>
 <!-- INDUSMOVA-RESEARCH-CHAT:START -->
-<script src="/assets/js/research-chat-enhance.js?v=5.21.0-7d47b8b"></script>
+<script src="/assets/js/research-chat-enhance.js?v=5.22.0-5c34289"></script>
 <!-- INDUSMOVA-RESEARCH-CHAT:END -->
-  <script type="module" src="/assets/js/build-watch.js?v=5.21.0-7d47b8b"></script>
-  <script src="/assets/js/chat-launcher.js?v=5.21.0-7d47b8b" defer></script>
+  <script type="module" src="/assets/js/build-watch.js?v=5.22.0-5c34289"></script>
+  <script src="/assets/js/chat-launcher.js?v=5.22.0-5c34289" defer></script>
+  <nav class="bottom-nav" aria-label="Primary (phone)">
+    <a href="/#/ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h9"/></svg><span>Ask</span></a>
+    <a href="/#/explore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M15 9l-2 4-4 2 2-4z"/></svg><span>Explore</span></a>
+    <a href="/topics/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Topics</span></a>
+    <a href="/#/library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h5v14H4zM11 5h5v14h-5zM18 6l3 12-3 1z"/></svg><span>Library</span></a>
+    <a href="/#/bookmarks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg><span>Saved</span></a>
+  </nav>
 </body>
 </html>

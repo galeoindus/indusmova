@@ -64,15 +64,37 @@ export function composerForm(ctx, { placeholderKey = 'askPlaceholder', autofocus
   const submitBtn = el('button', { type: 'submit', class: 'btn btn-primary' });
   const help = el('p', { class: 'mode-help', id: 'composerHelp', role: 'status' });
 
+  /* On a phone the two intentions have to fit on one control row beside the
+     mic and Send. "Ask a question" and "Find an article" are the right words
+     on a desktop and about 40 px too wide at 390, so the short pair is used
+     there — the full label stays in the button's accessible name. */
+  // `matchMedia` is absent in a few test and embed environments; when it is,
+  // the full labels are simply used, which is the desktop behaviour.
+  const narrow = typeof window.matchMedia === 'function'
+    ? window.matchMedia('(max-width: 700px)')
+    : { matches: false, addEventListener() {} };
+  const labelFor = (value) => {
+    const full = value === 'search' ? t('findArticleLabel') : t('askModeLabel');
+    if (!narrow.matches) return full;
+    return value === 'search' ? t('findShort') : t('askShort');
+  };
+
   const paintMode = (value) => {
     mode.querySelectorAll('.mode-btn').forEach((b) => {
       const on = b.dataset.mode === value;
       b.classList.toggle('is-active', on);
       b.setAttribute('aria-pressed', String(on));
+      b.textContent = labelFor(b.dataset.mode);
+      b.setAttribute('aria-label', b.dataset.mode === 'search' ? t('findArticleLabel') : t('askModeLabel'));
+      b.title = b.dataset.mode === 'search' ? t('findArticleLabel') : t('askModeLabel');
     });
     submitBtn.textContent = value === 'search' ? t('submitSearch') : t('submitAsk');
     help.textContent = value === 'search' ? t('modeHelpSearch') : t('modeHelpAsk');
   };
+
+  // Relabelling on a rotation or a resize costs nothing and avoids a mode
+  // switch that says "Ask" on a desktop.
+  narrow.addEventListener?.('change', () => paintMode(ctx.state.mode));
 
   for (const value of ['ask', 'search']) {
     const btn = el('button', {
@@ -140,7 +162,13 @@ export function composerForm(ctx, { placeholderKey = 'askPlaceholder', autofocus
 
 function wireVoice(button, textarea, ctx) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const status = () => document.getElementById('voiceStatus');
+  // The status line belongs to this composer, not to the document.
+  //
+  // It used to be looked up by id, and every view that renders a composer
+  // wrote the same id="voiceStatus" — so the home page and the search page
+  // both owned it, and the first one in the document answered for all of
+  // them. Walking up from the field finds the one this button sits in.
+  const status = () => textarea.closest('form')?.parentElement?.querySelector('.voice-status') || null;
   if (!SR) {
     button.addEventListener('click', () => {
       const s = status();

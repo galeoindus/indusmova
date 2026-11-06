@@ -49,7 +49,10 @@ html[data-theme="light"] {
   --line-2: #d5ccb9;
   --ink: #14201c;
   --ink-2: #3b4a44;
-  --muted: #6b7873;
+  /* #6b7873 measured 4.05:1 on the rail and 4.35:1 on the page — both below
+     the 4.5:1 AA floor, and eight labels used it. This clears 5.19:1 on the
+     rail, which is the darkest surface it can land on. */
+  --muted: #5a6660;
   --accent: #1a7a52;
   --brass: #a8622c;
   --brass-soft: #8f5222;
@@ -864,9 +867,13 @@ body.rail-hidden .rail {
 }
 
 /* The composer: one surface, no tray, and it stays put while the answer
-   scrolls. The seam under it was the dock's padding showing through. */
+   scrolls. The seam under it was the dock's padding showing through.
+   It is a grid row, not a sticky element: `position: sticky` on a grid item
+   whose row is `auto` resolved the row to zero height, which left the
+   composer floating in the middle of the page — the audit's F-01. The grid
+   already pins it to the last row, so sticky has nothing to add. */
 .dock {
-  position: sticky; bottom: 0;
+  position: relative; bottom: auto;
   padding: 10px 24px 18px;
   background: linear-gradient(to top, var(--bg) 62%, color-mix(in srgb, var(--bg) 0%, transparent));
 }
@@ -910,3 +917,77 @@ body.rail-hidden .rail {
 /* Nothing on this page may scroll sideways. */
 html, body { max-width: 100%; overflow-x: hidden; }
 .main, .scroll, .stage, .thread, .a, .a-body { min-width: 0; }
+
+/* ── the pre-ask note ─────────────────────────────────────────────────────
+   The audit's F-03: the chat is the only part of the product that sends the
+   reader's words to a third party, and the empty page never said so. This
+   sits under the composer, in the muted token, until the first answer
+   arrives — then the thread's own sources take over the explaining. */
+.chat-note {
+  margin: 10px 2px 0;
+  max-width: 72ch;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+body:not(.is-empty) .chat-note { display: none; }
+
+@media (max-width: 760px) {
+  .chat-note { font-size: 12px; line-height: 1.5; margin-top: 8px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE SHELL, SETTLED — the composer is on the floor
+   ══════════════════════════════════════════════════════════════════════════
+   The audit's F-01: on an empty chat the question box floated about
+   two-thirds of the way down the page with 190 px of dead space beneath it,
+   and it moved again the moment the first answer arrived.
+
+   The cause was the shell itself. `.main` was `display: contents`, so its
+   three children were asked to occupy rows of the body's grid — and the third
+   row resolved to zero height, which left the composer pinned to the top of a
+   zero-height area. Measured at 1440×1000: grid rows 59px / 941px / 0px, dock
+   top 583px.
+
+   So the main column is a flex column of its own: header, thread, composer,
+   in that order, with the thread taking the remaining height. The composer is
+   therefore always the last thing on the page and always on the floor, empty
+   conversation or not. */
+
+body {
+  display: grid;
+  grid-template-columns: var(--rail-w) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+}
+
+.rail { grid-column: 1; grid-row: 1; height: 100%; min-height: 0; }
+
+.main {
+  display: flex;
+  flex-direction: column;
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.top   { grid-column: auto; grid-row: auto; flex: 0 0 auto; }
+.scroll { grid-column: auto; grid-row: auto; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.dock  { grid-column: auto; grid-row: auto; flex: 0 0 auto; }
+
+/* the empty state centres inside the thread area, not inside the page */
+body.is-empty .scroll {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body.is-empty .stage { width: 100%; padding: 0 0 8px; }
+body:not(.is-empty) .scroll { display: block; }
+
+@media (max-width: 900px) {
+  body { grid-template-columns: minmax(0, 1fr); }
+  .main { grid-column: 1; }
+}

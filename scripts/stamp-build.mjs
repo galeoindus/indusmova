@@ -48,6 +48,33 @@ for (const file of await walk(ROOT)) {
   if (!/assets\/css\/system\.css/.test(html) && /<\/head>/i.test(html)) {
     html = html.replace(/<\/head>/i, `  <link rel="stylesheet" href="/assets/css/system.css?v=${build}">\n</head>`);
   }
+  // The reading column and the phone sheet. Both load after everything else
+  // because they are corrections to the layout rather than part of the paint,
+  // and both are added here so a page created later gets them without anyone
+  // having to remember.
+  for (const sheet of ['article-layout.css', 'mobile.css']) {
+    if (new RegExp(`assets/css/${sheet.replace('.', '\\.')}`).test(html)) continue;
+    if (!/<\/head>/i.test(html)) continue;
+    html = html.replace(/<\/head>/i, `  <link rel="stylesheet" href="/assets/css/${sheet}?v=${build}">\n</head>`);
+  }
+  // The phone navigation belongs on every page: the article pages had no way
+  // out of a 113,000 px document except the brand mark, because the header's
+  // text links are hidden below 860 px.
+  if (!/class="bottom-nav"/.test(html) && /<\/body>/i.test(html)) {
+    const nav = `  <nav class="bottom-nav" aria-label="Primary (phone)">
+    <a href="/#/ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/></svg><span>Ask</span></a>
+    <a href="/#/explore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M15 9l-2 4-4 2 2-4z"/></svg><span>Explore</span></a>
+    <a href="/topics/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Topics</span></a>
+    <a href="/#/library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h5v14H4zM11 5h5v14h-5zM18 6l3 12-3 1z"/></svg><span>Library</span></a>
+    <a href="/#/bookmarks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg><span>Saved</span></a>
+  </nav>
+</body>`;
+    html = html.replace(/<\/body>/i, nav);
+  }
+  // A phone with a notch needs the safe-area insets the sheets rely on.
+  if (/name=["']viewport["']/i.test(html) && !/viewport-fit=cover/i.test(html)) {
+    html = html.replace(/(<meta\s+name=["']viewport["'][^>]*content=["'])([^"']*)(["'])/i, '$1$2, viewport-fit=cover$3');
+  }
   if (!/assets\/js\/build-watch\.js/.test(html) && /<\/body>/i.test(html)) {
     html = html.replace(/<\/body>/i, `  <script type="module" src="/assets/js/build-watch.js?v=${build}"></script>\n</body>`);
   }

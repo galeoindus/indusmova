@@ -112,17 +112,18 @@ const el = (tag, cls, html) => {
   return n;
 };
 
-/* ── layout: the box moves, the page does not ───────────────────────────── */
-const dock = $('#dock');
-const stage = $('.stage');
-
+/* ── layout: the box stays where the hand expects it ─────────────────────
+ * The composer used to be *moved* into the empty state while there was no
+ * conversation, and moved back out to the body on the first question. That is
+ * the audit's F-01: on an empty chat the box floated about two-thirds down the
+ * page with dead space beneath it, and when the first answer arrived the whole
+ * page jumped — the reader's pointer was no longer over Send.
+ *
+ * The box now never moves. It is the last row of the main column, so it is on
+ * the floor whether the thread is empty or not; only the class changes, and
+ * the CSS decides what the empty state looks like. */
 function setEmpty(empty) {
   document.body.classList.toggle('is-empty', empty);
-  if (empty) {
-    if (dock.parentElement !== stage) stage.append(dock);
-  } else if (dock.parentElement !== document.body) {
-    document.body.append(dock);
-  }
 }
 
 /* ── sources ────────────────────────────────────────────────────────────── */

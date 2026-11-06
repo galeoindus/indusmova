@@ -185,3 +185,221 @@ textarea { line-height: 1.6; }
 @media (prefers-reduced-motion: reduce) {
   .chakra-loader, .spinner.chakra { animation: none; }
 }
+
+/* ==========================================================================
+   THE AUDIT'S PART II CORRECTIONS — surfaces, ink and states
+   ==========================================================================
+   The interface audit measured four complaints and traced all of them to one
+   habit: a component file declaring its own colour, and a state declaring a
+   background without declaring the foreground that sits on it. These rules
+   are the audit's patch list, applied in one place and loaded after the
+   sheets that paint the old versions, so the corrections win without a single
+   !important.
+
+   What they do, in the audit's own order:
+
+     F-05/F-06  the field is flat paper, not a pressed well
+     F-07/F-08  the hero card is an opaque surface with one quiet wash
+     F-09       no gradient sits behind text
+     F-10/F-11  every active state declares its ink with its fill
+     F-12       the primary button is a flat token pair
+     F-14       the dark theme's muted ink clears 4.5:1
+   ========================================================================== */
+
+/* ── F-05 / F-06 · the field ─────────────────────────────────────────────
+   A pressed well works for a button the reader presses. A text field is a
+   surface the reader reads on, and an inset shadow plus a 145° gradient
+   darkened the first two characters of every placeholder — 31 levels below
+   the page at the top-left corner. Flat surface, hairline border, one soft
+   shadow, and focus as the only state that changes the surface. */
+
+.searchbar,
+.composer .searchbar,
+.dash-hero .searchbar,
+.dash-hero-ask .searchbar,
+form.panel .searchbar,
+form.panel .select,
+.select,
+.langbar select,
+.langbar-inner input#langSelect,
+.feedback .fb-note textarea {
+  background: var(--surface);
+  background-image: none;
+  border: 1px solid var(--border-2);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.searchbar:focus-within,
+.composer .searchbar:focus-within,
+.dash-hero .searchbar:focus-within,
+form.panel .searchbar:focus-within,
+.select:focus,
+.langbar select:focus,
+.feedback .fb-note textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+/* The segmented controls were the same pressed well. They are a track with a
+   raised thumb, which is a different material from a field. */
+.mode,
+.tabs {
+  background: var(--surface-2);
+  background-image: none;
+  border: 1px solid var(--border-2);
+  box-shadow: none;
+}
+
+/* ── F-07 · the hero card is a surface, not a glass sheet ────────────────
+   Behind the hero there is a near-black page; blurring it produced a flat
+   near-black, so in the dark theme the card sat 2 levels above the page —
+   below the threshold at which a boundary is visible. Glass belongs to
+   floating chrome, not to the largest surface on the page. */
+
+.dash-hero,
+.dash-hero-ask {
+  background: var(--surface);
+  background-image: none;
+  border: 1px solid var(--border-2);
+  box-shadow: 0 18px 40px -30px rgba(0, 0, 0, .55);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* ── F-08 · the corner bloom ─────────────────────────────────────────────
+   One centred wash that cannot be mistaken for a rendering fault. The old
+   pair of blooms was tuned against the light background and produced a pale
+   top-right and a brown top-left in the dark one. */
+
+.dash-hero::before,
+.dash-hero-ask::before {
+  background: radial-gradient(60% 50% at 50% -10%,
+    color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%);
+  opacity: 1;
+}
+[data-theme="dark"] .dash-hero::before,
+[data-theme="dark"] .dash-hero-ask::before {
+  background: radial-gradient(60% 50% at 50% -10%,
+    color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%);
+}
+
+/* ── F-09 · no gradient behind text ──────────────────────────────────────
+   `background-clip: text` with a transparent fill measured 1.07:1: in print,
+   in forced-colours mode and wherever the clip is unsupported, the emphasised
+   half of the headline simply vanished. The colour is solid now; the gradient
+   is kept only where a browser has proved it can paint it. */
+
+.dash-hero h1 .dash-grad,
+.site-intro h1 .grad {
+  background-image: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--copper-ink);
+}
+[data-theme="dark"] .dash-hero h1 .dash-grad,
+[data-theme="dark"] .site-intro h1 .grad {
+  color: var(--accent);
+}
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  @media not print {
+    .dash-hero h1 .dash-grad {
+      background-image: linear-gradient(100deg, var(--copper) 0%, var(--accent-2) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  }
+}
+
+/* ── F-10 / F-11 / F-12 · every state is a pair ──────────────────────────
+   The active depth pill was white text on a pale gradient (1.25:1) and the
+   active half of the Ask/Find switch was dark text on a dark track (1.85:1).
+   A state now names its ink and its fill together, from the matching tokens,
+   so the two can never be chosen apart. */
+
+.depth-btn.is-active,
+.depth-btn[aria-pressed="true"],
+.chip-btn.is-active,
+.chip.is-active,
+.mode-btn.is-active,
+.mode-btn[aria-pressed="true"],
+.tab[aria-selected="true"],
+.tab.is-active,
+.toc a.active,
+.dash-hero .depth-btn.is-active,
+.dash-hero .depth-btn[aria-pressed="true"],
+.dash-hero .chip-btn.is-active,
+.dash-hero .mode-btn.is-active,
+.dash-hero .mode-btn[aria-pressed="true"] {
+  background: var(--primary);
+  background-image: none;
+  border-color: var(--primary);
+  color: var(--on-primary);
+  box-shadow: none;
+}
+
+.btn-primary,
+.btn-primary:hover,
+[data-theme="dark"] .btn-primary,
+[data-theme="dark"] .btn-primary:hover {
+  background: var(--primary);
+  background-image: none;
+  border-color: transparent;
+  color: var(--on-primary);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 12%, transparent);
+  filter: none;
+}
+.btn-primary:hover { filter: brightness(1.06); }
+.btn-primary:active { filter: brightness(.96); }
+
+/* ── F-14 · the dark theme's muted ink ───────────────────────────────────
+   #a8b0a6 measured 3.97:1 on the dark card. The audit's value clears 4.5:1
+   on the lightest surface it can land on, which for a dark theme is the
+   highest card, not the page. */
+
+[data-theme="dark"] {
+  --muted: #b9c2b6;
+  --faint: #9aa39a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="sepia"]) {
+    --muted: #b9c2b6;
+    --faint: #9aa39a;
+  }
+}
+
+/* ── F-20 · the skip link ────────────────────────────────────────────────
+   It is off-screen until focused, and when focused it must be legible: the
+   pair is declared here so a theme change cannot separate them. */
+
+.skip-link,
+a.skip-link {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+/* ── the composer wrapper is not a field ─────────────────────────────────
+   `.composer` is only a positioning div on the app pages — the field is the
+   form inside it. But three sheets painted the wrapper as a second field, so
+   the search box rendered as a box inside a box, with the pressed-well shadow
+   on the outer one. The wrapper goes back to being invisible. The chat page's
+   composer *is* the field (it is a <form class="composer">), so this is
+   scoped to the wrapper only. */
+
+.composer:has(> form.searchbar) {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+.composer:has(> form.searchbar):focus-within {
+  box-shadow: none;
+  border: 0;
+}
+
+/* ── `hidden` means hidden ───────────────────────────────────────────────
+   The clear button, the offline notice and a dozen other elements are hidden
+   by setting the `hidden` attribute, but any rule that gives the element a
+   `display` value beats the attribute — so the clear "×" sat in the composer
+   even with an empty field, and on a phone it took the space the mode switch
+   needed. One rule restores the attribute's meaning. */
+[hidden] { display: none !important; }
