@@ -36,7 +36,7 @@
     "release": "node scripts/release.mjs"
   },
   "dependencies": {
-    "jsdom": "^29.1.1"
+    "jsdom": "^30.1.3"
   },
   "devDependencies": {
     "ws": "^8.18.0"
