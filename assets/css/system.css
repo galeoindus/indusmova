@@ -625,3 +625,78 @@ form.panel .searchbar {
 .app-side .side-link[aria-current="page"] {
   background: color-mix(in srgb, var(--accent) 13%, transparent);
 }
+
+/* ── credits ─────────────────────────────────────────────────────────────
+   One card for the person who made the site, and a grid of the services it
+   runs on. The owner's photo is layered over the brand gradient, so the block
+   looks finished before the file exists and simply shows the picture when it
+   does: no broken-image icon, no code to change later. */
+
+.credit-owner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  margin: 0 0 18px;
+  border-radius: var(--r-card);
+  background: var(--surface);
+  box-shadow: var(--lift-1);
+}
+.credit-avatar {
+  flex: none;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background-image: url("/assets/img/owner.jpg"), linear-gradient(135deg, #173b32, #b46a45);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 10%, transparent);
+}
+.credit-owner h3 { margin: 0 0 3px; font-size: 17px; font-family: var(--font-body); font-weight: 650; }
+.credit-owner p { margin: 0; font-size: 13px; color: var(--muted); }
+
+.credit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+  margin: 0 0 14px;
+}
+.credit-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--r-block);
+  background: var(--surface);
+  box-shadow: var(--lift-1);
+  color: inherit;
+  text-decoration: none;
+  transition: box-shadow .24s cubic-bezier(.22,.61,.36,1), transform .24s cubic-bezier(.22,.61,.36,1);
+}
+.credit-card:hover { box-shadow: var(--lift-2); transform: translateY(-2px); text-decoration: none; }
+.credit-tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--copper-ink);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+[data-theme="dark"] .credit-tile { color: var(--sage); }
+.credit-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.credit-text strong { font-size: 14px; font-weight: 600; }
+.credit-text span { font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+.credits-note { margin: 0 0 14px; font-size: 14px; color: var(--muted); }
+.credits .src-credit { margin-top: 4px; font-size: 12px; color: var(--faint); }
+
+@media (max-width: 560px) {
+  .credit-owner { padding: 16px; gap: 13px; }
+  .credit-avatar { width: 56px; height: 56px; }
+  .credit-grid { grid-template-columns: 1fr; }
+}

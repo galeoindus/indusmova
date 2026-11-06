@@ -239,6 +239,68 @@ export function renderHistory(ctx) {
 
 /* ------------------------------------------------------------------ sources */
 
+/**
+ * Who made this, and what it runs on.
+ *
+ * Every service the site depends on is named here with what it is used for,
+ * because a reader checking a fact deserves to know which machine wrote the
+ * sentence and which one is holding the page. The marks are drawn from each
+ * provider's initials rather than copied artwork: a logo is a trademark, and
+ * the honest thing is to name the service and link to it until the owner
+ * supplies the official files.
+ *
+ * The owner's photo is a CSS layer: the picture at /assets/img/owner.jpg sits
+ * on top of the gradient, so the block looks finished whether or not the file
+ * has been added yet — no broken-image icon, nothing to wire up later.
+ */
+const CREDITS = [
+  { name: 'Mukesh Kumar', role: 'Owner and maintainer', initials: 'MK', owner: true },
+  { name: 'Wikipedia', role: 'Article text, pictures and references', href: 'https://www.wikipedia.org', initials: 'W' },
+  { name: 'Wikidata', role: 'Facts and identifiers', href: 'https://www.wikidata.org', initials: 'WD' },
+  { name: 'Wikimedia Commons', role: 'Images and their licences', href: 'https://commons.wikimedia.org', initials: 'WC' },
+  { name: 'Cloudflare Pages', role: 'Hosting and delivery', href: 'https://www.cloudflare.com', initials: 'CF' },
+  { name: 'Workers AI', role: 'Answers when OpenRouter is unavailable', href: 'https://developers.cloudflare.com/workers-ai/', initials: 'AI' },
+  { name: 'OpenRouter', role: 'The language model behind chat answers', href: 'https://openrouter.ai', initials: 'OR' },
+  { name: 'Google Translate', role: 'Machine translation of articles', href: 'https://translate.google.com', initials: 'GT' },
+  { name: 'MyMemory', role: 'Fallback translation service', href: 'https://mymemory.translated.net', initials: 'MM' },
+];
+
+function creditsSection() {
+  const section = el('section', { class: 'sec credits' });
+  section.append(sectionHead({ title: t('creditsTitle') }));
+  section.append(el('p', { class: 'credits-note', text: t('creditsBody') }));
+
+  const owner = CREDITS.find((c) => c.owner);
+  if (owner) {
+    const card = el('div', { class: 'credit-owner' });
+    card.append(el('div', { class: 'credit-avatar', 'aria-hidden': 'true' }));
+    const text = el('div');
+    text.append(el('h3', { text: owner.name }));
+    text.append(el('p', { text: `${owner.role} · ${t('creditsOwner')}` }));
+    card.append(text);
+    section.append(card);
+  }
+
+  const grid = el('div', { class: 'credit-grid' });
+  for (const credit of CREDITS.filter((c) => !c.owner)) {
+    const card = el('a', {
+      class: 'credit-card',
+      href: credit.href,
+      target: '_blank',
+      rel: 'noopener noreferrer',
+    });
+    card.append(el('span', { class: 'credit-tile', 'aria-hidden': 'true', text: credit.initials }));
+    const text = el('span', { class: 'credit-text' });
+    text.append(el('strong', { text: credit.name }));
+    text.append(el('span', { text: credit.role }));
+    card.append(text);
+    grid.append(card);
+  }
+  section.append(grid);
+  section.append(el('p', { class: 'src-credit', text: t('creditsMarks') }));
+  return section;
+}
+
 export function renderSources() {
   const wrap = el('div', { class: 'wrap' });
   const head = el('div', { class: 'article-head' });
@@ -273,6 +335,7 @@ export function renderSources() {
     section.append(grid);
     wrap.append(section);
   }
+  wrap.append(creditsSection());
   wrap.append(el('p', { class: 'ask-note', style: 'margin-top:20px', text: t('attribution') }));
   return wrap;
 }
