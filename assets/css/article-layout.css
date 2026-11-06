@@ -301,3 +301,32 @@ main#main {
   :root { --shell: 1320px; }
   .wrap { padding-inline: 48px; }
 }
+
+
+/* ── the reading column on a narrow screen ───────────────────────────────
+   The panel kept its 760px cap and the grid kept its two columns below the
+   rail breakpoint, so at 390px the text was 760px wide inside a 390px
+   viewport and the overflow guard simply cut the right-hand end off every
+   line. Measured before: panel 760px in a 390px window, list items 680px.
+   One column, full width, no cap. */
+
+#main .article-grid,
+.article-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (max-width: 1100px) {
+  #main .article-grid { grid-template-columns: minmax(0, 1fr); }
+  .article-grid > .panel.panel-wide,
+  #main .article-grid > .panel,
+  .panel.panel-wide {
+    max-width: 100%;
+    width: 100%;
+    margin-inline: 0;
+  }
+  .article-grid > .toc-rail { grid-column: 1; }
+}
+
+/* Nothing inside the article may be wider than the column it sits in. */
+.art-body, .art-body * { max-width: 100%; }
+.art-body .table-scroll, .art-body table { max-width: 100%; }

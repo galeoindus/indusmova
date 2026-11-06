@@ -1066,7 +1066,8 @@ $('#voiceBtn')?.addEventListener('click', startVoice);
 $('#themeBtn')?.addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = next;
-  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', next === 'dark' ? '#0b0f0e' : '#fbf8f2'));
+  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', next === 'dark' ? '#0e1211' : '#fdfdfb'));
+  // The same key the rest of the site reads, so one change applies everywhere.
   try { localStorage.setItem('indusmova:theme', next); } catch { /* blocked */ }
 });
 $('#contentLanguage')?.addEventListener('change', () => {
@@ -1121,8 +1122,21 @@ try {
   if (['quick', 'detailed', 'deep'].includes(savedDepth)) $('#answerDepth').value = savedDepth;
   const savedUi = localStorage.getItem('indusmova:chat:ui');
   if (savedUi === 'hi' || savedUi === 'en') $('#uiLanguage').value = savedUi;
-  const theme = localStorage.getItem('indusmova:theme');
-  if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+  // The theme is one setting for the whole site, not one per page. The site
+  // stores "auto" when the reader has never chosen, and this page used to
+  // ignore that value — so it stayed dark while every other page followed the
+  // system. "auto" is resolved here the same way theme.js resolves it.
+  let theme = 'auto';
+  try { theme = localStorage.getItem('indusmova:theme') || 'auto'; } catch { /* blocked */ }
+  const systemDark = typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const resolved = theme === 'auto' ? (systemDark ? 'dark' : 'light') : theme;
+  if (resolved === 'light' || resolved === 'dark') {
+    document.documentElement.dataset.theme = resolved;
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
+      m.setAttribute('content', resolved === 'dark' ? '#0e1211' : '#fdfdfb');
+    });
+  }
 } catch { /* private browsing */ }
 
 if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) $('#voiceBtn').hidden = true;
