@@ -39,6 +39,9 @@ export const STRINGS = {
     modeGroup: 'What would you like to do?',
     askModeLabel: 'Ask a question',
     findArticleLabel: 'Find an article',
+    // The same two intentions, short enough for a 390 px control row.
+    askShort: 'Ask',
+    findShort: 'Find',
     modeHelpAsk: 'indusmova finds the best-matching entry and shows the passages that answer you.',
     modeHelpSearch: 'Searches by title or topic, so you can pick the entry yourself.',
     submitAsk: 'Ask',
@@ -347,6 +350,8 @@ export const STRINGS = {
     modeGroup: 'आप क्या करना चाहेंगे?',
     askModeLabel: 'सवाल पूछें',
     findArticleLabel: 'लेख खोजें',
+    askShort: 'पूछें',
+    findShort: 'खोजें',
     modeHelpAsk: 'indusmova सबसे मेल खाता विकिपीडिया लेख चुनता है और जवाब देने वाले अंश दिखाता है।',
     modeHelpSearch: 'शीर्षक या विषय से विकिपीडिया लेख खोजता है, ताकि आप खुद चुन सकें।',
     submitAsk: 'पूछें',

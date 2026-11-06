@@ -86,7 +86,7 @@ function composerBlock(ctx, question) {
   const composer = el('div', { class: 'composer', style: 'margin:0 0 22px' });
   const form = composerForm(ctx, { placeholderKey: 'askPlaceholder', autofocus: !question, initialMode: 'ask', labelled: true });
   composer.append(form);
-  composer.append(el('p', { class: 'voice-status', id: 'voiceStatus', role: 'status', 'aria-live': 'polite' }));
+  composer.append(el('p', { class: 'voice-status', role: 'status', 'aria-live': 'polite' }));
   attachSuggest(form.querySelector('textarea'), ctx);
   if (question) form.querySelector('textarea').value = question;
   composer.append(depthControl(ctx));

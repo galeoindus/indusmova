@@ -53,7 +53,7 @@ function hero(ctx) {
   const composer = el('div', { class: 'composer' });
   const form = composerForm(ctx, { autofocus: false, labelled: true });
   composer.append(form);
-  composer.append(el('p', { class: 'voice-status', id: 'voiceStatus', role: 'status', 'aria-live': 'polite' }));
+  composer.append(el('p', { class: 'voice-status', role: 'status', 'aria-live': 'polite' }));
   // The same suggest-as-you-type the other composers have, so the front door
   // behaves like the rest of the site.
   attachSuggest(form.querySelector('textarea'), ctx);

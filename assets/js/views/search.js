@@ -43,7 +43,7 @@ export async function renderSearch(ctx, route) {
     },
   });
   composer.append(form);
-  composer.append(el('p', { class: 'voice-status', id: 'voiceStatus', role: 'status', 'aria-live': 'polite' }));
+  composer.append(el('p', { class: 'voice-status', role: 'status', 'aria-live': 'polite' }));
   attachSuggest(form.querySelector('textarea'), ctx);
   if (query) form.querySelector('textarea').value = query;
   bar.append(composer);

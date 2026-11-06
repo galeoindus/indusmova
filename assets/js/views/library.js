@@ -47,7 +47,7 @@ export async function renderLibrary(ctx, route) {
   const composer = el('div', { class: 'composer', style: 'margin:0 0 18px;max-width:none' });
   const form = composerForm(ctx, { placeholderKey: 'libraryPlaceholder', autofocus: !query, initialMode: 'search', labelled: true });
   composer.append(form);
-  composer.append(el('p', { class: 'voice-status', id: 'voiceStatus', role: 'status', 'aria-live': 'polite' }));
+  composer.append(el('p', { class: 'voice-status', role: 'status', 'aria-live': 'polite' }));
   attachSuggest(form.querySelector('textarea'), ctx);
   if (query) form.querySelector('textarea').value = query;
   wrap.append(composer);

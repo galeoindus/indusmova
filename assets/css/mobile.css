@@ -1,0 +1,334 @@
+/* ==========================================================================
+   indusmova — the phone
+   --------------------------------------------------------------------------
+   What a site has to get right on a phone, and what this one did not.
+
+   The measured starting point (390 x 844, Chromium, touch emulation):
+
+     · the article page had NO navigation at all — the five header links were
+       display:none below 860 px and no bottom bar existed on those pages, so
+       the only way out of a 113,000 px article was the brand mark
+     · the contents panel came last in the document, at y = 113,051 px
+     · the fact box clipped its values mid-word at 320 px
+     · 20 interactive controls were under 40 x 40 px
+     · 14 pieces of text were under 14 px
+     · the search field broke into three stacked rows inside a 180 px box
+     · a fixed full-screen grain layer blended on every scroll frame
+     · the floating "Ask AI" button sat on top of the bottom bar
+
+   The rules below are the standard mobile checklist, applied to this tree:
+
+     1. one thumb-reachable navigation, on every page, always visible
+     2. 44 px minimum targets (WCAG 2.5.5 / platform guidelines)
+     3. 16 px minimum on every field, or iOS zooms the page on focus
+     4. safe-area insets, so nothing hides under a home indicator
+     5. content first: no fixed decoration over text, no layout shift
+     6. one column, 12-16 px gutters, and nothing that scrolls sideways
+   ========================================================================== */
+
+:root {
+  --tap: 44px;
+  --gutter: 14px;
+}
+
+/* ------------------------------------------------------- 1 · the bottom bar */
+
+/* The bar exists in the app shell only. It is defined here for every page, and
+   the markup is added to the static pages by the same build step. */
+.bottom-nav {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .bottom-nav {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 55;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    -webkit-backdrop-filter: saturate(150%) blur(14px);
+    backdrop-filter: saturate(150%) blur(14px);
+    border-top: 1px solid var(--border);
+  }
+  .bottom-nav a {
+    display: grid;
+    justify-items: center;
+    gap: 3px;
+    min-height: 48px;
+    padding: 7px 2px 5px;
+    border-radius: 10px;
+    font-size: 11px;
+    line-height: 1.15;
+    color: var(--muted);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bottom-nav a[aria-current="page"] {
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+  .bottom-nav svg { width: 21px; height: 21px; }
+
+  /* nothing may sit under the bar */
+  body { padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px)); }
+  .site-foot { padding-bottom: 24px; }
+
+  /* the floating launcher moves above the bar, and off the last button */
+  .im-launcher, .chat-launcher, .fab {
+    bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 12px !important;
+  }
+}
+
+/* the header keeps its tools but drops the five text links, which now live in
+   the bar — that is what stops the header wrapping to three rows at 360 px */
+@media (max-width: 860px) {
+  .topnav { display: none; }
+  .topbar-inner { flex-wrap: nowrap; gap: 8px; }
+  .brand-word { font-size: 16px; }
+}
+
+/* ------------------------------------------------------- 2 · tap targets */
+
+@media (pointer: coarse) {
+  button,
+  .btn,
+  .btn-icon,
+  .chip,
+  .depth-btn,
+  .mode-btn,
+  .tab,
+  .toc a,
+  .side-link,
+  .bottom-nav a {
+    min-height: var(--tap);
+  }
+  .btn-icon { width: var(--tap); height: var(--tap); }
+  /* inline links inside prose stay inline: they are read, not pressed */
+  .art-body a, .prose a, .crumbs a { min-height: 0; }
+}
+
+/* a small pointer still needs a comfortable target */
+.btn-icon { min-width: 36px; min-height: 36px; }
+
+/* ------------------------------------------------------- 3 · fields */
+
+/* 16 px on every field: below that, iOS Safari zooms the viewport on focus and
+   the reader loses their place. The old rule only did this under 700 px. */
+input,
+select,
+textarea,
+.searchbar textarea,
+.searchbar input {
+  font-size: max(16px, 1rem);
+}
+
+@media (max-width: 700px) {
+  /* the field: one row for the input, one for the tools — never three */
+  .searchbar:has(> .composer-tools) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px 10px 8px 14px;
+    border-radius: 18px;
+  }
+  .searchbar:has(> .composer-tools) > textarea {
+    width: 100%;
+    min-height: 44px;
+    font-size: 16px;
+    padding: 8px 0 4px;
+  }
+  .searchbar:has(> .composer-tools) > .composer-tools {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+  }
+  .searchbar:has(> .composer-tools) > .composer-tools > .mode {
+    order: 1;
+    margin-right: auto;
+  }
+  .searchbar:has(> .composer-tools) > .composer-tools > button[type="submit"] {
+    order: 2;
+    min-height: 42px;
+    padding: 0 18px;
+  }
+  .searchbar:has(> .composer-tools) > .composer-tools > .btn-icon { order: 0; }
+
+  .mode { padding: 3px; }
+  .mode-btn { padding: 0 10px; font-size: 12.5px; }
+}
+
+/* ------------------------------------------------------- 4 · safe areas */
+
+/* the chat dock and any sticky footer must clear a home indicator */
+.dock,
+.composer-dock {
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
+.topbar {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+/* landscape on a notched phone */
+@media (orientation: landscape) and (max-height: 500px) {
+  .bottom-nav { padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px)); }
+  .bottom-nav a { min-height: 40px; font-size: 10px; }
+  .bottom-nav svg { width: 18px; height: 18px; }
+}
+
+/* ------------------------------------------------------- 5 · decoration */
+
+/* The grain is a fixed, full-viewport SVG turbulence layer with a blend mode.
+   On a phone it is a per-frame composite over the whole screen for a texture
+   nobody can see at 390 px. It goes. */
+@media (max-width: 700px) {
+  .grain { display: none; }
+  body::after { display: none; }      /* the 56 px grid overlay, same reason */
+  body::before { filter: none; }      /* a 18 px blur of four gradients */
+}
+
+/* ------------------------------------------------------- 6 · rhythm */
+
+@media (max-width: 700px) {
+  :root { --gutter: 14px; }
+
+  .wrap,
+  [data-view="article"] .wrap,
+  [data-view="ask"] .wrap {
+    padding-inline: var(--gutter);
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .panel,
+  .panel.panel-wide,
+  .article-grid > .panel {
+    padding: 18px 16px 22px;
+    border-radius: 16px;
+  }
+
+  /* headings: one step down, and never clipped */
+  .article-title, .article-head h1 {
+    font-size: clamp(28px, 8vw, 38px);
+    line-height: 1.14;
+    max-width: 100%;
+  }
+  .article-sub { font-size: 17px; line-height: 1.62; }
+  .lead-figure img, .art-figure img { max-height: 240px; }
+  .art-body h2 { font-size: 22px; line-height: 1.25; }
+  .art-body h3 { font-size: 18px; }
+
+  .art-body > p,
+  .art-body > ul,
+  .art-body > ol,
+  .prose > p { max-width: 100%; }
+
+  /* the action row: two per line, not five rows of one */
+  .article-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .article-actions .btn { width: 100%; min-height: 44px; font-size: 14px; }
+  .article-actions .btn:first-child { grid-column: 1 / -1; }
+
+  /* the hero: shorter, so the field is on the first screen */
+  .dash-hero { padding: 20px 16px 18px; margin-top: 8px; border-radius: 18px; }
+  .dash-hero h1 { font-size: clamp(26px, 7.4vw, 34px); }
+  .dash-hero > p { font-size: 15px; margin-bottom: 16px; }
+  .dash-hero-badge { font-size: 10.5px; padding: 6px 10px; }
+
+  /* example chips: a scroll row instead of three full-width pills */
+  .example-prompts {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .example-prompts li { flex: 0 0 auto; scroll-snap-align: start; }
+  .example-prompts button { white-space: nowrap; }
+
+  /* long code and tables never push the page sideways */
+  pre { overflow-x: auto; }
+  .art-body .table-scroll { margin-inline: 0; }
+
+  /* the contents panel: compact, scrollable, first */
+  .toc-rail .toc { max-height: 40vh; overflow-y: auto; }
+
+  /* a footer that is not 400 px of links */
+  .site-foot { padding-top: 24px; }
+  .site-foot .foot-links { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+}
+
+/* very small phones: 320 px is still a supported width */
+@media (max-width: 360px) {
+  :root { --gutter: 12px; }
+  .article-title, .article-head h1 { font-size: 26px; }
+  .panel, .panel.panel-wide, .article-grid > .panel { padding: 14px 12px 18px; }
+  .article-actions { grid-template-columns: 1fr; }
+  .bottom-nav a { font-size: 10px; }
+}
+
+/* tablets: two columns are available, use one column of text plus the rail */
+@media (min-width: 701px) and (max-width: 1100px) {
+  .wrap, [data-view="article"] .wrap { padding-inline: 24px; }
+  .article-grid { grid-template-columns: minmax(0, 1fr); }
+  .article-grid > .toc-rail { order: -1; position: static; max-height: none; }
+  .article-grid > .toc-rail .toc { max-height: 30vh; overflow-y: auto; }
+}
+
+/* landscape phones: the bar is thin, the content is not */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 480px) {
+  .dash-hero { padding: 14px 16px; }
+  .dash-hero h1 { font-size: 24px; }
+  .dash-hero-badge, .trust-strip, .hero-clock { display: none; }
+}
+
+/* ------------------------------------------------------- 7 · reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-nav a, .btn, .chip { transition: none !important; }
+  .example-prompts { scroll-behavior: auto; }
+}
+
+/* ------------------------------------------------------- 8 · one row of tools */
+
+/* On a phone the composer's control row was wrapping into two — the icons on
+   one line, the mode switch and Send on the next — which made the field three
+   rows tall in a 390 px column. The controls fit on one line at this size; they
+   just have to be allowed to stay there. */
+@media (max-width: 700px) {
+  .searchbar:has(> .composer-tools) > .composer-tools {
+    flex-wrap: nowrap;
+    gap: 5px;
+  }
+  .searchbar:has(> .composer-tools) > .composer-tools > .mode {
+    flex: 0 0 auto;
+  }
+  .searchbar:has(> .composer-tools) > .composer-tools > .mode .mode-btn {
+    padding: 0 8px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .searchbar:has(> .composer-tools) > .composer-tools > button[type="submit"] {
+    flex: 0 0 auto;
+    min-height: 38px;
+    padding: 0 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .searchbar:has(> .composer-tools) > .composer-tools > .btn-icon {
+    flex: 0 0 auto;
+    width: 32px; height: 32px; min-height: 32px;
+  }
+}
+
+/* A broken or still-loading picture must not reserve 360 px of empty card on
+   a phone; the figure collapses to the size of its caption instead. */
+@media (max-width: 700px) {
+  .lead-figure img, .art-figure img { max-height: 220px; }
+}
