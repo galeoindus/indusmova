@@ -991,3 +991,284 @@ body:not(.is-empty) .scroll { display: block; }
   body { grid-template-columns: minmax(0, 1fr); }
   .main { grid-column: 1; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   AI MODE — the chat, rebuilt as an assistant surface
+   ══════════════════════════════════════════════════════════════════════════
+   The page was a dark two-column shell with a serif greeting, a small
+   composer and cards inside cards. It read as a settings screen with a text
+   box in it, not as something you ask a question of.
+
+   What it is now, in the shape Google's AI Mode and Gemini use:
+
+     · one calm surface, sans-serif throughout, no decorative panels
+     · the question box is the loudest thing on the page: a large pill with a
+       soft edge, and it never moves between states
+     · the greeting is short and left alone; the example questions are pills
+     · an answer is prose in a 720px column, with the sources as a row of
+       small numbered chips above it and follow-up questions as pills below
+     · the rail is a quiet list of past chats, and a drawer on a phone
+
+   Nothing about the behaviour changes: same ids, same classes, same script. */
+
+/* ── the surface ────────────────────────────────────────────────────────── */
+:root {
+  --bg: #0e1211;
+  --rail: #121716;
+  --panel: #161c1a;
+  --panel-2: #1b2220;
+  --line: #232b28;
+  --line-2: #303a36;
+  --ink: #f0f3f1;
+  --ink-2: #c3ccc7;
+  --muted: #9aa5a0;
+  --accent: #6cc9a0;
+  --brass: #d08a4e;
+  --brass-soft: #dda066;
+  --user: #1d2624;
+  --col: 720px;
+  --rail-w: 248px;
+  --ease: cubic-bezier(.22, .61, .36, 1);
+}
+
+html[data-theme="light"] {
+  --bg: #fdfdfb;
+  --rail: #f7f6f2;
+  --panel: #ffffff;
+  --panel-2: #f2f1ec;
+  --line: #e8e6df;
+  --line-2: #d8d5cb;
+  --ink: #1c1f1e;
+  --ink-2: #3c4441;
+  --muted: #5c635f;
+  --accent: #1f6f56;
+  --brass: #9c5a26;
+  --brass-soft: #8a5220;
+  --user: #f0efe9;
+}
+
+/* Sans everywhere. The serif greeting was the single biggest reason the page
+   read as an article rather than as an assistant. */
+.empty .empty-heading,
+.brand-text b,
+.md h2, .md h3, .md h4 {
+  font-family: var(--sans);
+}
+
+/* ── the rail: quiet ────────────────────────────────────────────────────── */
+.rail { border-right: 1px solid var(--line); padding: 14px 10px 12px; gap: 8px; }
+.brand { padding: 2px 6px 10px; }
+.brand .mark { width: 30px; height: 30px; border-radius: 9px; box-shadow: none; }
+.brand-text b { font-size: 16.5px; font-weight: 600; letter-spacing: -0.01em; }
+.brand-text em { font-size: 9px; letter-spacing: .16em; color: var(--muted); }
+.rail-new { border-radius: 999px; padding: 9px 12px; font-size: 12.5px; border-color: var(--line-2); }
+.rail-search { border-radius: 999px; }
+.rail-head-row { margin: 12px 6px 4px; }
+.rail-row .rail-item { font-size: 12.5px; padding: 7px 10px; }
+.rail-foot { border-radius: 999px; font-size: 10.5px; }
+
+/* ── the header: thin, no rule ──────────────────────────────────────────── */
+.top { padding: 10px 20px; min-height: 52px; }
+.top h1 { font-size: 13px; font-weight: 500; color: var(--muted); }
+
+/* ── the first screen ───────────────────────────────────────────────────── */
+/* Greeting near the top and the box at the bottom, the way an assistant app
+   opens: the eye goes to the greeting, the hand goes to the box. */
+body.is-empty .scroll { align-items: flex-start; }
+body.is-empty .stage { padding-top: clamp(24px, 9vh, 96px); }
+body.is-empty .empty { text-align: left; max-width: var(--col); margin-inline: auto; width: 100%; }
+
+.empty-mark { width: 44px; height: 44px; margin: 0 0 20px; border-radius: 14px; box-shadow: none; }
+.empty .empty-heading {
+  font-size: clamp(26px, 3.6vw, 38px);
+  font-weight: 500;
+  line-height: 1.22;
+  letter-spacing: -0.022em;
+  margin: 0 0 10px;
+}
+.empty .empty-heading em { font-style: normal; color: var(--brass-soft); }
+.empty > p { margin: 0 0 24px; max-width: 52ch; font-size: 14.5px; line-height: 1.6; color: var(--muted); }
+
+/* the example questions: pills, two to a row, not cards */
+.starters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  text-align: left;
+}
+.starters button {
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.starters button:hover { border-color: var(--line-2); background: var(--panel-2); transform: none; }
+.starters b { display: none; }
+.starters span { font-size: 13px; color: inherit; }
+
+.empty-links { justify-content: flex-start; gap: 6px 16px; margin-top: 22px; }
+.empty-links a { font-size: 12.5px; }
+
+/* ── the question box ───────────────────────────────────────────────────── */
+.dock {
+  padding: 8px 20px calc(14px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, var(--bg) 70%, color-mix(in srgb, var(--bg) 0%, transparent));
+}
+.composer {
+  border-radius: 26px;
+  padding: 10px 10px 10px 18px;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  box-shadow: 0 6px 24px -18px rgba(0, 0, 0, .5);
+  gap: 8px;
+}
+.composer:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--line-2));
+  box-shadow: 0 8px 28px -18px rgba(0, 0, 0, .55);
+}
+.composer textarea {
+  font-size: 16px;
+  line-height: 1.5;
+  padding: 9px 2px;
+  min-height: 28px;
+  color: var(--ink);
+}
+.composer textarea::placeholder { color: var(--muted); }
+.plus, .mic { width: 32px; height: 32px; border: 0; color: var(--muted); }
+.plus:hover, .mic:hover { color: var(--ink); background: var(--panel-2); border-radius: 50%; }
+.composer .send {
+  width: 38px; height: 38px;
+  background: var(--accent);
+  color: #06231a;
+}
+html[data-theme="light"] .composer .send { color: #ffffff; }
+.composer .send svg { width: 17px; height: 17px; }
+
+.meta-row { margin-top: 8px; padding: 0 4px; font-size: 10.5px; }
+.meta-row .mchip { border: 0; padding: 4px 8px; font-size: 11px; background: transparent; }
+.meta-row .mchip::before { background: var(--accent); }
+.hint { font-size: 10.5px; }
+
+.chat-note { font-size: 11.5px; line-height: 1.5; color: var(--muted); margin-top: 8px; }
+
+/* ── the conversation ───────────────────────────────────────────────────── */
+.stage { padding: 18px 0 8px; gap: 26px; }
+.thread { gap: 28px; }
+
+/* the question: a soft bubble on the right, not a block of colour */
+.q {
+  align-self: flex-end;
+  max-width: min(80%, 52ch);
+  padding: 10px 16px;
+  border-radius: 20px 20px 6px 20px;
+  background: var(--user);
+  border: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+/* the answer: an assistant line, then prose */
+.a { gap: 12px; }
+.a::before {
+  width: 22px; height: 22px;
+  border-radius: 7px;
+  background-image: url("/assets/img/mark.svg");
+  margin-top: 3px;
+}
+.a-meta { margin-bottom: 4px; }
+.a-meta .who { font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--ink-2); }
+.a-meta .badge { border-radius: 999px; font-size: 9.5px; }
+.md { font-size: 15.5px; line-height: 1.75; gap: 14px; color: var(--ink); }
+.md p { line-height: 1.75; }
+.md h2, .md h3, .md h4 {
+  font-size: 13px; font-weight: 650;
+  letter-spacing: .04em; text-transform: none;
+  color: var(--brass-soft);
+  margin-top: 10px;
+}
+.md ul, .md ol { padding-left: 1.1em; }
+.md li { margin: 6px 0; }
+.md a { color: var(--accent); }
+
+/* ── the sources: a row of numbered chips above the answer ──────────────── */
+.src-panel { margin: 0 0 6px; padding: 0; border: 0; background: none; }
+.src-head {
+  margin: 0 0 6px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--muted);
+}
+.src-cards { display: flex; flex-wrap: wrap; gap: 6px; }
+.src-card {
+  display: inline-flex; align-items: center; gap: 6px;
+  max-width: 100%;
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  font-size: 12px; line-height: 1.3;
+  color: var(--ink-2);
+  text-decoration: none;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.src-card:hover { border-color: var(--line-2); background: var(--panel-2); color: var(--ink); }
+
+/* ── follow-ups and actions ─────────────────────────────────────────────── */
+.followups { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.followups button, .followups a {
+  padding: 7px 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.followups button:hover, .followups a:hover { background: var(--panel-2); border-color: var(--line-2); color: var(--ink); }
+
+.a-actions { margin-top: 12px; gap: 4px; }
+.a-actions button, .a-actions a {
+  border: 0; background: transparent;
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.a-actions button:hover, .a-actions a:hover { background: var(--panel-2); color: var(--ink); }
+
+/* ── the small floating things ──────────────────────────────────────────── */
+.jump {
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  box-shadow: 0 8px 22px -14px rgba(0, 0, 0, .6);
+  font-size: 12px;
+}
+
+/* ── a phone ────────────────────────────────────────────────────────────── */
+@media (max-width: 760px) {
+  .top { padding: 8px 12px; }
+  .scroll { padding: 0 14px; }
+  body.is-empty .stage { padding-top: 18px; }
+  .empty .empty-heading { font-size: clamp(24px, 7vw, 30px); }
+  .empty > p { font-size: 14px; margin-bottom: 18px; }
+  .starters { gap: 6px; }
+  .starters button { padding: 8px 12px; font-size: 12.5px; }
+  .dock { padding: 6px 10px calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .composer { border-radius: 22px; padding: 8px 8px 8px 14px; }
+  .composer textarea { font-size: 16px; }
+  .q { max-width: 88%; font-size: 14.5px; }
+  .md { font-size: 15px; }
+  .chat-note { display: none; }
+}
+
+/* The phone navigation bar sits at the bottom of the viewport, and the chat
+   shell is a fixed-height column — so the composer was overlapping the bar by
+   a few pixels and the note under it was half hidden behind it. The dock
+   clears the bar instead. */
+@media (max-width: 1024px) {
+  .dock { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+  body.is-empty .chat-note { margin-bottom: 2px; }
+}

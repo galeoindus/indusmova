@@ -2433,3 +2433,100 @@ form.panel .searchbar, form.panel .select, .feedback .fb-note textarea,
 /* A last guard against a sideways scrollbar anywhere in the shell. */
 html, body { max-width: 100%; overflow-x: hidden; }
 .app-main, #main { min-width: 0; max-width: 100%; }
+
+/* ======================================================================
+   22 · THE HOME BANDS — five tiles on one row, and the depth pair together
+   ====================================================================== */
+
+/* The action band used `auto-fit` with a 180px minimum, which fits four
+   tiles in a 760px window and leaves the fifth — Sources — stranded alone on
+   a second row with a hole beside it. Five tiles are five tiles: they get
+   five columns as soon as there is room for five, two on a phone, and the
+   odd one out takes the whole row so it reads as a deliberate last card
+   rather than a leftover. */
+.dash-actions {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+.dash-actions > * { grid-column: auto !important; }
+.dash-actions .dash-action {
+  min-height: 0;
+  padding: 16px 15px;
+}
+.dash-actions .dash-action h2,
+.dash-actions .dash-action h3 { font-size: 14.5px; }
+.dash-actions .dash-action p { font-size: 12.5px; line-height: 1.5; margin: 4px 0 0; }
+
+@media (min-width: 720px) {
+  .dash-actions { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+  .dash-actions .dash-action { padding: 18px 16px; }
+}
+@media (max-width: 560px) {
+  .dash-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* five cards in two columns: the fifth spans the row instead of leaving a gap */
+  .dash-actions > :last-child:nth-child(odd) { grid-column: 1 / -1 !important; }
+}
+
+/* The depth control and the meaning switch were pushed to opposite ends of a
+   full-width row, which left a hand's width of nothing between them. They are
+   one decision — how deep, and whether to rank by meaning — so they sit
+   together, centred, with a normal gap. */
+.dash-depth {
+  justify-content: center;
+  gap: 10px;
+  row-gap: 10px;
+}
+.depth { flex: 0 1 auto; }
+.dash-hero .dash-depth { justify-content: center; }
+@media (max-width: 700px) {
+  .dash-depth { justify-content: center; gap: 8px; }
+}
+
+/* ======================================================================
+   23 · THE ARTICLE OF THE DAY IS A CARD, NOT A CARD IN A CARD
+   ======================================================================
+   The picture sat in a tinted panel with a hard border down its right edge,
+   inside a bordered, shadowed card — so the eye read two frames and a boxed
+   photograph. The picture now sits in the card's own surface with no inner
+   panel and no divider; the card keeps the only border. */
+
+.aotd {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.aotd-media {
+  margin: 0;
+  background: transparent;
+  border: 0;
+  border-right: 0;
+  display: block;
+  overflow: hidden;
+}
+.aotd-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 0;
+}
+@media (max-width: 860px) {
+  /* one column: the picture is the top of the card, so it keeps the card's
+     own corners and needs no divider under it either */
+  .aotd-media { border-right: 0; border-bottom: 0; }
+  .aotd-media img { max-height: 260px; border-radius: 0; }
+}
+
+/* On a phone the depth row broke into three lines — the label, then two
+   buttons, then "Deep dive" alone. The label goes, the three choices stay
+   together, and the meaning switch takes the next line as a unit. */
+@media (max-width: 700px) {
+  .dash-depth { flex-direction: column; align-items: center; gap: 8px; }
+  .dash-depth .depth-label { display: none; }
+  .depth { flex-wrap: nowrap; }
+  .depth .depth-btn { padding: 0 10px; font-size: 12.5px; }
+}

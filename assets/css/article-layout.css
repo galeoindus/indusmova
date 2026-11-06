@@ -88,9 +88,12 @@ main#main {
 .panel.panel-wide {
   grid-column: 1;
   grid-row: 1;
-  max-width: 100%;
-  margin-inline: 0;
-  padding: clamp(20px, 2.4vw, 40px) clamp(18px, 2.6vw, 44px);
+  /* 760px of text at the body size is about 80 characters — the top of the
+     comfortable range, and the widest the facts box gets too, so the two
+     columns line up. */
+  max-width: 760px;
+  margin-inline: auto;
+  padding: clamp(20px, 2.4vw, 40px) clamp(18px, 2.6vw, 40px);
 }
 
 /* the contents panel is the second column, and it sticks */
@@ -115,6 +118,11 @@ main#main {
   margin-inline: 0;
 }
 
+/* The prose runs the width of the column, exactly like the facts box above
+   it. A reader asked for that in as many words: "the words of the article
+   should spread as wide as the facts". The measure is kept readable by
+   capping the panel instead of the paragraph, so the two always agree — a
+   narrower paragraph inside a wider facts box is what looked broken. */
 .art-body > p,
 .art-body > ul,
 .art-body > ol,
@@ -122,7 +130,16 @@ main#main {
 .prose > p,
 .prose > ul,
 .prose > ol {
-  max-width: var(--prose);
+  max-width: 100%;
+}
+
+/* A picture is centred in the column, whatever the rules above say about
+   direct children: they set `margin-inline: 0`, which quietly left-aligned
+   the lead figure. */
+.panel.panel-wide > .art-figure,
+.panel.panel-wide > .lead-figure,
+.article-grid > .panel > .art-figure {
+  margin-inline: auto;
 }
 
 /* long-form prose that is quoted at length gets a slightly wider measure */
