@@ -253,15 +253,16 @@ export function renderHistory(ctx) {
  * on top of the gradient, so the block looks finished whether or not the file
  * has been added yet — no broken-image icon, nothing to wire up later.
  */
+const PROVIDERS = '/assets/img/providers';
 const CREDITS = [
   { name: 'Mukesh Kumar', role: 'Owner and maintainer', initials: 'MK', owner: true },
-  { name: 'Wikipedia', role: 'Article text, pictures and references', href: 'https://www.wikipedia.org', initials: 'W' },
-  { name: 'Wikidata', role: 'Facts and identifiers', href: 'https://www.wikidata.org', initials: 'WD' },
-  { name: 'Wikimedia Commons', role: 'Images and their licences', href: 'https://commons.wikimedia.org', initials: 'WC' },
-  { name: 'Cloudflare Pages', role: 'Hosting and delivery', href: 'https://www.cloudflare.com', initials: 'CF' },
-  { name: 'Workers AI', role: 'Answers when OpenRouter is unavailable', href: 'https://developers.cloudflare.com/workers-ai/', initials: 'AI' },
+  { name: 'Wikipedia', role: 'Article text, pictures and references', href: 'https://www.wikipedia.org', initials: 'W', logo: `${PROVIDERS}/wikipedia.png` },
+  { name: 'Wikidata', role: 'Facts and identifiers', href: 'https://www.wikidata.org', initials: 'WD', logo: `${PROVIDERS}/wikidata.svg` },
+  { name: 'Wikimedia Commons', role: 'Images and their licences', href: 'https://commons.wikimedia.org', initials: 'WC', logo: `${PROVIDERS}/commons.png` },
+  { name: 'Cloudflare Pages', role: 'Hosting and delivery', href: 'https://www.cloudflare.com', initials: 'CF', logo: `${PROVIDERS}/cloudflare.png` },
+  { name: 'Workers AI', role: 'Answers when OpenRouter is unavailable', href: 'https://developers.cloudflare.com/workers-ai/', initials: 'AI', logo: `${PROVIDERS}/cloudflare.png` },
   { name: 'OpenRouter', role: 'The language model behind chat answers', href: 'https://openrouter.ai', initials: 'OR' },
-  { name: 'Google Translate', role: 'Machine translation of articles', href: 'https://translate.google.com', initials: 'GT' },
+  { name: 'Google Translate', role: 'Machine translation of articles', href: 'https://translate.google.com', initials: 'GT', logo: `${PROVIDERS}/translate.png` },
   { name: 'MyMemory', role: 'Fallback translation service', href: 'https://mymemory.translated.net', initials: 'MM' },
 ];
 
@@ -289,7 +290,12 @@ function creditsSection() {
       target: '_blank',
       rel: 'noopener noreferrer',
     });
-    card.append(el('span', { class: 'credit-tile', 'aria-hidden': 'true', text: credit.initials }));
+    // The real mark where one exists, the initials where it does not: both are
+    // inside the same tile, so the row keeps one rhythm either way.
+    const tile = el('span', { class: `credit-tile${credit.logo ? ' has-logo' : ''}`, 'aria-hidden': 'true' });
+    if (credit.logo) tile.append(el('img', { src: credit.logo, alt: '', loading: 'lazy', decoding: 'async' }));
+    else tile.textContent = credit.initials;
+    card.append(tile);
     const text = el('span', { class: 'credit-text' });
     text.append(el('strong', { text: credit.name }));
     text.append(el('span', { text: credit.role }));

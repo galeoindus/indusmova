@@ -700,3 +700,18 @@ form.panel .searchbar {
   .credit-avatar { width: 56px; height: 56px; }
   .credit-grid { grid-template-columns: 1fr; }
 }
+
+/* A real logo in the tile: contained, on the tile's own tint, so a wide
+   wordmark and a square icon both sit inside the same 38px square. */
+.credit-tile.has-logo {
+  background: color-mix(in srgb, var(--surface-2) 70%, #ffffff);
+  padding: 5px;
+}
+[data-theme="dark"] .credit-tile.has-logo { background: color-mix(in srgb, #ffffff 88%, var(--surface)); }
+.credit-tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
