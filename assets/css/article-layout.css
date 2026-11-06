@@ -27,7 +27,7 @@
      1240 frame holds a 64-character column and a 280 px contents rail with
      real gutters either side, instead of one wall of text. */
   --shell: clamp(960px, 92vw, 1240px);
-  --rail-w: 280px;
+  --toc-w: 280px;
   --rail-gap: 32px;
   /* The prose measure: 62-66 characters, which is the comfortable end of the
      range for 17 px body text. 70ch read as a newspaper column on a wide
@@ -75,7 +75,7 @@ main#main {
 .article-grid,
 #main .article-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--rail-w);
+  grid-template-columns: minmax(0, 1fr) var(--toc-w);
   gap: var(--rail-gap);
   align-items: start;
   width: 100%;
@@ -264,7 +264,7 @@ main#main {
 /* --------------------------------------------------------------- a wide page */
 
 @media (min-width: 1600px) {
-  :root { --shell: 1280px; --rail-w: 300px; }
+  :root { --shell: 1280px; --toc-w: 300px; }
   .art-body > p,
   .art-body > ul,
   .art-body > ol,
@@ -275,7 +275,7 @@ main#main {
 
 /* a 1280 laptop: the rail gives up 40 px before the prose does */
 @media (max-width: 1400px) {
-  :root { --rail-w: 260px; --rail-gap: 26px; }
+  :root { --toc-w: 260px; --rail-gap: 26px; }
 }
 
 /* a very wide page: the shell stops growing, and the gutters grow instead,

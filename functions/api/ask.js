@@ -615,7 +615,7 @@ export async function onRequestPost({ request, env = {} }) {
       message: configured
         ? 'AI providers are temporarily unavailable. Please retry in a moment.'
         : 'No AI provider is configured yet. Add OpenRouter secrets or enable the Workers AI binding.',
-    }, configured ? 503 : 503);
+    }, 503);
   }
 
   // A marker that points at no passage would render as a link to nothing, so

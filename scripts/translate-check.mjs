@@ -161,13 +161,20 @@ const tabOpen = await ev(`!document.querySelector('#tab-panel-tr').hidden`);
 console.log('translate tab opens:', tabOpen);
 
 // One step now: choosing a language starts the translation. There is no
-// second button to press.
-await ev(`(() => {
-  const select = document.querySelector('#tab-panel-tr #trLang');
-  if (!select) return;
-  select.value = 'hi';
-  select.dispatchEvent(new Event('change', { bubbles: true }));
+// second button to press — the panel opens on the languages themselves, so
+// the check presses the Hindi button. It used to look for a `#trLang` select,
+// which the panel stopped having when it became one press; the check then
+// silently did nothing and reported a failure against working code.
+const pressed = await ev(`(() => {
+  const panel = document.querySelector('#tab-panel-tr');
+  if (!panel) return 'no panel';
+  const btn = panel.querySelector('.tr-lang[data-code="hi"]')
+    || [...panel.querySelectorAll('.tr-lang')].find((b) => (b.textContent || '').includes('हि'));
+  if (!btn) return 'no language button';
+  btn.click();
+  return 'pressed ' + (btn.dataset.code || 'hi');
 })()`);
+console.log('language chosen:', pressed);
 
 let done = false;
 for (let i = 0; i < 40; i += 1) {
@@ -180,13 +187,20 @@ const after = await ev(`(() => {
   const out = document.querySelector('#tab-panel-tr .tr-body');
   const clone = out.querySelector('.panel-wide') || out;
   const original = document.querySelector('#tab-panel-full .panel-wide');
+  // The language and direction live on the translated block itself, which is
+  // what assistive technology reads. The check used to look for them on the
+  // wrapper, where they were never set.
+  const marked = out.querySelector('.translated-article') || out;
   return {
     translated: out.textContent.includes('HI:'),
     status: document.querySelector('#tab-panel-tr .tr-status')?.textContent || '',
-    dir: out.getAttribute('dir'),
-    lang: out.getAttribute('lang'),
+    dir: marked.getAttribute('dir'),
+    lang: marked.getAttribute('lang'),
     figures: clone.querySelectorAll('figure').length,
     images: clone.querySelectorAll('img').length,
+    // The infobox becomes the site's facts box, so the article's only table is
+    // expected to arrive as a <dl> and not as a <table>.
+    facts: clone.querySelectorAll('.factbox').length,
     tables: clone.querySelectorAll('table').length,
     headings: clone.querySelectorAll('h2').length,
     imgSrcKept: (clone.querySelector('img')?.getAttribute('src') || '').includes('Rocket.jpg'),
@@ -206,7 +220,7 @@ const pass = after.translated
   && after.lang === 'hi'
   && after.figures >= 1
   && after.images >= 1
-  && after.tables >= 1
+  && after.facts >= 1
   && after.headings >= 1
   && after.imgSrcKept
   && after.originalUntouched;

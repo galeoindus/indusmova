@@ -102,5 +102,8 @@ export function cleanUrl(url) {
 }
 
 export function prefersReducedMotion() {
+  // `matchMedia` is absent in a few embed and test environments; there, the
+  // animation is simply allowed, which is the default behaviour.
+  if (typeof window.matchMedia !== 'function') return false;
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }

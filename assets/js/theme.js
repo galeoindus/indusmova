@@ -25,7 +25,18 @@ const TITLE = {
   dark: 'Dark theme',
 };
 
-const media = window.matchMedia('(prefers-color-scheme: dark)');
+// A guarded media query: `matchMedia` is missing in some embed and test
+// environments, and an unguarded call at module load would take the whole
+// theme module (and with it the header controls) down with it.
+const media = typeof window.matchMedia === 'function'
+  ? window.matchMedia('(prefers-color-scheme: dark)')
+  : { matches: false, addEventListener() {}, addListener() {} };
+
+/** Subscribe to a media-query change on browsers that predate addEventListener. */
+function onMediaChange(fn) {
+  if (typeof media.addEventListener === 'function') media.addEventListener('change', fn);
+  else if (typeof media.addListener === 'function') media.addListener(fn);
+}
 let currentTheme = getPref('theme', 'auto');
 
 function effective(theme) {
@@ -47,7 +58,7 @@ function paint() {
 
 export function initTheme() {
   paint();
-  media.addEventListener('change', () => { if (currentTheme === 'auto') paint(); });
+  onMediaChange(() => { if (currentTheme === 'auto') paint(); });
 
   document.getElementById('themeBtn')?.addEventListener('click', () => {
     currentTheme = THEMES[(THEMES.indexOf(currentTheme) + 1) % THEMES.length];
