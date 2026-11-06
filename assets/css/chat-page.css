@@ -1323,3 +1323,105 @@ html[data-theme="light"] .composer .send { color: #ffffff; }
 
 /* the answer's own avatar: a soft dot, not a framed square */
 .a::before { box-shadow: 0 2px 8px -4px color-mix(in srgb, var(--ink) 50%, transparent); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE CONVERSATION
+   ══════════════════════════════════════════════════════════════════════════
+   The page had the right parts in the right order, but it did not read as a
+   conversation: every turn was a block of document, spaced the same as every
+   other block, with a label above it. A reader could not see at a glance
+   where their question ended and the answer began.
+
+   A transcript now. The question is a message on the right, the answer is a
+   message on the left under the mark, and the pair is tighter than the gap
+   between turns — which is what makes a chat scan as a dialogue rather than
+   as a list of sections. Nothing is added to the markup; the script already
+   emits `q` then `a` for each turn, so the sibling selector can do the
+   grouping. */
+
+.thread { gap: 10px; }
+
+/* a turn: the question, then its answer, then a wide gap before the next */
+.q { margin-top: 18px; }
+.q:first-child { margin-top: 0; }
+.q + .a { margin-top: 4px; }
+.a + .q { margin-top: 26px; }
+
+/* the question, as a message */
+.q {
+  align-self: flex-end;
+  max-width: min(82%, 54ch);
+  padding: 11px 16px;
+  border-radius: 20px 20px 6px 20px;
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel));
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.55;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 5%, transparent);
+}
+html[data-theme="light"] .q { background: color-mix(in srgb, var(--accent) 12%, #ffffff); }
+
+/* the answer, as a message from the assistant */
+.a {
+  align-self: flex-start;
+  max-width: 100%;
+  gap: 10px;
+  padding: 0;
+}
+.a::before { width: 24px; height: 24px; border-radius: 8px; margin-top: 1px; }
+.a-body { padding-bottom: 2px; }
+.a-meta { margin-bottom: 6px; gap: 6px; }
+.a-meta .who { font-size: 12.5px; font-weight: 650; color: var(--ink); }
+.a-meta .dot { width: 4px; height: 4px; }
+.a-meta .badge { border: 0; background: color-mix(in srgb, var(--panel-2) 80%, transparent); padding: 2px 8px; }
+
+.md { font-size: 15.5px; line-height: 1.72; gap: 12px; }
+.md p { line-height: 1.72; }
+.md h2 { margin-top: 12px; font-size: 13px; letter-spacing: .02em; }
+
+/* the sources sit under the answer as a quiet row, the way a chat cites */
+.src-panel { margin: 10px 0 0; }
+.src-head { font-size: 10px; letter-spacing: .1em; margin-bottom: 5px; }
+.src-cards { gap: 5px; }
+.src-card { padding: 4px 10px; font-size: 11.5px; border-radius: 999px; }
+
+/* the actions and the follow-ups belong to the answer, not to the page */
+.a-actions { margin-top: 10px; gap: 2px; }
+.followups { margin-top: 12px; gap: 6px; }
+
+/* ── the typing state, as a message ─────────────────────────────────────
+   It used to be a spinner and a line of text sitting loose in the column.
+   It is a bubble on the assistant's side now, with three dots, so the reader
+   sees the bot "writing" in the same place the answer will appear. */
+
+.working {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-left: 34px;
+  padding: 10px 16px;
+  border-radius: 18px 18px 18px 6px;
+  background: color-mix(in srgb, var(--panel-2) 85%, transparent);
+  color: var(--muted);
+  font-size: 13px;
+}
+.working .chakra-loader { width: 16px; height: 16px; }
+
+/* ── a phone ────────────────────────────────────────────────────────────── */
+@media (max-width: 760px) {
+  .q { max-width: 88%; font-size: 14.5px; padding: 10px 14px; }
+  .a + .q { margin-top: 22px; }
+  .md { font-size: 15px; }
+  .working { margin-left: 0; }
+}
+
+/* The dock's gradient faded to transparent at its top edge, so the last
+   message showed through the composer and looked cut off mid-sentence. The
+   dock is its own row in the column — it needs an opaque surface, not a fade. */
+.dock {
+  background: var(--bg);
+  box-shadow: 0 -1px 0 color-mix(in srgb, var(--line) 45%, transparent);
+}
+/* and the thread keeps a little room so the last line is never flush with it */
+.thread { padding-bottom: 6px; }
