@@ -17,6 +17,15 @@ updates:
       npm-minor-patch:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+    ignore:
+      # jsdom 30 pulls in undici, which needs Node's zstd support (Node 22.15+
+      # or 24). This project supports Node 18 and runs its CI on Node 20, where
+      # importing jsdom 30 crashes inside undici before a single test runs:
+      #   TypeError: Cannot read properties of undefined (reading 'bind')
+      # Minor and patch updates to jsdom are still proposed; the major bump
+      # waits until the suite moves to Node 22.
+      - dependency-name: "jsdom"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
