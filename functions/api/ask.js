@@ -164,6 +164,43 @@ function makeMessages(question, passages, depth) {
   ];
 }
 
+/**
+ * Ordinary conversation.
+ *
+ * Every question used to be a research question: the browser fetched
+ * Wikipedia passages first, and if none came back the reader was told there
+ * were no results — so "hi" produced nothing at all. A chat has to be able to
+ * say hello, answer a question about itself and keep a thread, without
+ * pretending it has sources for it. This is that path: no passages, no
+ * citations, a short answer, and the last few turns carried along so it is a
+ * conversation rather than a series of unrelated replies.
+ */
+const CHAT_MAX_TOKENS = 320;
+const CHAT_HISTORY_TURNS = 8;
+const CHAT_SYSTEM = [
+  'You are indusmova, a friendly, concise assistant on a site that answers questions from Wikipedia.',
+  'This turn is ordinary conversation, not a research question. Reply naturally and briefly — one or two sentences.',
+  'You may greet the reader, say what you are, explain what the site does, and answer questions about the conversation itself.',
+  'Do not invent facts about the world. If the reader asks something factual that would need sources, say in one short sentence that you can look it up in Wikipedia and invite them to ask it.',
+  'Never claim to have browsed anything. Never output HTML. Answer in the language of the last message.',
+].join('\n');
+
+function makeChatMessages(question, history = []) {
+  const messages = [{ role: 'system', content: CHAT_SYSTEM }];
+  const turns = Array.isArray(history) ? history.slice(-CHAT_HISTORY_TURNS) : [];
+  for (const turn of turns) {
+    const role = turn?.role === 'assistant' ? 'assistant' : 'user';
+    const content = text(turn?.content, 600);
+    if (content) messages.push({ role, content });
+  }
+  // The last history entry can be the question itself when the caller sends
+  // the whole thread; sending it twice makes the model answer itself.
+  const last = messages[messages.length - 1];
+  if (last && last.role === 'user' && last.content.trim() === question.trim()) messages.pop();
+  messages.push({ role: 'user', content: question });
+  return messages;
+}
+
 function getOpenRouterKeys(env) {
   const keys = [];
   for (let i = 1; i <= 6; i += 1) {
@@ -278,13 +315,14 @@ async function resolveModels(env, signal) {
   return out.slice(0, 4);
 }
 
-async function runOpenRouter(question, passages, depth, env) {
+async function runOpenRouter(question, passages, depth, env, opts = {}) {
   const keys = getOpenRouterKeys(env);
   if (!keys.length) return { ok: false, configured: false, reason: 'not_configured' };
 
   const start = nextKeyStart % keys.length;
   nextKeyStart = (nextKeyStart + 1) % keys.length;
-  const messages = makeMessages(question, passages, depth);
+  const messages = opts.messages || makeMessages(question, passages, depth);
+  const maxTokens = opts.maxTokens || (DEPTHS[depth] || DEPTHS.detailed).maxTokens;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort('OpenRouter failover budget exhausted'), OPENROUTER_BUDGET_MS);
   let lastStatus = 0;
@@ -293,7 +331,7 @@ async function runOpenRouter(question, passages, depth, env) {
   // Start with the model the operator named (or the default) and only ask the
   // catalogue for alternatives if that one turns out not to exist. This keeps
   // the normal request to a single round trip.
-  const queue = [text(env?.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL, 120)];
+  const queue = [text(opts.model || env?.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL, 120)];
   const tried = new Set();
   let discovered = false;
 
@@ -321,7 +359,7 @@ async function runOpenRouter(question, passages, depth, env) {
             body: JSON.stringify({
               model,
               messages,
-              max_tokens: (DEPTHS[depth] || DEPTHS.detailed).maxTokens,
+              max_tokens: maxTokens,
               temperature: 0.25,
               stream: false,
             }),
@@ -405,19 +443,21 @@ async function readBodyLimited(request, maxBytes) {
  * 70B model is the second attempt, so a bad first call still produces a real
  * answer rather than a shrug.
  */
-async function runWorkersAI(question, passages, depth, env) {
+async function runWorkersAI(question, passages, depth, env, opts = {}) {
   if (!env?.AI || typeof env.AI.run !== 'function') {
     return { ok: false, configured: false, reason: 'not_configured' };
   }
-  const preferred = text(env?.WORKERS_AI_MODEL || DEFAULT_WORKERS_AI_MODEL, 120);
+  const preferred = text(opts.model || env?.WORKERS_AI_MODEL || DEFAULT_WORKERS_AI_MODEL, 120);
   const chain = [preferred, ...WORKERS_AI_FALLBACKS.filter((m) => m !== preferred)];
+  const messages = opts.messages || makeMessages(question, passages, depth);
+  const maxTokens = opts.maxTokens || (DEPTHS[depth] || DEPTHS.detailed).maxTokens;
   let lastReason = 'provider_failed';
 
   for (const model of chain) {
     try {
       const result = await env.AI.run(model, {
-        messages: makeMessages(question, passages, depth),
-        max_tokens: (DEPTHS[depth] || DEPTHS.detailed).maxTokens,
+        messages,
+        max_tokens: maxTokens,
         temperature: 0.25,
       });
       const answer = answerText(extractWorkersAnswer(result), 8_000);
@@ -541,8 +581,10 @@ export async function onRequestPost({ request, env = {} }) {
   const question = text(body?.question, MAX_QUESTION_CHARS);
   const passages = normalizePassages(body?.passages);
   const depth = Object.hasOwn(DEPTHS, body?.depth) ? body.depth : 'detailed';
+  const mode = body?.mode === 'chat' ? 'chat' : 'grounded';
+  const history = Array.isArray(body?.history) ? body.history.slice(-CHAT_HISTORY_TURNS) : [];
   if (!question) return json({ error: 'bad_request', message: 'A question is required.' }, 400);
-  if (!passages.length) {
+  if (mode === 'grounded' && !passages.length) {
     return json({ error: 'no_sources', message: 'At least one valid Wikipedia source passage is required.' }, 400);
   }
 
@@ -557,6 +599,41 @@ export async function onRequestPost({ request, env = {} }) {
     }, 429);
     res.headers.set('retry-after', String(budget.retryAfter));
     return res;
+  }
+
+  const providerMode = ['auto', 'openrouter', 'workers-ai'].includes(String(env.AI_PROVIDER || '').toLowerCase())
+    ? String(env.AI_PROVIDER || 'auto').toLowerCase()
+    : 'auto';
+
+  // ── conversation ───────────────────────────────────────────────────────
+  // No passages, no citations, a light model and a short budget: this is the
+  // hello-and-small-talk path, and it is not cached because the history is
+  // part of the answer.
+  if (mode === 'chat') {
+    const messages = makeChatMessages(question, history);
+    const lightModel = text(env?.CHAT_MODEL, 120);
+    const opts = { messages, maxTokens: CHAT_MAX_TOKENS, model: lightModel };
+    let reply = { ok: false, reason: 'not_configured' };
+    if (providerMode !== 'workers-ai') {
+      reply = await runOpenRouter(question, [], 'quick', env, opts);
+    }
+    if (!reply.ok && providerMode !== 'openrouter') {
+      const second = await runWorkersAI(question, [], 'quick', env, opts);
+      if (second.ok) reply = second;
+    }
+    if (!reply.ok) {
+      return json({
+        error: 'providers_unavailable',
+        message: 'The assistant is temporarily unavailable. Please retry in a moment.',
+      }, 503);
+    }
+    return json({
+      answer: answerText(reply.answer, 1_400),
+      provider: reply.provider,
+      model: reply.model,
+      mode: 'chat',
+      sources: [],
+    });
   }
 
   // ── answer cache ───────────────────────────────────────────────────────
@@ -581,10 +658,6 @@ export async function onRequestPost({ request, env = {} }) {
       if (hit) return json({ ...(await hit.json()), cached: true });
     } catch { /* a cache miss must never block an answer */ }
   }
-
-  const providerMode = ['auto', 'openrouter', 'workers-ai'].includes(String(env.AI_PROVIDER || '').toLowerCase())
-    ? String(env.AI_PROVIDER || 'auto').toLowerCase()
-    : 'auto';
 
   // Wikipedia supplied the passages; these two write the sentence over them.
   // OpenRouter is tried first when it is configured, Workers AI covers for it.
@@ -675,5 +748,6 @@ export const __test = Object.freeze({
   overBudget,
   isRetryableStatus,
   makeMessages,
+  makeChatMessages,
   readBodyLimited,
 });

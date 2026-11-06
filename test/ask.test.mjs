@@ -199,3 +199,37 @@ test('the request budget refuses a burst from one client', () => {
   }
   assert.equal(limited, true, 'a burst should eventually be refused');
 });
+
+
+test('a chat turn carries the thread and needs no sources', () => {
+  const messages = __test.makeChatMessages('what can you do?', [
+    { role: 'user', content: 'hi' },
+    { role: 'assistant', content: 'Hello — ask me anything.' },
+    { role: 'user', content: 'what can you do?' },
+  ]);
+  assert.equal(messages[0].role, 'system');
+  assert.match(messages[0].content, /ordinary conversation/i);
+  // the history is kept, in order, and the last line is the question itself
+  assert.deepEqual(messages.slice(1).map((m) => m.role), ['user', 'assistant', 'user']);
+  assert.equal(messages.at(-1).content, 'what can you do?');
+  // nothing in a chat turn asks the model for citations
+  assert.doesNotMatch(messages[0].content, /Add a source citation/);
+});
+
+test('a chat request with no passages is accepted, a grounded one is not', async () => {
+  const chat = await onRequestPost({
+    request: request({ question: 'hello', mode: 'chat', depth: 'quick' }),
+    env: {},
+  });
+  // no provider is configured in this test, so it answers 503 rather than 400:
+  // the request itself was valid, which is the point.
+  assert.notEqual(chat.status, 400);
+
+  const grounded = await onRequestPost({
+    request: request({ question: 'hello', depth: 'quick', passages: [] }),
+    env: {},
+  });
+  assert.equal(grounded.status, 400);
+  const body = await grounded.json();
+  assert.equal(body.error, 'no_sources');
+});

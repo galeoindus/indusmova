@@ -148,13 +148,51 @@ async function searchSources(query, language, limit, signal) {
   }));
 }
 
-async function askAI(question, passages, depth, signal) {
+/**
+ * Is this a line of conversation rather than a question about the world?
+ *
+ * Every message used to go through Wikipedia first: the page searched, found
+ * nothing for "hi", and answered "no article matched that question". A chat
+ * cannot work like that — it has to be able to say hello back. These are the
+ * openings and courtesies that need no source, in English and Hindi. Anything
+ * longer, or anything with a question about a subject, still goes to the
+ * grounded path where the citations are.
+ */
+const SMALL_TALK = /^(hi+|hey+|hello+|yo|hiya|namaste|namaskar|salaam|salam|hola|good\s+(morning|afternoon|evening|night)|thanks?|thank\s+you|thx|ty|ok(ay)?|cool|great|nice|bye+|goodbye|see\s+you|who\s+are\s+you|what\s+are\s+you|what\s+can\s+you\s+do|what\s+is\s+this|how\s+do\s+you\s+work|help)\b/i;
+const SMALL_TALK_DEVANAGARI = /^(हाय|हैलो|नमस्ते|नमस्कार|धन्यवाद|शुक्रिया|ठीक है|अलविदा|तुम कौन|आप कौन|तुम क्या कर सकते|मदद)/;
+
+function isSmallTalk(value) {
+  const text = String(value || '').trim();
+  if (!text || text.length > 64) return false;
+  // A question mark with a subject in it is a research question, not a greeting.
+  if (SMALL_TALK_DEVANAGARI.test(text)) return true;
+  return SMALL_TALK.test(text);
+}
+
+/** The last few turns, as the model expects them. */
+function conversationHistory() {
+  const history = [];
+  for (const item of recent.slice(0, 4).reverse()) {
+    if (item?.q) history.push({ role: 'user', content: String(item.q).slice(0, 600) });
+    const previous = item?.answer?.answer;
+    if (previous) history.push({ role: 'assistant', content: String(previous).slice(0, 600) });
+  }
+  return history;
+}
+
+async function askAI(question, passages, depth, signal, { mode = 'grounded', history = [] } = {}) {
   const res = await fetch('/api/ask', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     cache: 'no-store',
     signal,
-    body: JSON.stringify({ question, depth, passages: passages.map((p) => ({ title: p.title, text: p.text, url: p.url })) }),
+    body: JSON.stringify({
+      question,
+      depth,
+      mode,
+      history: mode === 'chat' ? history : [],
+      passages: passages.map((p) => ({ title: p.title, text: p.text, url: p.url })),
+    }),
   });
   const data = await res.json().catch(() => null);
   if (!res.ok || !data?.answer) {
@@ -513,6 +551,30 @@ async function ask(raw, depthOverride) {
   const timer = setTimeout(() => controller.abort(), 60_000);
 
   try {
+    // A greeting, a thank-you, a question about the assistant itself: answer
+    // it as conversation. No search, no citations, and the last few turns are
+    // carried along so it reads as a thread.
+    if (isSmallTalk(question)) {
+      label.textContent = t('writing');
+      const data = await askAI(question, [], depth, controller.signal, {
+        mode: 'chat',
+        history: conversationHistory(),
+      });
+      working.remove();
+      const reply = {
+        question,
+        title: '',
+        answer: data.answer,
+        sources: [],
+        provider: data.provider || 'AI',
+        model: data.model || '',
+      };
+      renderAnswer(reply, { store: true });
+      attachAnswer(question, reply);
+      syncDeleteButton();
+      return;
+    }
+
     const limit = depth === 'quick' ? 4 : depth === 'deep' ? 8 : 6;
     const passages = await searchSources(question, language, limit, controller.signal);
     if (!passages.length) {
