@@ -606,3 +606,22 @@ form.panel .searchbar {
 .dash-hero .searchbar:hover {
   border-color: color-mix(in srgb, var(--border-2) 62%, transparent);
 }
+
+/* The rail is not a panel.
+   With the stroke gone it still read as a box, because the surface tone is
+   lighter than the page and the rounded corner drew the rest of the outline
+   by implication. A list of links does not need a container at all: it sits
+   directly on the page, and the reader sees a column of destinations rather
+   than a card full of them. */
+.app-side,
+[data-theme="dark"] .app-side,
+[data-theme="light"] .app-side {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.side-link[aria-current="page"],
+.app-side .side-link[aria-current="page"] {
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+}
