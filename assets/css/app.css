@@ -2414,34 +2414,6 @@ form.panel .searchbar, form.panel .select, .feedback .fb-note textarea,
 .sres-ask-text strong { font-size: 14px; }
 .sres-ask-text span { font-size: 12.5px; }
 
-/* ======================================================================
-   21 · THE READING COLUMN USES THE SCREEN
-   ======================================================================
-   On a desktop the article was a 74-character column inside a 1160px
-   frame, which left a hand's width of empty space on both sides and made
-   every paragraph look like a footnote. The column is wider now, and the
-   frame widens with it, so the text fills the page the way a reading app
-   does — while still stopping short of a line so long the eye loses its
-   place. */
-
-[data-view="article"] .wrap {
-  max-width: 1320px;
-  padding: 18px 26px 84px;
-}
-.panel.panel-wide { padding: 32px clamp(20px, 3vw, 44px) 40px; }
-.panel.panel-wide > * { max-width: 86ch; }
-.art-body > ul > li,
-.topic-block .line-list > li,
-.point-block .line-list > li { max-width: 86ch; }
-.reference-list { max-width: 92ch; }
-.lead-figure { max-width: min(760px, 100%); }
-.lead-figure img { max-height: 420px; }
-
-@media (min-width: 1440px) {
-  [data-view="article"] .wrap { max-width: 1400px; }
-  .panel.panel-wide > * { max-width: 90ch; }
-}
-
 /* Nothing in the reading view may push the page sideways: long chemical
    names, URLs and wide tables stay inside the column. */
 [data-view="article"] .art-body,
