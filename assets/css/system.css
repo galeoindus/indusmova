@@ -403,3 +403,206 @@ a.skip-link {
    even with an empty field, and on a phone it took the space the mode switch
    needed. One rule restores the attribute's meaning. */
 [hidden] { display: none !important; }
+
+/* ==========================================================================
+   SILKY SURFACES — one soft material instead of outlined boxes
+   ==========================================================================
+   Every card, panel, field and section carried a 1px border in --border-2 and
+   a hard inner edge, so the page read as a set of drawn rectangles: a thin
+   line beside every piece of text, a box around every block. That is what
+   looked cheap. Nothing on this site needs to be outlined to be understood.
+
+   So there is one material now. A surface is a tone, lifted off the page by a
+   soft shadow rather than fenced in by a stroke. Borders survive only where
+   they are structural (a table cell, a focus ring, a divider that separates
+   two different lists) and even there they are a hairline of the surface's own
+   colour, not a drawn line.
+
+   The rules are written as one layer, loaded after the sheets that paint the
+   old versions, so nothing here needs !important. */
+
+:root {
+  --lift-1: 0 1px 1px color-mix(in srgb, var(--text) 4%, transparent),
+            0 6px 18px -14px color-mix(in srgb, var(--text) 22%, transparent);
+  --lift-2: 0 1px 2px color-mix(in srgb, var(--text) 5%, transparent),
+            0 16px 40px -26px color-mix(in srgb, var(--text) 30%, transparent);
+  --hair: color-mix(in srgb, var(--border) 55%, transparent);
+  --r-card: 20px;
+  --r-block: 16px;
+}
+
+/* ── cards and panels: a tone and a shadow, no stroke ──────────────────── */
+.card,
+.q-card,
+.cat-card,
+.topic-card,
+.dash-action,
+.howstep,
+.panel,
+.answer-card,
+.source-card,
+.factbox,
+.src-group,
+.aotd,
+.dash-hero,
+.dash-hero-ask,
+.rail-card,
+.evidence,
+.ask-note,
+.method-note {
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--surface);
+  box-shadow: var(--lift-1);
+  transition: box-shadow .28s cubic-bezier(.22,.61,.36,1),
+              transform .28s cubic-bezier(.22,.61,.36,1),
+              background-color .28s cubic-bezier(.22,.61,.36,1);
+}
+
+.card:hover,
+.q-card:hover,
+.cat-card:hover,
+.topic-card:hover,
+.dash-action:hover,
+.howstep:hover {
+  box-shadow: var(--lift-2);
+  transform: translateY(-2px);
+}
+
+/* a section is separated by space, not by a rule under its heading */
+.sec-head,
+.dash-band-head {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.prose h2,
+.art-body h2,
+.art-section-head {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* the fact box: rows read as a table by alignment alone */
+.factbox { overflow: hidden; }
+.factbox h3 { background: color-mix(in srgb, var(--surface-2) 55%, var(--surface)); border-bottom: 0; }
+.factbox .row { border-bottom: 0; }
+.factbox .row + .row { box-shadow: inset 0 1px 0 var(--hair); }
+
+/* the timeline drew a vertical line down the whole list */
+.timeline li { border-left: 0; }
+
+/* ── fields: a hairline that belongs to the surface ────────────────────── */
+.searchbar,
+.composer .searchbar,
+.select,
+.langbar select,
+form.panel .searchbar,
+.feedback .fb-note textarea {
+  border: 1px solid var(--hair);
+}
+
+/* ── the left rail: a soft column, not a bordered sheet ────────────────── */
+.app-side {
+  border: 0;
+  background: color-mix(in srgb, var(--surface) 62%, transparent);
+  border-radius: var(--r-card);
+  box-shadow: none;
+  padding: 14px 10px 22px;
+}
+.side-link {
+  border-radius: 12px;
+  color: var(--text);
+  font-weight: 500;
+}
+.side-link svg { opacity: .75; }
+.side-link:hover { background: color-mix(in srgb, var(--surface-2) 70%, transparent); }
+.side-link:hover svg { opacity: 1; }
+.side-link[aria-current="page"] {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  box-shadow: none;
+  color: var(--text);
+  font-weight: 600;
+}
+.side-link[aria-current="page"] svg { opacity: 1; color: var(--accent); }
+.side-heading {
+  color: var(--muted);
+  letter-spacing: .12em;
+  margin: 18px 0 6px;
+  padding: 0 12px;
+}
+
+/* ── the right rail: no outline, and no eternal skeleton ───────────────── */
+.app-rail { border: 0; }
+.app-rail .rail-card,
+.app-rail > .card { box-shadow: var(--lift-1); }
+
+/* ── the top bar keeps its blur and loses the drawn line ───────────────── */
+.topbar { border-bottom: 1px solid var(--hair); }
+.site-foot { border-top: 1px solid var(--hair); }
+
+/* ── the reading panel ────────────────────────────────────────────────── */
+.article-grid > .panel,
+.panel.panel-wide {
+  border: 0;
+  box-shadow: var(--lift-1);
+}
+.toc-rail .toc {
+  border: 0;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  border-radius: var(--r-card);
+  box-shadow: none;
+  padding: 14px;
+}
+
+/* ── tables keep their cell rules: they carry meaning ─────────────────── */
+.art-body .table-scroll {
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+/* ── motion: everything eases, nothing jumps ──────────────────────────── */
+a, button, .btn, .chip, .pill, .side-link, .tab, .depth-btn, .mode-btn {
+  transition-duration: .24s;
+  transition-timing-function: cubic-bezier(.22,.61,.36,1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .card:hover, .q-card:hover, .cat-card:hover, .topic-card:hover,
+  .dash-action:hover, .howstep:hover { transform: none; }
+}
+
+/* ── the left rail, without its outline ─────────────────────────────────
+   The border came from a three-selector rule that listed the dark and light
+   theme variants explicitly, so a plain `.app-side` override could not beat
+   it. Same selectors here, later in the cascade, and the stroke is gone: the
+   column is a tone on the page, lifted by nothing at all. */
+
+.app-side,
+[data-theme="dark"] .app-side,
+[data-theme="light"] .app-side {
+  border: 0;
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  box-shadow: none;
+  border-radius: var(--r-card);
+}
+[data-theme="dark"] .app-side { border-color: transparent; }
+
+.app-side .side-link[aria-current="page"] {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  box-shadow: none;
+  color: var(--text);
+}
+.app-side .side-link:hover { background: color-mix(in srgb, var(--surface-2) 70%, transparent); }
+
+/* the field's own hairline, a shade softer again: it is a surface, not a box */
+.searchbar,
+.composer .searchbar,
+.dash-hero .searchbar,
+.dash-hero-ask .searchbar,
+form.panel .searchbar {
+  border-color: color-mix(in srgb, var(--border-2) 42%, transparent);
+}
+.searchbar:hover,
+.dash-hero .searchbar:hover {
+  border-color: color-mix(in srgb, var(--border-2) 62%, transparent);
+}

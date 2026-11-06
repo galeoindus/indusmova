@@ -1272,3 +1272,54 @@ html[data-theme="light"] .composer .send { color: #ffffff; }
   .dock { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
   body.is-empty .chat-note { margin-bottom: 2px; }
 }
+
+/* ── the same soft material as the rest of the site ──────────────────────
+   The chat was rebuilt as an assistant surface but still used hairline
+   outlines for its chips and its composer, which is the drawn-box look the
+   rest of the site has just dropped. Chips are a tone now, the composer is a
+   lifted surface, and the rail divider is a whisper. */
+
+.starters button,
+.src-card,
+.followups button,
+.followups a {
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--panel-2) 70%, transparent);
+  box-shadow: 0 1px 1px color-mix(in srgb, var(--ink) 4%, transparent);
+  transition: background-color .24s cubic-bezier(.22,.61,.36,1),
+              box-shadow .24s cubic-bezier(.22,.61,.36,1),
+              transform .24s cubic-bezier(.22,.61,.36,1);
+}
+.starters button:hover,
+.src-card:hover,
+.followups button:hover,
+.followups a:hover {
+  background: var(--panel-2);
+  box-shadow: 0 6px 18px -14px color-mix(in srgb, var(--ink) 40%, transparent);
+  transform: translateY(-1px);
+}
+
+.composer {
+  border: 1px solid transparent;
+  background: var(--panel);
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--ink) 4%, transparent),
+              0 18px 44px -30px color-mix(in srgb, var(--ink) 45%, transparent);
+}
+.composer:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--ink) 5%, transparent),
+              0 22px 52px -30px color-mix(in srgb, var(--ink) 50%, transparent);
+}
+
+.rail { border-right: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
+.rail-new,
+.rail-search { border-color: transparent; background: color-mix(in srgb, var(--panel) 70%, transparent); }
+.rail-new:hover,
+.rail-search:focus-within { background: var(--panel); border-color: transparent; }
+
+.jump { border-color: transparent; box-shadow: 0 10px 30px -18px color-mix(in srgb, var(--ink) 60%, transparent); }
+.meta-row .mchip { background: transparent; box-shadow: none; }
+.a-actions button, .a-actions a { border-radius: 999px; }
+
+/* the answer's own avatar: a soft dot, not a framed square */
+.a::before { box-shadow: 0 2px 8px -4px color-mix(in srgb, var(--ink) 50%, transparent); }
