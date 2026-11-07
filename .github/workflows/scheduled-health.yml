@@ -1,0 +1,58 @@
+# Weekly health run — the checks that a push does not trigger.
+#
+# ci.yml runs on every push and pull request, which answers "does this commit
+# still work?". It never runs when nobody commits, so the site can drift for
+# months unnoticed: an article that dropped out of the sitemap, a link to a
+# page that was renamed, the live deployment going down after an unrelated
+# Cloudflare change. This workflow answers that slower question every Monday
+# at 03:30 IST (22:00 UTC on Sunday) and on demand.
+name: scheduled health
+
+on:
+  schedule:
+    # 22:00 UTC Sunday = 03:30 IST Monday, ahead of the dependabot runs at 05:00.
+    - cron: '0 22 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scheduled-health
+  cancel-in-progress: false
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify the repository
+        env:
+          BUILD_COMMIT: ${{ github.sha }}
+        run: npm run stamp:build && npm run verify
+
+      - name: Weekly drift audit
+        run: node scripts/weekly-audit.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Live site smoke check
+        run: |
+          set -euo pipefail
+          url="https://indusmova.pages.dev/"
+          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 --retry 3 --retry-delay 5 "$url")
+          echo "live smoke: $url → HTTP $code"
+          {
+            echo "### Live smoke check"
+            echo ""
+            echo "\`$url\` → HTTP $code"
+          } >> "$GITHUB_STEP_SUMMARY"
+          test "$code" = "200"
