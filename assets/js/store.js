@@ -69,9 +69,11 @@ export function toggleBookmark(item) {
     emit('bookmarks', list);
     return false;
   }
-  list.unshift({ ...item, savedAt: Date.now() });
-  write(STORAGE_KEYS.bookmarks, list.slice(0, 500));
-  emit('bookmarks', list);
+  // Keep what is written and what is announced the same list, or a view
+  // renders a bookmark that was never saved.
+  const next = [{ ...item, savedAt: Date.now() }, ...list].slice(0, 500);
+  write(STORAGE_KEYS.bookmarks, next);
+  emit('bookmarks', next);
   return true;
 }
 
@@ -94,9 +96,9 @@ export function getHistory() {
 
 export function pushHistory(item) {
   const list = getHistory().filter((h) => h.id !== item.id);
-  list.unshift({ ...item, readAt: Date.now() });
-  write(STORAGE_KEYS.history, list.slice(0, 200));
-  emit('history', list);
+  const next = [{ ...item, readAt: Date.now() }, ...list].slice(0, 200);
+  write(STORAGE_KEYS.history, next);
+  emit('history', next);
 }
 
 export function clearHistory() {

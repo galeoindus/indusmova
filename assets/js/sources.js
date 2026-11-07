@@ -26,7 +26,8 @@ const TIMEOUT = 9000;
 async function getJson(url, { signal, as = 'json' } = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT);
-  if (signal) signal.addEventListener('abort', () => controller.abort(), { once: true });
+  const forward = () => controller.abort();
+  if (signal) signal.addEventListener('abort', forward);
   try {
     const res = await fetch(url, {
       signal: controller.signal,
@@ -37,6 +38,9 @@ async function getJson(url, { signal, as = 'json' } = {}) {
     return as === 'json' ? await res.json() : await res.text();
   } finally {
     clearTimeout(timer);
+    // The caller's signal outlives this one request, and one search fires this
+    // function once per source; drop the listener or they pile up on it.
+    if (signal) signal.removeEventListener('abort', forward);
   }
 }
 

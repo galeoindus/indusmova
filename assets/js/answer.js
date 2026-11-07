@@ -77,16 +77,6 @@ export function factsFromInfobox(infoboxHtml) {
 }
 
 /**
- * Build the answer.
- *
- * @param {object} args
- * @param {string} args.question  the user's question, in any language
- * @param {HTMLElement} args.root cleaned article container (from parse.clean)
- * @param {Array} args.sections   section metadata from the API
- * @param {string} [args.depth]   quick | detailed | deep
- * @param {boolean} [args.deep]   use the on-device meaning model
- */
-/**
  * The text of an infobox cell.
  *
  * Wikipedia puts a name, a date and a place in separate inline elements with
@@ -102,6 +92,16 @@ function factCell(cell) {
   return textOf(clone);
 }
 
+/**
+ * Build the answer.
+ *
+ * @param {object} args
+ * @param {string} args.question  the user's question, in any language
+ * @param {HTMLElement} args.root cleaned article container (from parse.clean)
+ * @param {Array} args.sections   section metadata from the API
+ * @param {string} [args.depth]   quick | detailed | deep
+ * @param {boolean} [args.deep]   use the on-device meaning model
+ */
 export async function composeAnswer({ question, root, sections = [], depth = 'detailed', deep = false, lang = 'en', title = '', mode = 'ask', maxSections = null, maxSentences = null }) {
   const parts = splitArticle(root, sections);
   const preset = DEPTHS[depth] || DEPTHS.detailed;
