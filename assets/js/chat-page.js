@@ -23,8 +23,8 @@ const SPEECH = {
 
 const COPY = {
   en: {
-    hello: 'What do you want to <em>understand</em>?',
-    intro: 'Ask in your own words. You get a clear answer, broken into topics, with the sources behind every claim.',
+    hello: 'Hi, I’m <em>Indus</em>. What do you want to <em>understand</em>?',
+    intro: 'Chat naturally, explore any topic, and get clear answers grounded in Wikipedia articles you can open and read.',
     ask: 'Ask anything…',
     hint: 'Answers are written from the sources shown under them.',
     searching: 'Finding the best sources',
@@ -33,7 +33,7 @@ const COPY = {
     failed: 'The answer could not be written.',
     failedBody: 'The AI service did not respond in time. Your question is still here — try again.',
     retry: 'Try again',
-    sources: 'Sources',
+    sources: 'Wikipedia articles',
     copy: 'Copy', copied: 'Copied', save: 'Save', saved: 'Saved',
     speak: 'Read aloud', stopSpeak: 'Stop reading',
     followUp: 'Ask more',
@@ -41,11 +41,11 @@ const COPY = {
     hideList: 'Hide chat list', showList: 'Show chat list', options: 'Answer options', noSaved: 'Nothing saved on this device yet.',
     remove: 'Remove', back: 'Back to the chat',
     offline: 'You are offline. Answers need a connection.',
-    voice: 'Voice', listening: 'Listening…',
+    voice: 'Voice', listening: 'Listening…', voiceUnsupported: 'Voice input is unavailable in this browser.',
   },
   hi: {
-    hello: 'आप क्या <em>समझना</em> चाहते हैं?',
-    intro: 'अपने शब्दों में पूछें। उत्तर विषयों में बँटा हुआ आएगा, और हर दावे के साथ उसका स्रोत रहेगा।',
+    hello: 'नमस्ते, मैं <em>Indus</em> हूँ। आज क्या <em>समझें</em>?',
+    intro: 'बातचीत की तरह पूछें, किसी भी विषय को explore करें और Wikipedia के लेखों पर आधारित स्पष्ट जवाब पाएँ।',
     ask: 'अपना सवाल लिखें…',
     hint: 'उत्तर नीचे दिए स्रोतों से लिखे जाते हैं।',
     searching: 'सबसे अच्छे स्रोत खोजे जा रहे हैं',
@@ -54,7 +54,7 @@ const COPY = {
     failed: 'उत्तर नहीं लिखा जा सका।',
     failedBody: 'AI सेवा ने समय पर जवाब नहीं दिया। आपका सवाल यहीं है — फिर कोशिश करें।',
     retry: 'फिर कोशिश करें',
-    sources: 'स्रोत',
+    sources: 'विकिपीडिया के लेख',
     copy: 'कॉपी', copied: 'कॉपी हो गया', save: 'सहेजें', saved: 'सहेजा गया',
     speak: 'सुनें', stopSpeak: 'पढ़ना बंद करें',
     followUp: 'आगे पूछें',
@@ -62,7 +62,7 @@ const COPY = {
     hideList: 'चैट सूची छिपाएँ', showList: 'चैट सूची दिखाएँ', options: 'उत्तर के विकल्प', noSaved: 'इस डिवाइस पर अभी कुछ सहेजा नहीं है।',
     remove: 'हटाएँ', back: 'चैट पर लौटें',
     offline: 'आप ऑफ़लाइन हैं। उत्तर के लिए इंटरनेट चाहिए।',
-    voice: 'आवाज़', listening: 'सुन रहा है…',
+    voice: 'आवाज़', listening: 'सुन रहा है…', voiceUnsupported: 'इस ब्राउज़र में आवाज़ से लिखना उपलब्ध नहीं है।',
   },
 };
 
@@ -75,6 +75,12 @@ const wikiUrl = (v) => {
   try {
     const u = new URL(String(v || ''));
     return u.protocol === 'https:' && (u.hostname === 'wikipedia.org' || u.hostname.endsWith('.wikipedia.org')) ? u.href : '';
+  } catch { return ''; }
+};
+const wikiImageUrl = (value) => {
+  try {
+    const url = new URL(String(value || ''));
+    return url.protocol === 'https:' && (url.hostname === 'upload.wikimedia.org' || url.hostname === 'commons.wikimedia.org') ? url.href : '';
   } catch { return ''; }
 };
 
@@ -132,8 +138,8 @@ async function searchSources(query, language, limit, signal) {
   const params = {
     action: 'query', format: 'json', formatversion: '2', origin: '*',
     generator: 'search', gsrsearch: query, gsrlimit: String(limit),
-    prop: 'extracts|info', inprop: 'url', exintro: '1', explaintext: '1',
-    exchars: '1800', redirects: '1',
+    prop: 'extracts|info|pageimages|description', inprop: 'url', exintro: '1', explaintext: '1',
+    exchars: '1800', piprop: 'thumbnail', pithumbsize: '480', redirects: '1',
   };
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   const res = await fetch(url.href, { headers: { accept: 'application/json' }, signal });
@@ -144,6 +150,8 @@ async function searchSources(query, language, limit, signal) {
   return list.filter((p) => p && !p.missing && p.extract).map((p) => ({
     title: clean(p.title, 200),
     text: clean(p.extract, 1800),
+    description: clean(p.description || '', 260),
+    image: wikiImageUrl(p.thumbnail?.source),
     url: wikiUrl(p.fullurl) || `https://${language}.wikipedia.org/wiki/${encodeURIComponent(String(p.title).replace(/ /g, '_'))}`,
   }));
 }
@@ -158,8 +166,8 @@ async function searchSources(query, language, limit, signal) {
  * longer, or anything with a question about a subject, still goes to the
  * grounded path where the citations are.
  */
-const SMALL_TALK = /^(hi+|hey+|hello+|yo|hiya|namaste|namaskar|salaam|salam|hola|good\s+(morning|afternoon|evening|night)|thanks?|thank\s+you|thx|ty|ok(ay)?|cool|great|nice|bye+|goodbye|see\s+you|who\s+are\s+you|what\s+are\s+you|what\s+can\s+you\s+do|what\s+is\s+this|how\s+do\s+you\s+work|help)\b/i;
-const SMALL_TALK_DEVANAGARI = /^(हाय|हैलो|नमस्ते|नमस्कार|धन्यवाद|शुक्रिया|ठीक है|अलविदा|तुम कौन|आप कौन|तुम क्या कर सकते|मदद)/;
+const SMALL_TALK = /^(hi+|hey+|hello+|yo|hiya|namaste|namaskar|salaam|salam|hola|good\s+(morning|afternoon|evening|night)|how\s+are\s+you|how\s+is\s+it\s+going|what'?s\s+up|thanks?|thank\s+you|thx|ty|ok(ay)?|cool|great|nice|bye+|goodbye|see\s+you|who\s+are\s+you|what\s+are\s+you|what'?s\s+your\s+name|tell\s+me\s+about\s+yourself|are\s+you\s+(an?\s+)?ai|what\s+can\s+you\s+do|what\s+is\s+this|how\s+do\s+you\s+work|can\s+you\s+help\s+me|what\s+can\s+i\s+ask|help)\b/i;
+const SMALL_TALK_DEVANAGARI = /^(हाय|हैलो|हेलो|नमस्ते|नमस्कार|सुप्रभात|कैसे हैं|कैसी हैं|आप कैसे|क्या हाल|धन्यवाद|शुक्रिया|ठीक है|अलविदा|तुम कौन|आप कौन|आपका नाम|तुम्हारा नाम|आप क्या हैं|क्या आप एआई|आप क्या कर सकते|मदद|क्या आप मदद)/;
 
 function isSmallTalk(value) {
   const text = String(value || '').trim();
@@ -167,6 +175,28 @@ function isSmallTalk(value) {
   // A question mark with a subject in it is a research question, not a greeting.
   if (SMALL_TALK_DEVANAGARI.test(text)) return true;
   return SMALL_TALK.test(text);
+}
+
+function localSmallTalkReply(question) {
+  const q = String(question || '').trim().toLowerCase();
+  if (/^(hi+|hey+|hello+|yo|hiya|namaste|namaskar|हाय|हैलो|नमस्ते|नमस्कार)(?=[\s!,.?]|$)/i.test(q)) {
+    return uiLang() === 'hi'
+      ? 'नमस्ते! 👋 मैं Indus हूँ। आप मुझसे सामान्य बातचीत कर सकते हैं या कोई विषय पूछ सकते हैं—मैं Wikipedia के लेख खोजकर स्रोतों के साथ समझाऊँगा।'
+      : 'Hi there! 👋 I’m Indus. We can chat naturally, or you can ask me about any topic and I’ll look up relevant Wikipedia articles with sources.';
+  }
+  if (/how are you|कैसे हैं|कैसी हैं|आप कैसे|क्या हाल/.test(q)) {
+    return uiLang() === 'hi' ? 'मैं बढ़िया हूँ और आपकी मदद के लिए तैयार हूँ। आज किस विषय को explore करें?' : 'I’m doing well and ready to help. What are you curious about today?';
+  }
+  if (/who are you|what are you|your name|what.s your name|tell me about yourself|are you an? ai|आप कौन|आपका नाम|तुम कौन/.test(q)) {
+    return uiLang() === 'hi'
+      ? 'मैं Indus हूँ—Indusmova का AI research assistant। मैं सामान्य बातचीत कर सकता हूँ और आपके सवालों के लिए Wikipedia से संबंधित लेख खोजकर स्रोतों के साथ जवाब देता हूँ।'
+      : 'I’m Indus, the AI research assistant on Indusmova. I can chat with you and search Wikipedia articles to answer factual questions with citations you can open.';
+  }
+  if (/thank|धन्यवाद|शुक्रिया/.test(q)) return uiLang() === 'hi' ? 'आपका स्वागत है! कुछ और जानना हो तो पूछिए।' : 'You’re welcome! Ask me anything else you’d like to explore.';
+  if (/bye|goodbye|अलविदा/.test(q)) return uiLang() === 'hi' ? 'फिर मिलेंगे! जब भी कुछ जानना हो, वापस आइए।' : 'See you soon! Come back whenever you want to explore something new.';
+  return uiLang() === 'hi'
+    ? 'मैं आपकी मदद के लिए यहाँ हूँ। कोई विषय पूछिए—मैं Wikipedia पर संबंधित लेख खोजकर जवाब दूँगा।'
+    : 'I’m here to help. Ask about a topic and I’ll search Wikipedia for relevant articles before answering.';
 }
 
 /** The last few turns, as the model expects them. */
@@ -374,8 +404,8 @@ function renderAnswer(a, { store = false, animate = true } = {}) {
 
   const meta = el('div', 'a-meta');
   meta.append(el('span', 'dot'));
-  meta.append(el('span', 'who', 'indusmova'));
-  meta.append(el('span', 'badge', esc(a.provider === 'workers-ai' ? 'Workers AI' : (a.provider || 'AI'))));
+  meta.append(el('span', 'who', 'Indus')); 
+  meta.append(el('span', 'badge', a.sources?.length ? (uiLang() === 'hi' ? 'Wikipedia आधारित' : 'Wikipedia-backed') : (uiLang() === 'hi' ? 'बातचीत' : 'Conversation')));
   if (a.title) meta.append(el('span', 'src-name', esc(a.title)));
   inner.append(meta);
 
@@ -389,10 +419,8 @@ function renderAnswer(a, { store = false, animate = true } = {}) {
 
   const sources = (a.sources || []).filter((s) => s.url && wikiUrl(s.url));
   if (sources.length) {
-    // Sources as cards, not as a row of pills that truncate every title to
-    // "Chandray…". A reader checking a claim needs the whole name of the
-    // article and the site it came from, side by side.
-    const panel = el('div', 'src-panel');
+    const panel = el('section', 'src-panel');
+    panel.setAttribute('aria-label', t('sources'));
     panel.append(el('p', 'src-head', esc(t('sources'))));
     const grid = el('div', 'src-cards');
     for (const s of sources) {
@@ -401,11 +429,30 @@ function renderAnswer(a, { store = false, animate = true } = {}) {
       card.href = wikiUrl(s.url);
       card.target = '_blank';
       card.rel = 'noopener noreferrer';
-      card.append(el('span', 'src-n', String(Number(s.n))));
+      card.setAttribute('aria-label', `${s.title} — ${lang()}.wikipedia.org`);
+      const media = el('span', 'src-media');
+      if (wikiImageUrl(s.image)) {
+        const img = el('img');
+        img.src = wikiImageUrl(s.image);
+        img.alt = '';
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.addEventListener('error', () => {
+          img.remove();
+          media.classList.add('is-placeholder');
+        }, { once: true });
+        media.append(img);
+      } else {
+        media.classList.add('is-placeholder');
+        media.setAttribute('aria-hidden', 'true');
+      }
+      media.append(el('span', 'src-n', String(Number(s.n))));
       const body = el('span', 'src-body');
       body.append(el('span', 'src-t', esc(s.title)));
-      body.append(el('span', 'src-d', `${lang()}.wikipedia.org`));
-      card.append(body);
+      const summary = s.description || s.extract || '';
+      if (summary) body.append(el('span', 'src-excerpt', esc(clean(summary, 220))));
+      body.append(el('span', 'src-d', `${lang()}.wikipedia.org · Read article ↗`));
+      card.append(media, body);
       grid.append(card);
     }
     panel.append(grid);
@@ -487,6 +534,39 @@ function renderAnswer(a, { store = false, animate = true } = {}) {
   }
 }
 
+function renderArticleResults(passages) {
+  if (!Array.isArray(passages) || !passages.length) return;
+  const panel = el('section', 'src-panel src-fallback');
+  panel.setAttribute('aria-label', t('sources'));
+  panel.append(el('p', 'src-head', esc(t('sources'))));
+  const grid = el('div', 'src-cards');
+  passages.forEach((source, index) => {
+    const card = el('a', 'src-card');
+    card.href = wikiUrl(source.url);
+    card.target = '_blank';
+    card.rel = 'noopener noreferrer';
+    const media = el('span', 'src-media');
+    if (wikiImageUrl(source.image)) {
+      const img = el('img');
+      img.src = wikiImageUrl(source.image);
+      img.alt = '';
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.addEventListener('error', () => { img.remove(); media.classList.add('is-placeholder'); }, { once: true });
+      media.append(img);
+    } else media.classList.add('is-placeholder');
+    media.append(el('span', 'src-n', String(index + 1)));
+    const body = el('span', 'src-body');
+    body.append(el('span', 'src-t', esc(source.title)));
+    body.append(el('span', 'src-excerpt', esc(clean(source.description || source.text, 220))));
+    body.append(el('span', 'src-d', `${lang()}.wikipedia.org · Read article ↗`));
+    card.append(media, body);
+    grid.append(card);
+  });
+  panel.append(grid);
+  $('#thread').append(panel);
+}
+
 function renderNote(title, body, retryQuestion, depth) {
   const box = el('div', 'note');
   box.append(el('strong', null, esc(title)));
@@ -556,10 +636,16 @@ async function ask(raw, depthOverride) {
     // carried along so it reads as a thread.
     if (isSmallTalk(question)) {
       label.textContent = t('writing');
-      const data = await askAI(question, [], depth, controller.signal, {
-        mode: 'chat',
-        history: conversationHistory(),
-      });
+      let data = null;
+      try {
+        data = await askAI(question, [], depth, controller.signal, {
+          mode: 'chat',
+          history: conversationHistory(),
+        });
+      } catch (error) {
+        if (error?.name === 'AbortError') throw error;
+        data = { answer: localSmallTalkReply(question), provider: 'Indus fallback' };
+      }
       working.remove();
       const reply = {
         question,
@@ -597,20 +683,28 @@ async function ask(raw, depthOverride) {
 
     working.remove();
     if (!data) {
+      renderArticleResults(passages);
       renderNote(t('failed'), t('failedBody'), question, depth);
       return;
     }
 
+    const passageByTitle = new Map(passages.map((passage) => [passage.title.toLowerCase(), passage]));
     const finished = {
       question,
       title: passages[0]?.title || '',
       answer: data.answer,
-      sources: (data.sources || []).map((s) => ({
-        n: Number(s.n) || 1,
-        title: clean(s.title, 200),
-        url: wikiUrl(s.url),
-        cited: Boolean(s.cited),
-      })),
+      sources: (data.sources || []).map((s) => {
+        const match = passageByTitle.get(clean(s.title, 200).toLowerCase());
+        return {
+          n: Number(s.n) || 1,
+          title: clean(s.title, 200),
+          url: wikiUrl(s.url),
+          cited: Boolean(s.cited),
+          image: match?.image || '',
+          description: match?.description || '',
+          extract: match?.text || '',
+        };
+      }),
       provider: data.provider || 'AI',
       model: data.model || '',
     };
@@ -975,12 +1069,12 @@ function renderSuggestions() {
   const box = $('#suggestions');
   box.replaceChildren();
   const ideas = uiLang() === 'hi'
-    ? [['विषय समझें', 'प्रकाश संश्लेषण कैसे होता है?'],
-       ['तथ्य जाँचें', 'चंद्रयान-3 चंद्रमा पर कब उतरा?'],
-       ['और गहरे जाएँ', 'सम्राट अशोक कौन थे और क्यों महत्वपूर्ण हैं?']]
-    : [['Explain a topic', 'How does photosynthesis work?'],
-       ['Check a fact', 'When did Chandrayaan-3 land on the Moon?'],
-       ['Go deeper', 'Who was Ashoka, and why does he matter?']];
+    ? [['बातचीत शुरू करें', 'नमस्ते Indus!'],
+       ['विज्ञान समझें', 'प्रकाश संश्लेषण कैसे होता है?'],
+       ['इतिहास खोजें', 'सम्राट अशोक कौन थे और क्यों महत्वपूर्ण हैं?']]
+    : [['Say hello', 'Hi, Indus!'],
+       ['Explore science', 'How does photosynthesis work?'],
+       ['Discover history', 'Who was Ashoka, and why does he matter?']];
   for (const [label, idea] of ideas) {
     const b = el('button', null, `<b>${esc(label)}</b><span>${esc(idea)}</span>`);
     b.type = 'button';
@@ -1125,13 +1219,6 @@ $('#railClear')?.addEventListener('click', () => {
   $('#prompt').focus();
 });
 $('#voiceBtn')?.addEventListener('click', startVoice);
-$('#themeBtn')?.addEventListener('click', () => {
-  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-  document.documentElement.dataset.theme = next;
-  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', next === 'dark' ? '#0e1211' : '#fdfdfb'));
-  // The same key the rest of the site reads, so one change applies everywhere.
-  try { localStorage.setItem('indusmova:theme', next); } catch { /* blocked */ }
-});
 $('#contentLanguage')?.addEventListener('change', () => {
   try { localStorage.setItem('indusmova:chat:lang', lang()); } catch { /* blocked */ }
 });
@@ -1184,21 +1271,7 @@ try {
   if (['quick', 'detailed', 'deep'].includes(savedDepth)) $('#answerDepth').value = savedDepth;
   const savedUi = localStorage.getItem('indusmova:chat:ui');
   if (savedUi === 'hi' || savedUi === 'en') $('#uiLanguage').value = savedUi;
-  // The theme is one setting for the whole site, not one per page. The site
-  // stores "auto" when the reader has never chosen, and this page used to
-  // ignore that value — so it stayed dark while every other page followed the
-  // system. "auto" is resolved here the same way theme.js resolves it.
-  let theme = 'auto';
-  try { theme = localStorage.getItem('indusmova:theme') || 'auto'; } catch { /* blocked */ }
-  const systemDark = typeof window.matchMedia === 'function'
-    && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const resolved = theme === 'auto' ? (systemDark ? 'dark' : 'light') : theme;
-  if (resolved === 'light' || resolved === 'dark') {
-    document.documentElement.dataset.theme = resolved;
-    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
-      m.setAttribute('content', resolved === 'dark' ? '#0e1211' : '#fdfdfb');
-    });
-  }
+
 } catch { /* private browsing */ }
 
 if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) $('#voiceBtn').hidden = true;

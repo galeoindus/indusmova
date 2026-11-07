@@ -1,82 +1,17 @@
-/* indusmova — theme and reading comfort.
- *
- * The page ships with data-theme="dark" and data-comfort="auto" in the markup
- * so the first paint is already right; this module takes over from there.
- * Theme cycles auto -> light -> dark, stored per device. Comfort (opaque
- * surfaces) is a separate boolean. A reading-progress bar is updated on scroll.
- *
- * The build stamp is not handled here. It used to be, in two more places at
- * once (app.js and this file), each with its own storage key and reload guard.
- * assets/js/build-watch.js is now the single source of truth.
- */
-
 import { getPref, setPref } from './store.js';
 import { prefersReducedMotion } from './ui.js';
 
-const THEMES = ['auto', 'light', 'dark'];
-const ICON = {
-  auto: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.5-.4-.9-.9-.9a7 7 0 0 1-7.2-7.2c0-.5-.4-.9-.9-.9z"/></svg>',
-  light: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2 12h2.4M19.6 12H22M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"/></svg>',
-  dark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.5-.4-.9-.9-.9a7 7 0 0 1-7.2-7.2c0-.5-.4-.9-.9-.9z"/></svg>',
-};
-const TITLE = {
-  auto: 'Following the system theme',
-  light: 'Light theme',
-  dark: 'Dark theme',
-};
-
-// A guarded media query: `matchMedia` is missing in some embed and test
-// environments, and an unguarded call at module load would take the whole
-// theme module (and with it the header controls) down with it.
-const media = typeof window.matchMedia === 'function'
-  ? window.matchMedia('(prefers-color-scheme: dark)')
-  : { matches: false, addEventListener() {}, addListener() {} };
-
-/** Subscribe to a media-query change on browsers that predate addEventListener. */
-function onMediaChange(fn) {
-  if (typeof media.addEventListener === 'function') media.addEventListener('change', fn);
-  else if (typeof media.addListener === 'function') media.addListener(fn);
-}
-let currentTheme = getPref('theme', 'auto');
-
-function effective(theme) {
-  return theme === 'auto' ? (media.matches ? 'dark' : 'light') : theme;
-}
-
-function paint() {
-  const html = document.documentElement;
-  html.setAttribute('data-theme', effective(currentTheme));
-  const bg = effective(currentTheme) === 'dark' ? '#101713' : '#f5f0e6';
-  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', bg));
-  const btn = document.getElementById('themeBtn');
-  if (btn) {
-    btn.innerHTML = ICON[currentTheme];
-    btn.title = TITLE[currentTheme];
-    btn.setAttribute('aria-label', TITLE[currentTheme]);
-  }
-}
-
+/** Theme selection is owned by global-theme.js on every route. This module
+ * keeps only home-app reading comfort and progress behaviour. */
 export function initTheme() {
-  paint();
-  onMediaChange(() => { if (currentTheme === 'auto') paint(); });
-
-  document.getElementById('themeBtn')?.addEventListener('click', () => {
-    currentTheme = THEMES[(THEMES.indexOf(currentTheme) + 1) % THEMES.length];
-    setPref('theme', currentTheme);
-    paint();
-  });
-
+  window.IndusTheme?.sync();
   const comfort = getPref('comfort', false);
   applyComfort(comfort);
   document.getElementById('comfortBtn')?.addEventListener('click', () => {
-    // The stylesheet switches on `data-comfort="opaque"`; writing "on" here
-    // meant the button flipped an attribute no rule listened to, so the
-    // control did nothing at all.
     const next = document.documentElement.getAttribute('data-comfort') !== 'opaque';
     setPref('comfort', next);
     applyComfort(next);
   });
-
   initProgress();
 }
 

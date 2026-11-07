@@ -81,13 +81,14 @@ import { answerFor, toMarkdown } from './research-answer.js';
     toast.textContent = message; toast.hidden = false; clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { toast.hidden = true; }, 3000);
   }
-  function saveTheme(theme) {
-    prefs.theme = theme === 'dark' ? 'dark' : 'light';
-    app.dataset.theme = prefs.theme;
-    const icon = $('[data-theme-icon]');
-    icon.innerHTML = prefs.theme === 'dark' ? '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/>' : '<path d="M20.5 15.4A8.5 8.5 0 0 1 8.6 3.5 8.5 8.5 0 1 0 20.5 15.4Z"/>';
-    persistPrefs();
+  function saveTheme() {
+    // The root document is the source of truth. The app shell mirrors it only
+    // because the research desk's legacy CSS scopes some tokens to the shell.
+    const theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+    app.dataset.theme = theme;
+    prefs.theme = theme;
   }
+  window.addEventListener('indusmova:themechange', saveTheme);
   function setLimit(value) {
     prefs.limit = Number(value) || 5;
     limitButtons.forEach((button) => button.classList.toggle('is-active', Number(button.dataset.limit) === prefs.limit));
@@ -360,7 +361,7 @@ import { answerFor, toMarkdown } from './research-answer.js';
   function doAction(action, target) {
     switch (action) {
       case 'new-search': showHome(); break;
-      case 'theme': saveTheme(prefs.theme === 'dark' ? 'light' : 'dark'); break;
+      case 'theme': break; // global-theme.js handles the shared theme control
       case 'mobile-menu': workspace.classList.toggle('mobile-nav-open'); scrim.hidden = !workspace.classList.contains('mobile-nav-open'); break;
       case 'mobile-saved': setView('saved'); break;
       case 'clear-query': queryInput.value = ''; $('[data-action="clear-query"]').hidden = true; queryInput.focus(); break;
@@ -378,7 +379,7 @@ import { answerFor, toMarkdown } from './research-answer.js';
   }
 
   // Initial settings and saved state.
-  saveTheme(prefs.theme);
+  saveTheme();
   langControl.value = prefs.language;
   if (mobileLangControl) mobileLangControl.value = prefs.language;
   if (resultsLangControl) resultsLangControl.value = prefs.language;

@@ -1,0 +1,187 @@
+/* Indusmova Design System 1.0 — shared tokens and restrained multimorphism.
+   Rule of use: glass for navigation/chrome, clay for a few expressive feature
+   surfaces, soft inset depth for controls, and calm flat surfaces for reading. */
+:root {
+  --im-bg: #f3f6f2;
+  --im-surface: #ffffff;
+  --im-surface-2: #eaf0eb;
+  --im-text: #17251f;
+  --im-muted: #52645a;
+  --im-faint: #64756b;
+  --im-border: #d5e0d8;
+  --im-border-strong: #bdcdc2;
+  --im-accent: #176b4c;
+  --im-accent-soft: #e0f1e8;
+  --im-warm: #a65f32;
+  --im-shadow-sm: 0 2px 8px rgba(20, 48, 35, .06);
+  --im-shadow: 0 12px 32px -20px rgba(20, 48, 35, .24), 0 2px 6px rgba(20, 48, 35, .05);
+  --im-shadow-lg: 0 24px 60px -28px rgba(20, 48, 35, .32);
+  --im-clay-shadow: 8px 8px 20px rgba(26, 56, 40, .09), -7px -7px 18px rgba(255, 255, 255, .88);
+  --im-inset-shadow: inset 2px 2px 6px rgba(26, 56, 40, .08), inset -2px -2px 6px rgba(255, 255, 255, .84);
+  --im-glass: rgba(250, 253, 250, .76);
+  --im-glass-border: rgba(255, 255, 255, .7);
+  --im-radius-sm: 12px;
+  --im-radius-md: 18px;
+  --im-radius-lg: 26px;
+  --im-motion: cubic-bezier(.2, .7, .2, 1);
+  --bg: var(--im-bg);
+  --surface: var(--im-surface);
+  --surface-2: var(--im-surface-2);
+  --panel: var(--im-surface);
+  --panel-2: var(--im-surface-2);
+  --panel-soft: var(--im-surface-2);
+  --text: var(--im-text);
+  --ink: var(--im-text);
+  --ink-2: var(--im-muted);
+  --muted: var(--im-muted);
+  --faint: var(--im-faint);
+  --border: var(--im-border);
+  --border-2: var(--im-border-strong);
+  --line: var(--im-border);
+  --line-2: var(--im-border-strong);
+  --accent: var(--im-accent);
+  --primary: var(--im-accent);
+  --forest: #176b4c; --forest-ink: #176b4c; --copper: #a65f32; --copper-ink: #89502c; --sage: #c3dfce; --sand: #eaf0eb;
+  --on-primary: #ffffff; --accent-2: #287b5c; --focus: var(--im-accent);
+  --shadow-sm: var(--im-shadow-sm);
+  --shadow: var(--im-shadow);
+  --shadow-lg: var(--im-shadow-lg);
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --im-bg: #0b1110;
+  --im-surface: #111b18;
+  --im-surface-2: #17231e;
+  --im-text: #e9f0eb;
+  --im-muted: #b0beb5;
+  --im-faint: #9aa99f;
+  --im-border: #293b32;
+  --im-border-strong: #3b5145;
+  --im-accent: #83d4a8;
+  --im-accent-soft: #18382a;
+  --im-warm: #e2a978;
+  --im-shadow-sm: 0 2px 8px rgba(0, 0, 0, .24);
+  --im-shadow: 0 14px 34px -20px rgba(0, 0, 0, .68), 0 2px 6px rgba(0, 0, 0, .3);
+  --im-shadow-lg: 0 24px 64px -28px rgba(0, 0, 0, .78);
+  --im-clay-shadow: 8px 8px 20px rgba(0, 0, 0, .34), -7px -7px 18px rgba(255, 255, 255, .025);
+  --im-inset-shadow: inset 2px 2px 7px rgba(0, 0, 0, .3), inset -2px -2px 7px rgba(255, 255, 255, .025);
+  --im-glass: rgba(13, 22, 18, .76);
+  --im-glass-border: rgba(255, 255, 255, .08);
+  --bg: var(--im-bg); --surface: var(--im-surface); --surface-2: var(--im-surface-2);
+  --panel: var(--im-surface); --panel-2: var(--im-surface-2); --panel-soft: var(--im-surface-2);
+  --text: var(--im-text); --ink: var(--im-text); --ink-2: var(--im-muted); --muted: var(--im-muted); --faint: var(--im-faint);
+  --border: var(--im-border); --border-2: var(--im-border-strong); --line: var(--im-border); --line-2: var(--im-border-strong);
+  --accent: var(--im-accent); --primary: var(--im-accent);
+  --forest: #83d4a8; --forest-ink: #a8e6c1; --copper: #e2a978; --copper-ink: #efb98b; --sage: #a8d9b9; --sand: #17231e;
+  --on-primary: #0b1110; --accent-2: #a5dfbb; --focus: var(--im-accent);
+  --shadow-sm: var(--im-shadow-sm); --shadow: var(--im-shadow); --shadow-lg: var(--im-shadow-lg);
+  --rail: #0d1713; --line: var(--im-border); --line-2: var(--im-border-strong);
+  --ink-2: var(--im-muted); --brass: var(--im-warm); --brass-soft: #f1bd8e;
+  --user: #18362a;
+}
+html[data-theme="light"] {
+  --bg: var(--im-bg); --rail: #edf2ee; --panel: var(--im-surface); --panel-2: var(--im-surface-2);
+  --line: var(--im-border); --line-2: var(--im-border-strong); --ink: var(--im-text); --ink-2: var(--im-muted);
+  --muted: var(--im-muted); --accent: var(--im-accent); --brass: var(--im-warm); --brass-soft: #89502c;
+  --user: #e2f0e7; --shadow: var(--im-shadow);
+}
+html[data-theme="light"] { color-scheme: light; }
+html[data-theme="light"] #research-app,
+html[data-theme="dark"] #research-app {
+  --bg: var(--im-bg); --panel: var(--im-surface); --panel-soft: var(--im-surface-2);
+  --line: var(--im-border); --line-strong: var(--im-border-strong);
+  --text: var(--im-text); --muted: var(--im-muted); --muted-2: var(--im-faint);
+  --accent: var(--im-accent); --accent-deep: var(--im-accent); --accent-soft: var(--im-accent-soft);
+  --teal: var(--im-accent); --green: var(--im-accent); --shadow: var(--im-shadow);
+  --lift: var(--im-clay-shadow); --lift-sm: var(--im-shadow-sm); --press: var(--im-inset-shadow);
+  --grad: linear-gradient(125deg, var(--im-accent), #3e9a75);
+}
+html[data-theme="dark"] #research-app { --green-soft: #193529; --teal-soft: #18352e; --violet-soft: #25251f; --orange-soft: #34271c; }
+html, body { background-color: var(--im-bg); color: var(--im-text); }
+body { background-image: radial-gradient(70rem 35rem at 4% -12%, color-mix(in srgb, var(--im-accent) 8%, transparent), transparent 62%), radial-gradient(55rem 30rem at 96% 0%, color-mix(in srgb, var(--im-warm) 6%, transparent), transparent 66%); }
+
+/* Glassmorphism is reserved for persistent controls, never long-form text. */
+.topbar, .top, .chat-header, .topbar-actions, .suggest, .lang-menu, .im-theme-toggle {
+  background: var(--im-glass);
+  border-color: var(--im-glass-border);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  backdrop-filter: blur(18px) saturate(1.35);
+}
+.topbar { border-bottom: 1px solid var(--im-border); box-shadow: 0 4px 24px rgba(10, 30, 20, .035); }
+@supports not ((backdrop-filter: blur(1px))) {
+  .topbar, .top, .chat-header, .topbar-actions, .suggest, .lang-menu, .im-theme-toggle { background: var(--im-surface); }
+}
+[data-comfort="opaque"] .topbar,
+[data-comfort="opaque"] .top,
+[data-comfort="opaque"] .chat-header,
+[data-comfort="opaque"] .topbar-actions { background: var(--im-surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* Calm, tactile fields: subtle inset depth, with an unmistakable focus ring. */
+.searchbar, .search-box, .search-box input, .composer, .chat-composer, #prompt {
+  border-radius: var(--im-radius-md);
+}
+.searchbar, .search-box, .chat-composer {
+  box-shadow: var(--im-inset-shadow);
+  border: 1px solid var(--im-border-strong);
+  background: var(--im-surface);
+}
+.searchbar:focus-within, .search-box:focus-within, .chat-composer:focus-within {
+  border-color: var(--im-accent);
+  box-shadow: var(--im-inset-shadow), 0 0 0 3px color-mix(in srgb, var(--im-accent) 23%, transparent);
+}
+
+/* Claymorphism: one or two expressive areas per screen, not every card. */
+.dash-hero, .welcome-block, .aotd, .empty .empty-orb, .chat-empty-card {
+  border: 1px solid var(--im-border);
+  border-radius: var(--im-radius-lg);
+  box-shadow: var(--im-clay-shadow);
+}
+.suggestion-card, .card, .source-card, .topic-card, .content-option, .query-summary {
+  border-radius: var(--im-radius-md);
+  transition: border-color .2s var(--im-motion), box-shadow .2s var(--im-motion), transform .2s var(--im-motion);
+}
+.card, .source-card, .topic-card { box-shadow: var(--im-shadow-sm); }
+@media (hover:hover) {
+  .card:hover, .source-card:hover, .topic-card:hover { box-shadow: var(--im-shadow); transform: translateY(-2px); }
+}
+
+/* Reading surfaces stay opaque and quiet for comfortable long sessions. */
+.panel, .article-panel, .answer-card, .factbox, .prose, .thread, .message-content {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.prose { line-height: 1.78; }
+.prose p, .prose li { max-width: 72ch; }
+
+/* Consistent controls and accessible focus/target sizing. */
+button, input, textarea, select { font: inherit; }
+:focus-visible { outline: 2px solid var(--im-accent); outline-offset: 3px; }
+/* A skip-link target and a route change focus #main programmatically. That is
+   not keyboard navigation, so it must not paint a ring around the whole page. */
+#main:focus, #main:focus-visible, main:focus-visible, [tabindex="-1"]:focus-visible { outline: none !important; }
+.im-theme-toggle {
+  display: inline-grid; place-items: center; width: 42px; height: 42px; flex: 0 0 42px;
+  margin-inline-start: 8px; border: 1px solid var(--im-border); border-radius: 14px;
+  color: var(--im-text); box-shadow: var(--im-shadow-sm); cursor: pointer;
+  transition: transform .18s var(--im-motion), box-shadow .18s var(--im-motion), border-color .18s;
+  z-index: 120;
+}
+.im-theme-toggle svg { width: 19px; height: 19px; display: block; }
+/* The shared control is appended to whatever header a page has. Keep it on the
+   header row instead of letting it wrap onto a second line of its own. */
+.topbar-inner > .im-theme-toggle { flex: 0 0 auto; margin-inline-start: 10px; }
+@media (min-width: 861px) { .topbar-inner { flex-wrap: nowrap; } }
+.im-theme-toggle:hover { transform: translateY(-1px); border-color: var(--im-accent); box-shadow: var(--im-shadow); }
+.im-theme-toggle:active { transform: translateY(0); }
+body > .im-theme-toggle { position: fixed; top: max(14px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right)); }
+.bottom-nav { background: var(--im-glass); border-top: 1px solid var(--im-border); -webkit-backdrop-filter: blur(18px) saturate(1.3); backdrop-filter: blur(18px) saturate(1.3); }
+::selection { background: color-mix(in srgb, var(--im-accent) 26%, transparent); }
+
+@media (max-width: 720px) {
+  .topbar-inner { gap: 8px; }
+  .dash-hero, .welcome-block, .aotd { border-radius: 22px; }
+  .im-theme-toggle { width: 44px; height: 44px; flex-basis: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}

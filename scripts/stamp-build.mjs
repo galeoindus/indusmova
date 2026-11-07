@@ -75,6 +75,16 @@ for (const file of await walk(ROOT)) {
     if (!/<\/head>/i.test(html)) continue;
     html = html.replace(/<\/head>/i, `  <link rel="stylesheet" href="/assets/css/${sheet}?v=${build}">\n</head>`);
   }
+  // The global design system is the final visual authority on every page: it
+  // owns the semantic tokens the older sheets read from.
+  if (!/assets\/css\/design-system\.css/.test(html) && /<\/head>/i.test(html)) {
+    html = html.replace(/<\/head>/i, `  <link rel="stylesheet" href="/assets/css/design-system.css?v=${build}">\n</head>`);
+  }
+  // One theme controller for the whole site, including static articles and
+  // utility pages, so a reader's choice follows them across every route.
+  if (!/assets\/js\/global-theme\.js/.test(html) && /<\/head>/i.test(html)) {
+    html = html.replace(/<\/head>/i, `  <script src="/assets/js/global-theme.js?v=${build}"></script>\n</head>`);
+  }
   // The phone navigation belongs on every page: the article pages had no way
   // out of a 113,000 px document except the brand mark, because the header's
   // text links are hidden below 860 px.
