@@ -24,7 +24,10 @@ import { DEPTHS } from './config.js';
  * Wikipedia repeats a sentence across a lead and a section, and our sentence
  * splitter can leave a fragment of the previous sentence stuck to the front of
  * the next one. Comparing the sets of word 3-grams (Jaccard) collapses both
- * cases without needing the strings to match exactly.
+ * cases without needing the strings to match exactly. The measure is the
+ * overlap coefficient — shared 3-grams over the smaller set — not Jaccard over
+ * the union: a fragment is a subset of the sentence it came from, and Jaccard
+ * would score that pair as different.
  */
 function shingles(text) {
   const words = text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(Boolean);
