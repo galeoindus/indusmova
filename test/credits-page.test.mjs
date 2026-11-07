@@ -24,8 +24,14 @@ const [view, css, headers, pkg] = await Promise.all([
   assert.match(view, /not endorsed by or affiliated with[\s\S]*Government of India/);
 });
 
-test('Sarvam AI appears in both credits areas with its official mark and a specific development contribution', () => {
-  assert.match(view, /https:\/\/web\.sarvam\.dev\/assets\/brand\/guidelines\/wordmark-on-light\.png/);
+test('Sarvam AI is credited by name, with its mark gated behind written permission', () => {
+  // Their guidelines limit mark use to Sarvam products and services and to use
+  // with permission, so the default build must not display or fetch the mark.
+  assert.match(view, /const SARVAM_MARK_APPROVED = false;/);
+  assert.match(view, /credit-sarvam-fallback/);
+  assert.match(view, /wordmark-on-light\.png/);
+  assert.match(view, /wordmark-on-dark\.png/);
+  assert.doesNotMatch(view, /name: 'Sarvam AI'[^\n]*logomark-on-light/);
   assert.match(view, /AI development contributor/);
   assert.match(view, /name: 'Sarvam AI'.*AI-assisted development contribution/s);
   assert.match(view, /AI-assisted work on parts of the code, writing and project audits/);
