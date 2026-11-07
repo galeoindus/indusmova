@@ -428,10 +428,14 @@ FOOT = """  </main>
 
 def page_html(art, related):
     canonical = f"{ORIGIN}/articles/{slug(art['title'])}/"
-    # A one-line Wikidata description is too thin to be a search snippet;
-    # the lead sentence carries it when the description is short.
+    # A one-line Wikidata description is too thin to be a search snippet — a
+    # 35-character "Mauryan emperor from 269 to 232 BCE" tells a search engine
+    # almost nothing. Anything under ~70 characters gets the lead sentence
+    # appended, so the snippet reads as a sentence and still says what the page
+    # is. The description is written to the meta tag, og:description and the
+    # Article JSON-LD, so all three always agree.
     description = (art["description"] or "").strip()
-    if len(description) < 30:
+    if len(description) < 70:
         lead_text = re.sub(r"\s+", " ", strip_noise(art["leadText"] or "")).strip()
         description = (f"{description.rstrip('.')}. {lead_text}" if description else lead_text)
     description = description[:155].strip()

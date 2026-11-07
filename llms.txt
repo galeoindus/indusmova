@@ -49,6 +49,7 @@ answer only from them, citing the passage number for each claim.
 
 ## Entries
 
+- [Artificial intelligence](https://indusmova.pages.dev/articles/Artificial_intelligence/)
 - [Ashoka](https://indusmova.pages.dev/articles/Ashoka/)
 - [Ayurveda](https://indusmova.pages.dev/articles/Ayurveda/)
 - [Black hole](https://indusmova.pages.dev/articles/Black_hole/)
@@ -73,7 +74,6 @@ source: cite the passage it points to.
 ## Notes for automated readers
 
 - Every entry page is static HTML and readable without JavaScript.
-- `sitemap.xml` lists every crawlable page with a priority and a change
-  frequency.
+- `sitemap.xml` lists every crawlable page with its last-modified date.
 - `robots.txt` allows all crawlers and points at the sitemap.
 - The interactive answer chat needs JavaScript; the entries do not.
