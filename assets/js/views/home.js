@@ -145,19 +145,53 @@ function aotdMount(ctx) {
   return mount;
 }
 
-async function loadAotd(ctx, mount) {
+/** Pick an article only after finding a picture that belongs to that page.
+ * Picture-of-the-day media is deliberately not used as a substitute: it can
+ * describe an unrelated subject. A missing featured thumbnail is resolved
+ * with PageImages, then the next candidate is tried. */
+export async function resolveAotdArticle(ctx, lang, skipTitles = []) {
+  const feed = await ctx.api.featured(lang).catch(() => ({ article: null, mostread: [] }));
+  const candidates = [];
+  const seen = new Set(skipTitles.map((title) => String(title).toLocaleLowerCase()));
+  const add = (item) => {
+    const title = String(item?.title || '').trim();
+    const key = title.toLocaleLowerCase();
+    if (title && !seen.has(key)) { seen.add(key); candidates.push(item); }
+  };
+  add(feed.article);
+  for (const item of feed.mostread || []) add(item);
+
+  if (candidates.length < 2) {
+    const popular = await ctx.api.mostRead(lang).catch(() => []);
+    for (const row of popular || []) add(row);
+  }
+
+  for (const candidate of candidates.slice(0, 10)) {
+    const title = candidate.title;
+    let article = candidate;
+    let thumb = candidate.thumb?.src ? candidate.thumb : null;
+    if (!thumb && typeof ctx.api.pageImage === 'function') {
+      const image = await ctx.api.pageImage(lang, title).catch(() => null);
+      if (image?.src) thumb = image;
+    }
+    if (!article.extract || !article.url || !thumb) {
+      const summary = await ctx.api.summary(lang, title).catch(() => null);
+      if (summary) {
+        article = { ...summary, ...candidate };
+        thumb ||= summary.thumb?.src ? summary.thumb : null;
+      }
+    }
+    if (!thumb?.src) continue;
+    const url = article.url || `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`;
+    return { ...article, title: article.title || title, thumb, url };
+  }
+  return null;
+}
+
+async function loadAotd(ctx, mount, skipTitles = []) {
+  const lang = ctx.state.contentLang;
   try {
-    const lang = ctx.state.contentLang;
-    const featured = await ctx.api.featured(lang);
-    let article = featured.article;
-    if (!article) {
-      const rows = await ctx.api.mostRead(lang);
-      if (rows.length) article = await ctx.api.summary(lang, rows[0].title);
-    }
-    if (!article) {
-      mount.innerHTML = '';
-      return;
-    }
+    const article = await resolveAotdArticle(ctx, lang, skipTitles);
     const section = el('section', { class: 'sec' });
     // The snapshot's own wording: "changes daily" rather than a "view all"
     // link. The heading used to be built here and never appended, so the
@@ -169,28 +203,64 @@ async function loadAotd(ctx, mount) {
 
     const wrap = el('div', { class: 'aotd' });
     const figure = el('figure', { class: 'aotd-media' });
-    if (article.thumb?.src) {
-      figure.append(el('img', {
-        src: cleanUrl(article.thumb.src), alt: article.title, loading: 'eager',
-        fetchpriority: 'high', decoding: 'async', width: 1200, height: 750,
-      }));
-    }
-    wrap.append(figure);
-
     const body = el('div', { class: 'aotd-body' });
     body.append(el('span', { class: 'badge accent', text: t('aotd') }));
-    body.append(el('h2', { text: article.title }));
-    if (article.description) body.append(el('p', { html: `<em>${esc(article.description)}</em>` }));
-    body.append(el('p', { text: clamp(article.extract, 220) }));
-    body.append(rowCta({ title: article.title, lang, wikiUrl: article.url }));
-    body.append(el('p', { class: 'src-credit', text: `${t('fromWikipedia')} ${lang}.wikipedia.org` }));
-    wrap.append(body);
+
+    if (!article) {
+      figure.append(el('img', {
+        src: '/assets/img/image-fallback.svg', alt: '', loading: 'eager',
+        decoding: 'async', width: 1200, height: 750,
+      }));
+      body.append(el('h2', { text: 'A picture-backed article could not be loaded today' }));
+      body.append(el('p', { text: 'Wikipedia did not return an article with a usable image. Please try again; the section stays visible instead of disappearing.' }));
+      const retry = el('button', { class: 'btn btn-primary', type: 'button', text: 'Try again' });
+      retry.addEventListener('click', () => {
+        mount.innerHTML = '';
+        mount.append(skeletonGrid(1, 'card'));
+        loadAotd(ctx, mount);
+      });
+      body.append(retry);
+    } else {
+      const photo = el('img', {
+        src: cleanUrl(article.thumb.src), alt: article.title, loading: 'eager',
+        fetchpriority: 'high', decoding: 'async', width: 1200, height: 750,
+      });
+      photo.addEventListener('error', () => {
+        if (photo.dataset.retryStarted === 'true') return;
+        photo.dataset.retryStarted = 'true';
+        // An HTTP-successful API response can still point at a blocked or
+        // missing file. Try another article rather than leaving a broken image.
+        loadAotd(ctx, mount, [...skipTitles, article.title]);
+      });
+      figure.append(photo);
+      body.append(el('h2', { text: article.title }));
+      if (article.description) body.append(el('p', { html: `<em>${esc(article.description)}</em>` }));
+      body.append(el('p', { text: clamp(article.extract, 220) }));
+      body.append(rowCta({ title: article.title, lang, wikiUrl: article.url }));
+      body.append(el('p', { class: 'src-credit', text: `${t('fromWikipedia')} ${lang}.wikipedia.org` }));
+    }
+    wrap.append(figure, body);
     section.append(wrap);
 
     mount.innerHTML = '';
     mount.append(section);
   } catch {
+    // Keep the section visible and say what happened; do not silently erase it.
     mount.innerHTML = '';
+    const section = el('section', { class: 'sec' });
+    const head = el('div', { class: 'sec-head' });
+    head.append(el('h2', { text: t('aotd') }));
+    section.append(head);
+    const wrap = el('div', { class: 'aotd' });
+    wrap.append(el('figure', { class: 'aotd-media' }, [el('img', {
+      src: '/assets/img/image-fallback.svg', alt: '', width: 1200, height: 750, decoding: 'async',
+    })]));
+    const body = el('div', { class: 'aotd-body' });
+    body.append(el('h2', { text: 'Today’s featured article is temporarily unavailable' }));
+    body.append(el('p', { text: 'The article feed could not be reached. Please reload this section in a moment.' }));
+    wrap.append(body);
+    section.append(wrap);
+    mount.append(section);
   }
 }
 

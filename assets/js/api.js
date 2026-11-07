@@ -423,14 +423,24 @@ export async function onThisDay(lang, month, day, { signal } = {}) {
   return out;
 }
 
+/** The featured feed is calendar-day content, so use the reader's local day. */
+export function featuredDatePath(date = new Date()) {
+  const y = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${y}/${mm}/${dd}`;
+}
+
 /** Featured content for a day (article, most-read list, image). */
 export async function featured(lang, date = new Date(), { signal } = {}) {
-  const y = date.getUTCFullYear();
-  const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(date.getUTCDate()).padStart(2, '0');
+  // Not UTC: in India the UTC date changes at 05:30 local time, so the site
+  // would show yesterday's feed for the first five and a half hours of a day.
+  const datePath = featuredDatePath(date);
   try {
-    const data = await get(restUrl(lang, `/feed/featured/${y}/${mm}/${dd}`), { ttl: TTL.feed, signal });
-    const tfa = data.tfa || data.image || null;
+    const data = await get(restUrl(lang, `/feed/featured/${datePath}`), { ttl: TTL.feed, signal });
+    // `image` is picture-of-the-day media, not a guaranteed article about the
+    // same subject. Keep it in its own field; never promote it to `tfa`.
+    const tfa = data.tfa || null;
     return {
       article: tfa ? normalisePage(tfa) : null,
       mostread: (data.mostread?.articles || []).map(normalisePage).filter(Boolean),

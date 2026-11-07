@@ -341,6 +341,9 @@ HEAD = """<!DOCTYPE html>
   <meta property="og:description" content="{description}">
   <meta property="og:url" content="{canonical}">
   <meta property="og:site_name" content="indusmova">
+  <meta property="og:image" content="{imageUrl}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="{imageUrl}">
   <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Lora:ital,wght@0,500;0,600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
   <link rel="stylesheet" href="/assets/css/styles.css?v=5.1.0">
@@ -426,7 +429,7 @@ FOOT = """  </main>
 """
 
 
-def page_html(art, related):
+def page_html(art, related, article_map=None):
     canonical = f"{ORIGIN}/articles/{slug(art['title'])}/"
     # A one-line Wikidata description is too thin to be a search snippet — a
     # 35-character "Mauryan emperor from 269 to 232 BCE" tells a search engine
@@ -464,6 +467,7 @@ def page_html(art, related):
         title_enc=urllib.parse.quote(art["title"]),
         wikiUrl=art["wikiUrl"],
         jsonld=jsonld,
+        imageUrl=html.escape(art["thumb"], quote=True) if art["thumb"] else f"{ORIGIN}/assets/img/og.png",
     )]
 
     if art["thumb"]:
@@ -516,8 +520,11 @@ def page_html(art, related):
     if related:
         cards = "".join(
             f'        <a class="card" href="/articles/{urllib.parse.quote(slug(r))}/">'
-            f'<div class="card-thumb placeholder" aria-hidden="true"></div>'
-            f'<div class="card-body"><h3>{html.escape(r)}</h3>'
+            + (f'<div class="card-thumb"><img src="{html.escape(article_map[r]["thumb"], quote=True)}"'
+               ' alt="" width="640" height="360" loading="lazy" decoding="async"></div>'
+               if article_map and article_map.get(r, {}).get("thumb")
+               else '<div class="card-thumb placeholder" aria-hidden="true"></div>')
+            + f'<div class="card-body"><h3>{html.escape(r)}</h3>'
             f'<p>Read the full breakdown of {html.escape(r)}.</p></div></a>\n'
             for r in related)
         out.append(f'    <section class="sec">\n'
@@ -662,6 +669,17 @@ def dedupe_images(html_text):
                 img.decompose()
         else:
             seen.add(key)
+    # Wikipedia bodies reuse ids (a figure caption called "Caption" on more
+    # than one figure, for example). A document may only carry one of each, so
+    # the first keeps the id and later copies drop it: an in-page link then
+    # lands on the first, which is what the source intends anyway.
+    seen_ids = set()
+    for node in soup.find_all(attrs={"id": True}):
+        value = node.get("id")
+        if value in seen_ids:
+            del node["id"]
+        else:
+            seen_ids.add(value)
     return restore_svg_case(str(soup))
 
 
@@ -686,7 +704,7 @@ def main():
         out_dir = os.path.join(ROOT, "articles", slug(title))
         os.makedirs(out_dir, exist_ok=True)
         with open(os.path.join(out_dir, "index.html"), "w", encoding="utf-8") as fh:
-            fh.write(dedupe_images(page_html(art, related)))
+            fh.write(dedupe_images(page_html(art, related, built)))
     print(f"wrote {len(built)} article pages")
 
     # A sitemap that includes them.
@@ -705,8 +723,11 @@ def main():
     # A crawlable index of the static articles.
     cards = "".join(
         f'      <a class="card" href="/articles/{urllib.parse.quote(slug(t))}/">'
-        f'<div class="card-thumb placeholder" aria-hidden="true"></div>'
-        f'<div class="card-body"><h3>{html.escape(t)}</h3>'
+        + (f'<div class="card-thumb"><img src="{html.escape(built[t]["thumb"], quote=True)}"'
+           ' alt="" width="640" height="360" loading="lazy" decoding="async"></div>'
+           if built[t].get("thumb")
+           else '<div class="card-thumb placeholder" aria-hidden="true"></div>')
+        + f'<div class="card-body"><h3>{html.escape(t)}</h3>'
         f'<p>{html.escape((built[t]["description"] or built[t]["leadText"])[:150])}</p></div></a>\n'
         for t in titles)
     index = f"""<!DOCTYPE html>
@@ -715,8 +736,19 @@ def main():
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Articles — indusmova</title>
-  <meta name="description" content="The full indusmova articles: lead summary, quick facts, a numbered table of contents, sections, references and related topics.">
+  <meta name="description" content="Thirteen curated indusmova article pages with images, quick facts, cited sections and references. Search opens the full live Wikipedia catalogue.">
   <link rel="canonical" href="{ORIGIN}/articles/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Articles — indusmova">
+  <meta property="og:description" content="Thirteen curated indusmova article pages with images, quick facts, cited sections and references. Search opens the full live Wikipedia catalogue.">
+  <meta property="og:url" content="{ORIGIN}/articles/">
+  <meta property="og:site_name" content="indusmova">
+  <meta property="og:locale" content="en_IN">
+  <meta property="og:image" content="{ORIGIN}/assets/img/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Articles — indusmova">
+  <meta name="twitter:description" content="Thirteen curated indusmova article pages with images, quick facts, cited sections and references. Search opens the full live Wikipedia catalogue.">
+  <meta name="twitter:image" content="{ORIGIN}/assets/img/og.png">
   <meta name="theme-color" content="#101713">
   <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Lora:ital,wght@0,500;0,600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
@@ -734,7 +766,8 @@ def main():
     <div class="article-head">
       <span class="kicker">{len(titles)} full articles</span>
       <h1 class="article-title">Articles</h1>
-      <p class="article-sub">Each one has a lead summary, quick facts, a numbered table of contents, sections with citations, a reference list and related topics. For any other topic, ask indusmova.</p>
+      <p class="article-sub">These thirteen are curated, crawlable examples: each has a lead summary, quick facts, numbered contents, cited sections and a reference list. The live search opens any Wikipedia article in the same reading layout.</p>
+      <p class="article-actions"><a class="btn btn-primary" href="/#/search">Search all Wikipedia articles</a></p>
     </div>
     <div class="grid">
 {cards}    </div>

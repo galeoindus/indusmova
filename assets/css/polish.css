@@ -1,0 +1,260 @@
+/* indusmova — quiet, precise surface polish.
+   A restrained iOS-inspired layer: soft translucency, clear hierarchy,
+   consistent radii, tactile controls and no heavy neumorphic shadows. */
+
+:root {
+  --polish-radius-card: 24px;
+  --polish-radius-control: 20px;
+  --polish-shadow: 0 8px 28px color-mix(in srgb, var(--text) 7%, transparent);
+  --polish-shadow-hover: 0 14px 36px color-mix(in srgb, var(--text) 11%, transparent);
+  scroll-behavior: smooth;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.topbar {
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  -webkit-backdrop-filter: saturate(155%) blur(18px);
+  backdrop-filter: saturate(155%) blur(18px);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.dash-hero {
+  border-radius: 30px;
+  border: 1px solid color-mix(in srgb, var(--border-2) 82%, transparent);
+  box-shadow: var(--polish-shadow);
+  overflow: visible;
+}
+
+.searchbar:has(> .composer-tools) {
+  border: 1px solid var(--border-2);
+  border-radius: 26px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: 0 6px 22px color-mix(in srgb, var(--text) 6%, transparent);
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+
+.searchbar:has(> .composer-tools):focus-within {
+  border-color: color-mix(in srgb, var(--accent) 62%, var(--border-2));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 12%, transparent), var(--polish-shadow);
+}
+
+.searchbar:has(> .composer-tools) > textarea {
+  min-height: 52px;
+  line-height: 1.55;
+  font-size: 16px;
+  resize: vertical;
+}
+
+.searchbar:has(> .composer-tools) > .composer-tools > button[type="submit"] {
+  border-radius: 999px;
+  min-height: 44px;
+}
+
+.suggest {
+  border-radius: 20px;
+  border: 1px solid var(--border-2);
+  box-shadow: 0 18px 44px color-mix(in srgb, #000 17%, transparent);
+  padding: 5px;
+}
+
+.suggest-item {
+  border-radius: 13px;
+  border-bottom: 0;
+  min-height: 54px;
+  align-items: center;
+}
+
+.suggest-item.active,
+.suggest-item:hover {
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+}
+
+.card,
+.topic-card,
+.answer-card,
+.aotd,
+.src-group,
+.credit-maker,
+.credit-owner {
+  border-radius: var(--polish-radius-card);
+  box-shadow: var(--polish-shadow);
+}
+
+.card,
+.topic-card,
+.credit-card,
+.src-group {
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+@media (hover: hover) {
+  .card:hover,
+  .topic-card:hover,
+  .credit-card:hover,
+  .src-group:hover {
+    box-shadow: var(--polish-shadow-hover);
+  }
+}
+
+.card-thumb {
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  background: var(--surface-2);
+}
+
+.card-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.aotd {
+  border-radius: 26px;
+  box-shadow: var(--polish-shadow);
+}
+
+.aotd-media img {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--surface-2);
+}
+
+.aotd-body { padding: clamp(18px, 3vw, 30px); }
+
+.btn,
+.btn-primary,
+.btn-icon,
+.mode-btn,
+.depth-btn,
+.chip,
+.tab {
+  transition: transform .16s ease, background-color .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+
+.btn,
+.btn-primary { border-radius: 999px; }
+
+button:focus-visible,
+a:focus-visible,
+textarea:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: 3px;
+}
+
+/* Consistent image sizing; the app-level error handler swaps failed media
+   for a local placeholder and keeps provider avatars on their initials. */
+img.image-fallback {
+  object-fit: cover;
+  background: var(--surface-2);
+}
+
+/* Credits: logo-led identities rather than text-only contributor rows. */
+.src-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 42px;
+  margin: 0 0 10px;
+}
+
+.src-brand h3 { margin: 0; }
+.src-brand-mark,
+.credit-person-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--accent) 13%, var(--surface-2));
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.src-brand-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+}
+
+.src-brand-mark img,
+.credit-person-avatar img {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 5px;
+  background: var(--surface);
+}
+
+.src-brand-initials,
+.credit-person-initials { position: relative; z-index: 0; }
+
+.credit-person-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+}
+
+.credit-person-avatar img { object-fit: cover; padding: 0; }
+
+.credit-tile.has-logo { position: relative; }
+.credit-tile.has-logo .credit-logo-initials {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.credit-tile.has-logo img {
+  position: absolute;
+  inset: 5px;
+  z-index: 1;
+  width: calc(100% - 10px);
+  height: calc(100% - 10px);
+}
+
+.credit-people li {
+  grid-template-columns: 42px minmax(120px, 1.1fr) minmax(0, 2fr) auto;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  box-shadow: none;
+}
+
+.credit-person-name { line-height: 1.35; }
+
+.credit-avatar img {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 620px) {
+  .credit-people li { grid-template-columns: 42px minmax(0, 1fr) auto; }
+  .credit-person-role { grid-column: 2 / -1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* References are evidence, not teaser copy: keep every citation intact. */
+.reference-list li { overflow-wrap: anywhere; word-break: normal; }

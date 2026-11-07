@@ -249,21 +249,23 @@ export function renderHistory(ctx) {
  * the honest thing is to name the service and link to it until the owner
  * supplies the official files.
  *
- * The owner's avatar is the brand gradient in CSS: /assets/img/owner.jpg is not
- * in the repository, so no picture is requested and the card still looks
- * finished, with nothing to wire up until the file is added.
+ * Marks come from the repository's own provider files where they exist, and
+ * from each service's public profile image where they do not. Nothing here is
+ * copied artwork, and every tile keeps a drawn initials fallback underneath,
+ * so a blocked or missing remote image never leaves an empty hole.
  */
 const PROVIDERS = '/assets/img/providers';
 const CREDITS = [
-  { name: 'Mukesh Kumar', role: 'Owner and maintainer', initials: 'MK', owner: true },
+  { name: 'Bhola Kumar', role: 'Owner and maintainer', initials: 'BK', owner: true, avatar: 'https://github.com/galeoindus.png?size=144' },
   { name: 'Wikipedia', role: 'Article text, pictures and references', href: 'https://www.wikipedia.org', initials: 'W', logo: `${PROVIDERS}/wikipedia.png` },
   { name: 'Wikidata', role: 'Facts and identifiers', href: 'https://www.wikidata.org', initials: 'WD', logo: `${PROVIDERS}/wikidata.svg` },
   { name: 'Wikimedia Commons', role: 'Images and their licences', href: 'https://commons.wikimedia.org', initials: 'WC', logo: `${PROVIDERS}/commons.png` },
   { name: 'Cloudflare Pages', role: 'Hosting and delivery', href: 'https://www.cloudflare.com', initials: 'CF', logo: `${PROVIDERS}/cloudflare.png` },
-  { name: 'Workers AI', role: 'Answers when OpenRouter is unavailable', href: 'https://developers.cloudflare.com/workers-ai/', initials: 'AI', logo: `${PROVIDERS}/cloudflare.png` },
-  { name: 'OpenRouter', role: 'The language model behind chat answers', href: 'https://openrouter.ai', initials: 'OR' },
+  { name: 'Workers AI', role: 'Answers when OpenRouter is unavailable', href: 'https://developers.cloudflare.com/workers-ai/',
+    logo: `${PROVIDERS}/cloudflare.png`, initials: 'AI', logo: `${PROVIDERS}/cloudflare.png` },
+  { name: 'OpenRouter', role: 'The language model behind chat answers', href: 'https://openrouter.ai', initials: 'OR', logo: 'https://openrouter.ai/favicon.ico' },
   { name: 'Google Translate', role: 'Machine translation of articles', href: 'https://translate.google.com', initials: 'GT', logo: `${PROVIDERS}/translate.png` },
-  { name: 'MyMemory', role: 'Fallback translation service', href: 'https://mymemory.translated.net', initials: 'MM' },
+  { name: 'MyMemory', role: 'Fallback translation service', href: 'https://mymemory.translated.net', initials: 'MM', logo: 'https://mymemory.translated.net/favicon.ico' },
 ];
 
 function creditsSection() {
@@ -274,7 +276,14 @@ function creditsSection() {
   const owner = CREDITS.find((c) => c.owner);
   if (owner) {
     const card = el('div', { class: 'credit-owner' });
-    card.append(el('div', { class: 'credit-avatar', 'aria-hidden': 'true' }));
+    const avatar = el('div', { class: 'credit-avatar', 'aria-hidden': 'true' });
+    avatar.append(el('span', { class: 'credit-initials', text: owner.initials }));
+    if (owner.avatar) {
+      const img = el('img', { src: owner.avatar, alt: '', loading: 'lazy', decoding: 'async' });
+      img.addEventListener('error', () => img.remove());
+      avatar.append(img);
+    }
+    card.append(avatar);
     const text = el('div');
     text.append(el('h3', { text: owner.name }));
     text.append(el('p', { text: `${owner.role} · ${t('creditsOwner')}` }));
@@ -293,8 +302,12 @@ function creditsSection() {
     // The real mark where one exists, the initials where it does not: both are
     // inside the same tile, so the row keeps one rhythm either way.
     const tile = el('span', { class: `credit-tile${credit.logo ? ' has-logo' : ''}`, 'aria-hidden': 'true' });
-    if (credit.logo) tile.append(el('img', { src: credit.logo, alt: '', loading: 'lazy', decoding: 'async' }));
-    else tile.textContent = credit.initials;
+    tile.append(el('span', { class: 'credit-logo-initials', text: credit.initials }));
+    if (credit.logo) {
+      const img = el('img', { src: credit.logo, alt: '', loading: 'lazy', decoding: 'async' });
+      img.addEventListener('error', () => img.remove());
+      tile.append(img);
+    }
     card.append(tile);
     const text = el('span', { class: 'credit-text' });
     text.append(el('strong', { text: credit.name }));
@@ -457,24 +470,28 @@ const CREDIT_STACK = [
     what: 'Every sentence the site shows is quoted from a published article. Search, article text and images are fetched live in the browser.',
     licence: 'Text CC BY-SA 4.0 · images per file',
     href: 'https://www.wikipedia.org/',
+    logo: `${PROVIDERS}/wikipedia.png`,
   },
   {
     name: 'Wikidata',
     what: 'The facts, labels and cross-language titles behind the article cards and the factbox.',
     licence: 'CC0 1.0',
     href: 'https://www.wikidata.org/',
+    logo: `${PROVIDERS}/wikidata.svg`,
   },
   {
     name: 'Wikimedia Commons',
     what: 'Article images, each shown with the licence it carries on Commons.',
     licence: 'Per file',
     href: 'https://commons.wikimedia.org/',
+    logo: `${PROVIDERS}/commons.png`,
   },
   {
     name: 'Cloudflare Pages',
     what: 'Hosting, headers and the /api/ask function. The site is static, so there is no build step to deploy.',
     licence: 'Service',
     href: 'https://pages.cloudflare.com/',
+    logo: `${PROVIDERS}/cloudflare.png`,
   },
   {
     name: 'Cloudflare Workers AI',
@@ -487,38 +504,43 @@ const CREDIT_STACK = [
     what: 'The other, configurable provider for the same optional chat. Its credentials are Cloudflare encrypted secrets.',
     licence: 'Service',
     href: 'https://openrouter.ai/',
+    logo: 'https://openrouter.ai/favicon.ico',
   },
   {
     name: 'Transformers.js',
     what: 'Runs the small sentence-embedding model for “Understand meaning” entirely on the reader’s device.',
     licence: 'Apache-2.0',
     href: 'https://github.com/huggingface/transformers.js',
+    logo: 'https://github.com/huggingface.png?size=96',
   },
   {
     name: 'Xenova/all-MiniLM-L6-v2',
     what: 'The roughly 23 MB embedding model that re-orders sentences by meaning. Nothing is generated; only the order changes.',
     licence: 'Apache-2.0',
     href: 'https://huggingface.co/Xenova/all-MiniLM-L6-v2',
+    logo: 'https://huggingface.co/favicon.ico',
   },
   {
     name: 'Google Translate & MyMemory',
     what: 'The optional Translate button. Article text goes from the browser straight to one of these services, and back translated.',
     licence: 'Service',
     href: 'https://translate.google.com/',
+    logo: `${PROVIDERS}/translate.png`,
   },
   {
     name: 'GitHub',
     what: 'The public repository, the issue and pull-request trail, and the Actions that stamp the build and deploy it.',
     licence: 'Service · code MIT',
     href: SITE.repo,
+    logo: 'https://github.com/favicon.ico',
   },
 ];
 
 const CREDIT_PEOPLE = [
-  { name: 'Bhola Kumar', role: 'Design, code, writing and maintenance', commits: '122 commits', href: 'https://github.com/galeoindus' },
-  { name: 'indusmova audit', role: 'The repository’s own audit passes, committed by the maintainer', commits: '22 commits' },
-  { name: 'github-actions[bot]', role: 'Stamps the build version on every push to main', commits: '110 commits' },
-  { name: 'dependabot[bot]', role: 'Dependency updates', commits: '1 commit' },
+  { name: 'Bhola Kumar', role: 'Design, code, writing and maintenance', commits: '122 commits', href: 'https://github.com/galeoindus', avatar: 'https://github.com/galeoindus.png?size=96', initials: 'BK' },
+  { name: 'indusmova audit', role: 'The repository’s own audit passes, committed by the maintainer', commits: '22 commits', avatar: '/assets/img/mark.svg', initials: 'IA' },
+  { name: 'github-actions[bot]', role: 'Stamps the build version on every push to main', commits: '110 commits', avatar: 'https://github.com/github-actions.png?size=96', initials: 'GH' },
+  { name: 'dependabot[bot]', role: 'Dependency updates', commits: '1 commit', avatar: 'https://github.com/dependabot.png?size=96', initials: 'DB' },
 ];
 
 export function renderCredits() {
@@ -528,10 +550,10 @@ export function renderCredits() {
   /* --- the maker ------------------------------------------------------- */
   const maker = el('section', { class: 'credit-maker' });
   const avatar = el('div', { class: 'credit-avatar', 'aria-hidden': 'true' });
-  // A photograph is optional. Drop /assets/img/author.jpg into the repository
-  // and it appears here; until then the initials stand in, so the page never
-  // shows a broken image or an empty circle.
-  const photo = el('img', { src: '/assets/img/author.jpg', alt: '', width: '96', height: '96', loading: 'lazy', decoding: 'async' });
+  // The maintainer's public GitHub profile image, not an invented portrait and
+  // not a file the repository does not contain. The initials stay underneath,
+  // so a blocked request still leaves a finished circle.
+  const photo = el('img', { src: 'https://github.com/galeoindus.png?size=192', alt: '', width: '96', height: '96', loading: 'lazy', decoding: 'async' });
   photo.addEventListener('error', () => photo.remove());
   avatar.append(photo, el('span', { class: 'credit-initials', text: 'BK' }));
   maker.append(avatar);
@@ -582,7 +604,18 @@ export function renderCredits() {
   const grid = el('div', { class: 'src-grid' });
   for (const item of CREDIT_STACK) {
     const group = el('div', { class: 'src-group' });
-    group.append(el('h3', { html: `<a href="${item.href}" target="_blank" rel="noopener noreferrer">${esc(item.name)}</a>` }));
+    const brand = el('div', { class: 'src-brand' });
+    const mark = el('span', { class: 'src-brand-mark', 'aria-hidden': 'true' });
+    const initials = item.name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
+    mark.append(el('span', { class: 'src-brand-initials', text: initials }));
+    if (item.logo) {
+      const image = el('img', { src: item.logo, alt: '', loading: 'lazy', decoding: 'async' });
+      image.addEventListener('error', () => image.remove());
+      mark.append(image);
+    }
+    brand.append(mark);
+    brand.append(el('h3', { html: `<a href="${item.href}" target="_blank" rel="noopener noreferrer">${esc(item.name)}</a>` }));
+    group.append(brand);
     group.append(el('p', { text: item.what }));
     group.append(el('p', { class: 'credit-licence', text: item.licence }));
     grid.append(group);
@@ -607,6 +640,14 @@ export function renderCredits() {
     const name = person.href
       ? el('a', { href: person.href, target: '_blank', rel: 'noopener noreferrer', text: person.name })
       : el('strong', { text: person.name });
+    const personAvatar = el('span', { class: 'credit-person-avatar', 'aria-hidden': 'true' });
+    personAvatar.append(el('span', { class: 'credit-person-initials', text: person.initials }));
+    if (person.avatar) {
+      const image = el('img', { src: person.avatar, alt: '', loading: 'lazy', decoding: 'async' });
+      image.addEventListener('error', () => image.remove());
+      personAvatar.append(image);
+    }
+    li.append(personAvatar);
     li.append(el('span', { class: 'credit-person-name' }, [name]));
     li.append(el('span', { class: 'credit-person-role', text: person.role }));
     li.append(el('span', { class: 'credit-person-count', text: person.commits }));

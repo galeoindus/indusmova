@@ -49,7 +49,17 @@ for (const file of htmlFiles) {
   const ids = [...html.matchAll(/\bid=["']([^"']+)["']/gi)].map((item) => item[1]);
   const duplicateIds = ids.filter((id, index) => ids.indexOf(id) !== index);
   if (duplicateIds.length) errors.push(`Duplicate HTML id(s) in ${label}: ${[...new Set(duplicateIds)].slice(0, 5).join(', ')}`);
-  const build = (html.match(/<meta\s+name=["']indusmova-build["']\s+content=["']([^"']+)/i) || [])[1];
+  // Read the meta tags by name, whatever order the attributes are written in,
+  // and treat a duplicate build tag as a real error: two stamps mean one of
+  // them is stale and the page can serve the wrong cache-busting URL.
+  const metaTags = [...html.matchAll(/<meta\b[^>]*>/gi)].map((match) => match[0]);
+  const metaValue = (name) => {
+    const tag = metaTags.find((item) => new RegExp(`\\bname\\s*=\\s*(["'])${name}\\1`, 'i').test(item));
+    return tag ? (tag.match(/\bcontent\s*=\s*(["'])(.*?)\1/i) || [])[2] : '';
+  };
+  const buildTags = metaTags.filter((item) => /\bname\s*=\s*(["'])indusmova-build\1/i.test(item));
+  if (buildTags.length > 1) errors.push(`Duplicate indusmova-build meta tags: ${label}`);
+  const build = metaValue('indusmova-build');
   if (!build) errors.push(`Missing indusmova-build meta: ${label} (run npm run stamp:build)`);
   else if (!buildPattern.test(build)) errors.push(`Wrong build id in ${label}: ${build} (package ${VERSION})`);
   if (!/assets\/js\/build-watch\.js/.test(html)) errors.push(`Missing live build watcher: ${label}`);

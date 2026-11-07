@@ -288,44 +288,111 @@ export function chipRow(items, { onPick, justify = false } = {}) {
   return wrap;
 }
 
-/** Suggest-as-you-type dropdown bound to a textarea. */
+/** Suggest-as-you-type dropdown bound to a textarea.
+ *
+ * It is a real combobox: the field owns the listbox, arrow keys move through
+ * the options, Enter takes the active one, Escape closes the panel, and a
+ * response for an older query can never overwrite a newer one. */
+let suggestSequence = 0;
+
 export function attachSuggest(textarea, ctx) {
-  const box = el('div', { class: 'suggest', hidden: true });
+  const id = `${textarea.id || 'search'}-suggestions-${++suggestSequence}`;
+  const box = el('div', { class: 'suggest', id, role: 'listbox', hidden: true });
+  textarea.setAttribute('role', 'combobox');
+  textarea.setAttribute('aria-autocomplete', 'list');
+  textarea.setAttribute('aria-controls', id);
+  textarea.setAttribute('aria-expanded', 'false');
+  textarea.setAttribute('aria-haspopup', 'listbox');
   textarea.parentElement.append(box);
-  const run = debounce(async (value) => {
-    if (value.length < 2) {
-      box.hidden = true;
-      return;
-    }
+
+  let requestId = 0;
+  let activeIndex = -1;
+  let rows = [];
+
+  const hide = () => {
+    box.hidden = true;
+    activeIndex = -1;
+    textarea.setAttribute('aria-expanded', 'false');
+    textarea.removeAttribute('aria-activedescendant');
+  };
+  const clearSuggestions = () => {
+    hide();
+    rows = [];
+    box.replaceChildren();
+  };
+  const select = (hit) => {
+    if (!hit) return;
+    clearSuggestions();
+    textarea.value = hit.title;
+    ctx.onSubmit(hit.title);
+  };
+  const setActive = (index) => {
+    if (!rows.length) return;
+    activeIndex = (index + rows.length) % rows.length;
+    rows.forEach((row, i) => {
+      const active = i === activeIndex;
+      row.classList.toggle('active', active);
+      row.setAttribute('aria-selected', String(active));
+    });
+    textarea.setAttribute('aria-activedescendant', rows[activeIndex].id);
+    rows[activeIndex].scrollIntoView?.({ block: 'nearest' });
+  };
+
+  const run = debounce(async (value, currentRequest) => {
+    if (value.length < 2) { clearSuggestions(); return; }
     try {
       const hits = await ctx.suggest(value);
-      if (!hits.length) {
-        box.hidden = true;
-        return;
-      }
-      box.innerHTML = '';
-      for (const hit of hits) {
+      if (currentRequest !== requestId) return; // a newer query already ran
+      if (!hits.length) { clearSuggestions(); return; }
+      box.replaceChildren();
+      rows = [];
+      activeIndex = -1;
+      hits.forEach((hit, index) => {
         const row = el('a', {
-          class: 'suggest-item',
-          href: '#',
-          html: `${hit.thumb ? `<img src="${esc(hit.thumb)}" alt="" loading="lazy" width="34" height="34">` : ''}
-                 <span><span class="si-title">${esc(hit.title)}</span>${hit.description ? `<span class="si-desc">${esc(hit.description)}</span>` : ''}</span>`,
+          class: 'suggest-item', href: '#', role: 'option',
+          id: `${id}-option-${index}`, 'aria-selected': 'false',
         });
-        row.addEventListener('click', (event) => {
-          event.preventDefault();
-          box.hidden = true;
-          textarea.value = hit.title;
-          ctx.onSubmit(hit.title);
-        });
+        if (hit.thumb) row.append(el('img', { src: hit.thumb, alt: '', loading: 'lazy', width: '34', height: '34', decoding: 'async' }));
+        const text = el('span');
+        text.append(el('span', { class: 'si-title', text: hit.title }));
+        if (hit.description) text.append(el('span', { class: 'si-desc', text: hit.description }));
+        row.append(text);
+        row.addEventListener('click', (event) => { event.preventDefault(); select(hit); });
+        row.addEventListener('mousemove', () => setActive(index));
+        rows.push(row);
         box.append(row);
-      }
+      });
       box.hidden = false;
+      textarea.setAttribute('aria-expanded', 'true');
     } catch {
-      box.hidden = true;
+      if (currentRequest === requestId) clearSuggestions();
     }
   }, 220);
-  textarea.addEventListener('input', () => run(textarea.value.trim()));
-  textarea.addEventListener('blur', () => setTimeout(() => { box.hidden = true; }, 150));
+
+  textarea.addEventListener('input', () => {
+    const value = textarea.value.trim();
+    requestId += 1;
+    clearSuggestions();
+    if (value.length < 2) return;
+    run(value, requestId);
+  });
+  textarea.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowDown' && !box.hidden) { event.preventDefault(); setActive(activeIndex + 1); }
+    else if (event.key === 'ArrowUp' && !box.hidden) { event.preventDefault(); setActive(activeIndex < 0 ? rows.length - 1 : activeIndex - 1); }
+    else if (event.key === 'Escape' && !box.hidden) { event.preventDefault(); clearSuggestions(); }
+    else if (event.key === 'Enter' && !box.hidden && activeIndex >= 0) {
+      event.preventDefault();
+      const hit = rows[activeIndex];
+      select({ title: hit.querySelector('.si-title')?.textContent || '' });
+    }
+  });
+  textarea.addEventListener('blur', () => setTimeout(hide, 150));
+  textarea.addEventListener('focus', () => {
+    if (rows.length && textarea.value.trim().length >= 2) {
+      box.hidden = false;
+      textarea.setAttribute('aria-expanded', 'true');
+    }
+  });
   return box;
 }
 

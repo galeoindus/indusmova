@@ -15,6 +15,26 @@ if (!/^[0-9a-f]{7}$/i.test(commit)) throw new Error('BUILD_COMMIT must be a 7-ch
 const build = `${version}-${commit}`;
 const excluded = new Set(['.git', 'node_modules', '.wrangler', 'dist', 'build']);
 
+function metaAttribute(tag, attribute) {
+  const match = tag.match(new RegExp(`\\b${attribute}\\s*=\\s*(["'])(.*?)\\1`, 'i'));
+  return match ? match[2] : '';
+}
+
+/** Set a build meta tag whatever the attribute order, and collapse duplicates. */
+function upsertMeta(html, name, content) {
+  let found = false;
+  html = html.replace(/<meta\b[^>]*>/gi, (tag) => {
+    if (metaAttribute(tag, 'name').toLowerCase() !== name.toLowerCase()) return tag;
+    if (found) return '';
+    found = true;
+    return `<meta name="${name}" content="${content}">`;
+  });
+  if (!found && /<head[^>]*>/i.test(html)) {
+    html = html.replace(/<head[^>]*>/i, (head) => `${head}\n  <meta name="${name}" content="${content}">`);
+  }
+  return html;
+}
+
 async function walk(dir) {
   const output = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -33,16 +53,14 @@ for (const file of await walk(ROOT)) {
   html = html.replace(/([?&]v=)[^&"'\s<>]+/g, `$1${build}`);
   // Move legacy article inline scripts into an external file permitted by script-src 'self'.
   html = html.replace(/<script>\s*\/\* Read the article the way the breakdown reads:[\s\S]*?<\/script>/gi, `<script type="module" src="/assets/js/article-points.js?v=${build}" defer></script>`);
-  if (/<meta\s+name=["']indusmova-version["'][^>]*>/i.test(html)) {
-    html = html.replace(/<meta\s+name=["']indusmova-version["'][^>]*>/i, `<meta name="indusmova-version" content="${version}">`);
-  } else if (/<head[^>]*>/i.test(html)) {
-    html = html.replace(/<head[^>]*>/i, (head) => `${head}\n  <meta name="indusmova-version" content="${version}">`);
+  // The image failure handler has to be listening before the first <img> in
+  // the body is requested, so it is installed here for every page — the static
+  // article pages as well as the single-page app.
+  if (!/assets\/js\/image-fallback\.js/.test(html) && /<\/head>/i.test(html)) {
+    html = html.replace(/<\/head>/i, `  <script src="/assets/js/image-fallback.js?v=${build}"></script>\n</head>`);
   }
-  if (/<meta\s+name=["']indusmova-build["'][^>]*>/i.test(html)) {
-    html = html.replace(/<meta\s+name=["']indusmova-build["'][^>]*>/i, `<meta name="indusmova-build" content="${build}">`);
-  } else if (/<head[^>]*>/i.test(html)) {
-    html = html.replace(/<head[^>]*>/i, (head) => `${head}\n  <meta name="indusmova-build" content="${build}">`);
-  }
+  html = upsertMeta(html, 'indusmova-version', version);
+  html = upsertMeta(html, 'indusmova-build', build);
   // The shared design layer: type, spacing, controls, focus, print. Loaded
   // last so it settles every page onto the same system.
   if (!/assets\/css\/system\.css/.test(html) && /<\/head>/i.test(html)) {
@@ -52,7 +70,7 @@ for (const file of await walk(ROOT)) {
   // because they are corrections to the layout rather than part of the paint,
   // and both are added here so a page created later gets them without anyone
   // having to remember.
-  for (const sheet of ['article-layout.css', 'mobile.css']) {
+  for (const sheet of ['article-layout.css', 'mobile.css', 'polish.css']) {
     if (new RegExp(`assets/css/${sheet.replace('.', '\\.')}`).test(html)) continue;
     if (!/<\/head>/i.test(html)) continue;
     html = html.replace(/<\/head>/i, `  <link rel="stylesheet" href="/assets/css/${sheet}?v=${build}">\n</head>`);
