@@ -24,20 +24,16 @@ const [view, css, headers, pkg] = await Promise.all([
   assert.match(view, /not endorsed by or affiliated with[\s\S]*Government of India/);
 });
 
-test('Sarvam AI is credited by name, with its mark gated behind written permission', () => {
+test('Sarvam AI is credited by name only — no mark is displayed or fetched', () => {
   // Their guidelines limit mark use to Sarvam products and services and to use
-  // with permission, so the default build must not display or fetch the mark.
-  assert.match(view, /const SARVAM_MARK_APPROVED = false;/);
+  // with permission. This credit is development assistance, so the site must not
+  // show, fetch or allow-list their logo at all.
+  assert.match(view, /name: 'Sarvam AI'/);
+  assert.doesNotMatch(view, /sarvam\.dev/);
+  assert.doesNotMatch(view, /logomark-on-(light|dark)/);
+  assert.doesNotMatch(view, /wordmark-on-(light|dark)/);
   assert.match(view, /credit-sarvam-fallback/);
-  assert.match(view, /wordmark-on-light\.png/);
-  assert.match(view, /wordmark-on-dark\.png/);
-  assert.doesNotMatch(view, /name: 'Sarvam AI'[^\n]*logomark-on-light/);
-  assert.match(view, /AI development contributor/);
-  assert.match(view, /name: 'Sarvam AI'.*AI-assisted development contribution/s);
-  assert.match(view, /AI-assisted work on parts of the code, writing and project audits/);
-  assert.match(view, /does not mean the website is “powered by Sarvam AI”/);
-  assert.match(view, /brand-guidelines/);
-  assert.match(headers, /img-src[^\n]*https:\/\/web\.sarvam\.dev/);
+  assert.doesNotMatch(headers, /sarvam\.dev/);
 });
 
 test('every technology card includes a logo slot, a role, a description, a licence and an external destination', () => {

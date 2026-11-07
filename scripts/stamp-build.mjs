@@ -80,6 +80,10 @@ for (const file of await walk(ROOT)) {
   if (!/assets\/css\/design-system\.css/.test(html) && /<\/head>/i.test(html)) {
     html = html.replace(/<\/head>/i, `  <link rel="stylesheet" href="/assets/css/design-system.css?v=${build}">\n</head>`);
   }
+  // Amigo's shared refinement layer follows the design tokens on every route.
+  if (!/assets\/css\/amigo-ui\.css/.test(html) && /<\/head>/i.test(html)) {
+    html = html.replace(/<\/head>/i, `  <link rel="stylesheet" href="/assets/css/amigo-ui.css?v=${build}">\n</head>`);
+  }
   // One theme controller for the whole site, including static articles and
   // utility pages, so a reader's choice follows them across every route.
   if (!/assets\/js\/global-theme\.js/.test(html) && /<\/head>/i.test(html)) {
@@ -106,7 +110,7 @@ for (const file of await walk(ROOT)) {
   if (!/assets\/js\/build-watch\.js/.test(html) && /<\/body>/i.test(html)) {
     html = html.replace(/<\/body>/i, `  <script type="module" src="/assets/js/build-watch.js?v=${build}"></script>\n</body>`);
   }
-  // The floating "Ask AI" launcher belongs on every page except the chat
+  // The floating Amigo launcher belongs on every page except the chat
   // itself, which is already the destination.
   const isChat = /(^|\/)chat\/index\.html$/.test(file.replace(/\\/g, '/'));
   if (!isChat && !/assets\/js\/chat-launcher\.js/.test(html) && /<\/body>/i.test(html)) {

@@ -455,23 +455,6 @@ export function renderStatic(name) {
 
 const CREDITS_ASOF = '7 November 2026';
 
-/**
- * Sarvam AI's brand guidelines grant only a limited, non-exclusive permission
- * to use their marks, "only when they directly relate to Sarvam AI products or
- * services" (https://www.sarvam.ai/brand-guidelines). indusmova does not run on
- * Sarvam's APIs — this is a credit for development assistance — so their
- * wordmark is not shown until the maintainer has written permission. Until
- * then the name is written in text, which needs no permission and cannot be
- * mistaken for a "powered by" claim. Flip this to true only after that
- * permission is confirmed in writing; the theme-correct official wordmark and
- * the text fallback are already wired below.
- */
-const SARVAM_MARK_APPROVED = false;
-const SARVAM_WORDMARK = {
-  light: 'https://web.sarvam.dev/assets/brand/guidelines/wordmark-on-light.png',
-  dark: 'https://web.sarvam.dev/assets/brand/guidelines/wordmark-on-dark.png',
-};
-
 const CREDIT_TIMELINE = [
   { date: '20 October 2026', title: 'The first commit', detail: 'The design system is scaffolded and indusmova starts as a folder of plain HTML, CSS and ES modules.' },
   { date: '23 October 2026', title: 'v3.0.0, first public release', detail: 'Ask, Search, Article, On this day, Explore and the Sources page go live on Cloudflare Pages.' },
@@ -634,27 +617,15 @@ export function renderCredits() {
   ai.append(sectionHead({ title: 'AI-assisted development' }));
   ai.append(el('p', { class: 'credit-section-intro', text: 'AI tools assisted parts of the project’s development. The maintainer reviewed, tested and accepted the changes and remains responsible for the final product.' }));
   const sarvam = el('article', { class: 'credit-sarvam-card' });
+  // Their brand guidelines allow the marks only for Sarvam products and
+  // services, and only with permission. This is a credit for development
+  // assistance, so the name is written as type and no mark is requested at all.
   const sarvamLogo = el('a', {
-    class: `credit-sarvam-logo${SARVAM_MARK_APPROVED ? '' : ' is-wordmark-text'}`,
+    class: 'credit-sarvam-logo is-wordmark-text',
     href: 'https://www.sarvam.ai/', target: '_blank', rel: 'noopener noreferrer',
     'aria-label': 'Sarvam AI official website',
   });
   sarvamLogo.append(el('span', { class: 'credit-sarvam-fallback', text: 'Sarvam AI' }));
-  if (SARVAM_MARK_APPROVED) {
-    // Black on light, white on dark: the guidelines forbid accent colours,
-    // gradients and effects, and the wordmark may never be redrawn.
-    const dark = document.documentElement.dataset.theme === 'dark';
-    const sarvamImage = el('img', {
-      src: dark ? SARVAM_WORDMARK.dark : SARVAM_WORDMARK.light,
-      alt: 'Sarvam AI wordmark', loading: 'lazy', decoding: 'async',
-    });
-    sarvamImage.addEventListener('load', () => sarvamLogo.classList.add('has-image'));
-    sarvamImage.addEventListener('error', () => { sarvamImage.remove(); sarvamLogo.classList.remove('has-image'); });
-    sarvamLogo.append(sarvamImage);
-    window.addEventListener('indusmova:themechange', (event) => {
-      sarvamImage.src = event.detail.theme === 'dark' ? SARVAM_WORDMARK.dark : SARVAM_WORDMARK.light;
-    });
-  }
   sarvam.append(sarvamLogo);
   const sarvamCopy = el('div', { class: 'credit-sarvam-copy' });
   sarvamCopy.append(el('span', { class: 'credit-role-chip credit-role-chip-featured', text: 'AI development contributor' }));
@@ -663,7 +634,7 @@ export function renderCredits() {
   sarvamCopy.append(el('a', { class: 'credit-official-link', href: 'https://www.sarvam.ai/brand-guidelines', target: '_blank', rel: 'noopener noreferrer', text: 'Official brand and logo guidelines ↗' }));
   sarvam.append(sarvamCopy);
   ai.append(sarvam);
-  ai.append(el('p', { class: 'credit-disclosure-note', text: 'Attribution note: this acknowledgement does not mean the website is “powered by Sarvam AI”, sponsored by Sarvam, or endorsed by the company. The current chat runtime is configured separately through Cloudflare Workers AI and/or OpenRouter. The name appears as text because Sarvam AI’s brand guidelines limit use of their marks to Sarvam products and services and to use with permission; the mark will only be shown here once that permission is confirmed.' }));
+  ai.append(el('p', { class: 'credit-disclosure-note', text: 'Attribution note: this acknowledgement does not mean the website is “powered by Sarvam AI”, sponsored by Sarvam, or endorsed by the company. The current chat runtime is configured separately through Cloudflare Workers AI and/or OpenRouter. Sarvam AI’s brand guidelines limit use of their marks to Sarvam products and services and to use with permission, so their logo is not used anywhere on this site; the name appears as text.' }));
   wrap.append(ai);
 
   /* --- contributors ---------------------------------------------------- */

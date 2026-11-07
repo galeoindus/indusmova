@@ -81,3 +81,8 @@ Article text, source citations, tables, infoboxes and answer bodies should use s
 - [ ] Check text contrast for both themes (WCAG AA: 4.5:1 normal text; 3:1 large text).
 - [ ] Check prefers-reduced-motion, 200% zoom and long article reading.
 - [ ] Run unit tests, site audit, deep audit, Lighthouse and a real mobile smoke test.
+
+
+## Amigo assistant layer
+
+The conversational assistant is named **Amigo**; the knowledge platform remains indusmova. The `amigo-mark.svg` is a neutral geometric chat-face mark. Assistant progress and answer-reveal states use restrained CSS motion, with a complete reduced-motion fallback. The old wheel-like loader is replaced by a neutral progress ring. The shared `amigo-ui.css` composes with the existing light/dark design tokens and responsive article-gallery layout; `amigo-chat.css` is scoped to the dedicated chat route. Preserve the existing source-grounding, URL validation, server-side secret handling, and privacy notice when extending the agent.

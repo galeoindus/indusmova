@@ -1,0 +1,118 @@
+/* Amigo UI refinement: shared article, card, gallery and navigation rules.
+   Tokens remain owned by design-system.css; this sheet only composes them. */
+:root {
+  --amigo-radius-sm: 12px;
+  --amigo-radius-md: 18px;
+  --amigo-radius-lg: 24px;
+  --amigo-motion: cubic-bezier(.2,.75,.25,1);
+}
+
+/* Article media: turn source galleries into a responsive, balanced grid. */
+.art-body ul.gallery,
+.art-body .gallery.mw-gallery-traditional,
+.art-body .mw-gallery-traditional,
+.art-body .mw-gallery-packed,
+.art-body .article-gallery-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr));
+  align-items: start;
+  gap: clamp(10px, 2vw, 18px);
+  width: 100%;
+  max-width: 100%;
+  margin: 22px 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+  columns: initial !important;
+}
+.art-body .gallerybox,
+.art-body .gallery > li,
+.art-body .article-gallery-grid > * {
+  float: none !important;
+  width: auto !important;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0 !important;
+  break-inside: avoid;
+}
+.art-body .gallerybox .thumb,
+.art-body .gallery > li .thumb {
+  display: grid;
+  place-items: center;
+  width: 100% !important;
+  min-height: 150px;
+  margin: 0 !important;
+  padding: 8px;
+  overflow: hidden;
+  border: 1px solid var(--im-border);
+  border-radius: var(--amigo-radius-md);
+  background: var(--im-surface-2);
+}
+.art-body .gallerybox .thumb img,
+.art-body .gallery > li img,
+.art-body .article-gallery-grid img {
+  display: block;
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 260px;
+  margin: 0 auto;
+  object-fit: contain;
+  border-radius: 10px;
+}
+.art-body .gallerytext,
+.art-body .gallerybox .gallerytext {
+  padding: 8px 3px 2px;
+  color: var(--im-muted);
+  font-size: .88rem;
+  line-height: 1.5;
+  text-align: center;
+}
+.art-body .gallerybox .gallerytext p { margin: 0; max-width: none; }
+@media (min-width: 760px) {
+  .art-body ul.gallery,
+  .art-body .gallery.mw-gallery-traditional,
+  .art-body .mw-gallery-traditional,
+  .art-body .mw-gallery-packed,
+  .art-body .article-gallery-grid {
+    grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  }
+}
+
+/* Shared media and cards should align to a single edge and never overflow. */
+.card, .source-card, .topic-card, .src-card, .suggestion-card,
+.article-panel, .factbox, .panel-wide {
+  border-radius: var(--amigo-radius-md);
+}
+img, video, iframe { max-width: 100%; }
+button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
+:where(button, a, input, textarea, select):focus-visible {
+  outline: 2px solid var(--im-accent);
+  outline-offset: 3px;
+}
+
+/* One canonical five-destination phone bar, with an even rhythm. */
+.bottom-nav {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 3px;
+  padding-inline: max(8px, env(safe-area-inset-left)) max(8px, env(safe-area-inset-right));
+}
+.bottom-nav a {
+  min-width: 0;
+  min-height: 48px;
+  align-content: center;
+  justify-items: center;
+  gap: 4px;
+  border-radius: 13px;
+  font-weight: 550;
+  transition: color .18s var(--amigo-motion), background-color .18s var(--amigo-motion);
+}
+.bottom-nav a span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bottom-nav a[aria-current="page"] { color: var(--im-accent); background: var(--im-accent-soft); }
+@media (max-width: 360px) {
+  .bottom-nav a { font-size: 9px; }
+  .bottom-nav svg { width: 19px; height: 19px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-nav a, .card, .source-card, .topic-card { transition: none !important; }
+}

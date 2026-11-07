@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" role="img" aria-label="Amigo">
+  <defs>
+    <linearGradient id="a" x1="5" y1="4" x2="43" y2="44" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#83D4A8"/><stop offset="1" stop-color="#4CA985"/>
+    </linearGradient>
+  </defs>
+  <rect x="3" y="3" width="42" height="42" rx="15" fill="#14251E" stroke="#83D4A8" stroke-opacity=".34"/>
+  <path d="M11 23.5c0-7.2 5.8-13 13-13s13 5.8 13 13-5.8 13-13 13c-2.1 0-4.1-.5-5.9-1.4L12 37l1.9-5.1a12.9 12.9 0 0 1-2.9-8.4Z" fill="url(#a)" fill-opacity=".16" stroke="url(#a)" stroke-width="1.7"/>
+  <circle cx="19" cy="23" r="2" fill="#A8E8C1"/>
+  <circle cx="29" cy="23" r="2" fill="#A8E8C1"/>
+  <path d="M19 29c1.3 1.4 3 2.1 5 2.1s3.7-.7 5-2.1" stroke="#A8E8C1" stroke-width="1.8" stroke-linecap="round"/>
+  <circle cx="37.5" cy="10.5" r="2.5" fill="#E2A978"/>
+</svg>

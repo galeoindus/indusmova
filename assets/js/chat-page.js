@@ -23,7 +23,7 @@ const SPEECH = {
 
 const COPY = {
   en: {
-    hello: 'Hi, I’m <em>Indus</em>. What do you want to <em>understand</em>?',
+    hello: 'Hi, I’m <em>Amigo</em>. What would you like to explore?',
     intro: 'Chat naturally, explore any topic, and get clear answers grounded in Wikipedia articles you can open and read.',
     ask: 'Ask anything…',
     hint: 'Answers are written from the sources shown under them.',
@@ -44,7 +44,7 @@ const COPY = {
     voice: 'Voice', listening: 'Listening…', voiceUnsupported: 'Voice input is unavailable in this browser.',
   },
   hi: {
-    hello: 'नमस्ते, मैं <em>Indus</em> हूँ। आज क्या <em>समझें</em>?',
+    hello: 'नमस्ते, मैं <em>Amigo</em> हूँ। आज क्या जानना चाहेंगे?',
     intro: 'बातचीत की तरह पूछें, किसी भी विषय को explore करें और Wikipedia के लेखों पर आधारित स्पष्ट जवाब पाएँ।',
     ask: 'अपना सवाल लिखें…',
     hint: 'उत्तर नीचे दिए स्रोतों से लिखे जाते हैं।',
@@ -181,16 +181,16 @@ function localSmallTalkReply(question) {
   const q = String(question || '').trim().toLowerCase();
   if (/^(hi+|hey+|hello+|yo|hiya|namaste|namaskar|हाय|हैलो|नमस्ते|नमस्कार)(?=[\s!,.?]|$)/i.test(q)) {
     return uiLang() === 'hi'
-      ? 'नमस्ते! 👋 मैं Indus हूँ। आप मुझसे सामान्य बातचीत कर सकते हैं या कोई विषय पूछ सकते हैं—मैं Wikipedia के लेख खोजकर स्रोतों के साथ समझाऊँगा।'
-      : 'Hi there! 👋 I’m Indus. We can chat naturally, or you can ask me about any topic and I’ll look up relevant Wikipedia articles with sources.';
+      ? 'नमस्ते! 👋 मैं Amigo हूँ। आप मुझसे सामान्य बातचीत कर सकते हैं या कोई विषय पूछ सकते हैं—मैं Wikipedia के लेख खोजकर स्रोतों के साथ समझाऊँगा।'
+      : 'Hi there! 👋 I’m Amigo. We can chat naturally, or you can ask me about any topic and I’ll look up relevant Wikipedia articles with sources.';
   }
   if (/how are you|कैसे हैं|कैसी हैं|आप कैसे|क्या हाल/.test(q)) {
     return uiLang() === 'hi' ? 'मैं बढ़िया हूँ और आपकी मदद के लिए तैयार हूँ। आज किस विषय को explore करें?' : 'I’m doing well and ready to help. What are you curious about today?';
   }
   if (/who are you|what are you|your name|what.s your name|tell me about yourself|are you an? ai|आप कौन|आपका नाम|तुम कौन/.test(q)) {
     return uiLang() === 'hi'
-      ? 'मैं Indus हूँ—Indusmova का AI research assistant। मैं सामान्य बातचीत कर सकता हूँ और आपके सवालों के लिए Wikipedia से संबंधित लेख खोजकर स्रोतों के साथ जवाब देता हूँ।'
-      : 'I’m Indus, the AI research assistant on Indusmova. I can chat with you and search Wikipedia articles to answer factual questions with citations you can open.';
+      ? 'मैं Amigo हूँ—Indusmova का AI research assistant। मैं सामान्य बातचीत कर सकता हूँ और आपके सवालों के लिए Wikipedia से संबंधित लेख खोजकर स्रोतों के साथ जवाब देता हूँ।'
+      : 'I’m Amigo, the AI research assistant on Indusmova. I can chat with you and search Wikipedia articles to answer factual questions with citations you can open.';
   }
   if (/thank|धन्यवाद|शुक्रिया/.test(q)) return uiLang() === 'hi' ? 'आपका स्वागत है! कुछ और जानना हो तो पूछिए।' : 'You’re welcome! Ask me anything else you’d like to explore.';
   if (/bye|goodbye|अलविदा/.test(q)) return uiLang() === 'hi' ? 'फिर मिलेंगे! जब भी कुछ जानना हो, वापस आइए।' : 'See you soon! Come back whenever you want to explore something new.';
@@ -358,23 +358,25 @@ function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-function typeOut(target, text, prefix) {
+function typeOut(target, text, prefix, onDone = () => {}) {
   const full = String(text || '');
   if (prefersReducedMotion() || full.length > 6000) {
     target.innerHTML = markdown(full, prefix);
+    onDone();
     return;
   }
   const chunks = full.split(/(\s+)/);
   let i = 0;
   target.classList.add('typing');
   const step = () => {
-    i = Math.min(chunks.length, i + 3);
+    i = Math.min(chunks.length, i + 2);
     target.innerHTML = markdown(chunks.slice(0, i).join(''), prefix);
     scrollDown();
     if (i < chunks.length) {
-      setTimeout(step, 16);
+      setTimeout(step, 26);
     } else {
       target.classList.remove('typing');
+      onDone();
     }
   };
   step();
@@ -403,8 +405,15 @@ function renderAnswer(a, { store = false, animate = true } = {}) {
   box.dir = 'auto';
 
   const meta = el('div', 'a-meta');
-  meta.append(el('span', 'dot'));
-  meta.append(el('span', 'who', 'Indus')); 
+  const avatar = el('span', 'amigo-avatar');
+  const avatarImg = el('img');
+  avatarImg.src = '/assets/img/amigo-mark.svg';
+  avatarImg.alt = '';
+  avatarImg.width = 28;
+  avatarImg.height = 28;
+  avatar.append(avatarImg);
+  meta.append(avatar);
+  meta.append(el('span', 'who', 'Amigo')); 
   meta.append(el('span', 'badge', a.sources?.length ? (uiLang() === 'hi' ? 'Wikipedia आधारित' : 'Wikipedia-backed') : (uiLang() === 'hi' ? 'बातचीत' : 'Conversation')));
   if (a.title) meta.append(el('span', 'src-name', esc(a.title)));
   inner.append(meta);
@@ -414,8 +423,14 @@ function renderAnswer(a, { store = false, animate = true } = {}) {
   // Only a freshly written answer is typed out. Re-opening the chat used to
   // replay the whole thread character by character, which cost time and made
   // a returning reader wait for text they had already read.
-  if (animate) typeOut(body, a.answer, prefix);
-  else body.innerHTML = markdown(a.answer, prefix);
+  if (animate) {
+    meta.classList.add('is-speaking');
+    avatar.classList.add('is-active');
+    typeOut(body, a.answer, prefix, () => {
+      meta.classList.remove('is-speaking');
+      avatar.classList.remove('is-active');
+    });
+  } else body.innerHTML = markdown(a.answer, prefix);
 
   const sources = (a.sources || []).filter((s) => s.url && wikiUrl(s.url));
   if (sources.length) {
@@ -621,7 +636,14 @@ async function ask(raw, depthOverride) {
 
   const working = el('div', 'working');
   working.setAttribute('role', 'status');
-  working.append(el('span', 'chakra-loader'));
+  const workingAvatar = el('span', 'amigo-avatar is-active');
+  const workingAvatarImg = el('img');
+  workingAvatarImg.src = '/assets/img/amigo-mark.svg';
+  workingAvatarImg.alt = '';
+  workingAvatarImg.width = 28;
+  workingAvatarImg.height = 28;
+  workingAvatar.append(workingAvatarImg);
+  working.append(workingAvatar);
   const label = el('span', null, t('searching'));
   working.append(label);
   $('#thread').append(working);
@@ -644,7 +666,7 @@ async function ask(raw, depthOverride) {
         });
       } catch (error) {
         if (error?.name === 'AbortError') throw error;
-        data = { answer: localSmallTalkReply(question), provider: 'Indus fallback' };
+        data = { answer: localSmallTalkReply(question), provider: 'Amigo fallback' };
       }
       working.remove();
       const reply = {
@@ -1069,10 +1091,10 @@ function renderSuggestions() {
   const box = $('#suggestions');
   box.replaceChildren();
   const ideas = uiLang() === 'hi'
-    ? [['बातचीत शुरू करें', 'नमस्ते Indus!'],
+    ? [['बातचीत शुरू करें', 'नमस्ते Amigo!'],
        ['विज्ञान समझें', 'प्रकाश संश्लेषण कैसे होता है?'],
        ['इतिहास खोजें', 'सम्राट अशोक कौन थे और क्यों महत्वपूर्ण हैं?']]
-    : [['Say hello', 'Hi, Indus!'],
+    : [['Say hello', 'Hi, Amigo!'],
        ['Explore science', 'How does photosynthesis work?'],
        ['Discover history', 'Who was Ashoka, and why does he matter?']];
   for (const [label, idea] of ideas) {

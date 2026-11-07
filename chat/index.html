@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="en" data-theme="dark">
 <head>
-  <meta name="indusmova-build" content="5.26.0-78f0767">
+  <meta name="indusmova-build" content="5.26.0-1d82d90">
   <meta name="indusmova-version" content="5.26.0">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Ask — indusmova</title>
+  <title>Amigo — indusmova</title>
   <meta name="description" content="Ask a question and get a clear answer broken into topics, with the source behind every claim.">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <link rel="canonical" href="https://indusmova.pages.dev/chat/">
@@ -14,30 +14,32 @@
   <meta name="color-scheme" content="light dark">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="indusmova">
-  <meta property="og:title" content="Ask — indusmova">
+  <meta property="og:title" content="Amigo — indusmova">
   <meta property="og:description" content="A clear answer broken into topics, with the source behind every claim.">
   <meta property="og:url" content="https://indusmova.pages.dev/chat/">
   <meta property="og:image" content="https://indusmova.pages.dev/assets/img/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://indusmova.pages.dev/assets/img/og.png">
   <link rel="icon" href="/assets/img/mark.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/assets/css/chat-page.css?v=5.26.0-78f0767">
-  <link rel="stylesheet" href="/assets/css/system.css?v=5.26.0-78f0767">
-  <link rel="stylesheet" href="/assets/css/article-layout.css?v=5.26.0-78f0767">
-  <link rel="stylesheet" href="/assets/css/mobile.css?v=5.26.0-78f0767">
-  <script src="/assets/js/image-fallback.js?v=5.26.0-78f0767"></script>
-  <link rel="stylesheet" href="/assets/css/polish.css?v=5.26.0-78f0767">
-  <link rel="stylesheet" href="/assets/css/chat-redesign.css?v=5.26.0-78f0767">
-  <link rel="stylesheet" href="/assets/css/design-system.css?v=5.26.0-78f0767">
-  <script src="/assets/js/global-theme.js?v=5.26.0-78f0767"></script>
+  <link rel="stylesheet" href="/assets/css/chat-page.css?v=5.26.0-1d82d90">
+  <link rel="stylesheet" href="/assets/css/system.css?v=5.26.0-1d82d90">
+  <link rel="stylesheet" href="/assets/css/article-layout.css?v=5.26.0-1d82d90">
+  <link rel="stylesheet" href="/assets/css/mobile.css?v=5.26.0-1d82d90">
+  <script src="/assets/js/image-fallback.js?v=5.26.0-1d82d90"></script>
+  <link rel="stylesheet" href="/assets/css/polish.css?v=5.26.0-1d82d90">
+  <link rel="stylesheet" href="/assets/css/chat-redesign.css?v=5.26.0-1d82d90">
+  <link rel="stylesheet" href="/assets/css/design-system.css?v=5.26.0-1d82d90">
+  <link rel="stylesheet" href="/assets/css/amigo-ui.css?v=5.26.0-1d82d90">
+  <link rel="stylesheet" href="/assets/css/amigo-chat.css?v=5.26.0-1d82d90">
+  <script src="/assets/js/global-theme.js?v=5.26.0-1d82d90"></script>
 </head>
-<body class="is-empty">
+<body class="is-empty amigo-chat">
 <a class="skip-link" href="#prompt">Skip to the question box</a>
 
 <aside class="rail" id="rail" aria-label="Your chats">
   <a class="brand" href="/" aria-label="indusmova home">
-    <span class="mark" aria-hidden="true"><img src="/assets/img/indus-agent.svg" alt="" width="44" height="44"></span>
-    <span class="brand-text"><b>indusmova</b><em>ask</em></span>
+    <span class="mark" aria-hidden="true"><img src="/assets/img/amigo-mark.svg" alt="" width="44" height="44"></span>
+    <span class="brand-text"><b>Amigo</b><em>AI companion</em></span>
   </a>
 
   <button type="button" class="rail-new" id="railNew">
@@ -80,11 +82,11 @@
   <div class="scroll" id="main" role="main" tabindex="-1">
     <div class="stage">
       <div class="empty" id="empty">
-        <span class="empty-mark" aria-hidden="true"><img src="/assets/img/indus-agent.svg" alt="" width="72" height="72"></span>
-        <div class="welcome-eyebrow"><span class="welcome-pulse" aria-hidden="true"></span> WIKIPEDIA-POWERED RESEARCH COMPANION</div>
-        <h2 class="empty-heading">Hi, I'm <em>Indus</em>. What do you want to <em>understand</em>?</h2>
+        <span class="empty-mark" aria-hidden="true"><img src="/assets/img/amigo-mark.svg" alt="" width="72" height="72"></span>
+        <div class="welcome-eyebrow"><span class="welcome-pulse" aria-hidden="true"></span> YOUR RESEARCH COMPANION</div>
+        <h2 class="empty-heading">Hi, I’m <em>Amigo</em>. What would you like to explore?</h2>
         <p>Chat naturally, explore any topic, and get clear answers grounded in Wikipedia articles you can open and read.</p>
-        <div class="welcome-trust" aria-label="How Indus works">
+        <div class="welcome-trust" aria-label="How Amigo works">
           <span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5 16 5v4.3c0 3.8-2.6 6.5-6 8.2-3.4-1.7-6-4.4-6-8.2V5l6-2.5Z"/><path d="m7.2 9.8 1.8 1.8 3.8-4"/></svg>Source-grounded answers</span>
           <span><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m12.5 12.5 4 4"/></svg>Wikipedia article search</span>
           <span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5v15M2.5 10h15M4.7 4.7l10.6 10.6m0-10.6L4.7 15.3"/></svg>Natural conversation</span>
@@ -105,7 +107,7 @@
       <form class="composer" id="composer" autocomplete="off" action="javascript:void(0)" novalidate>
         <button class="plus" id="plusBtn" type="button" aria-label="Answer options" aria-expanded="false" aria-controls="optionsPanel" title="Answer options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         <label class="sr-only" for="prompt">Ask a question</label>
-        <textarea id="prompt" rows="1" maxlength="800" placeholder="Ask anything…" spellcheck="true"></textarea>
+        <textarea id="prompt" rows="1" maxlength="800" placeholder="Message Amigo…" spellcheck="true"></textarea>
         <button class="mic" id="voiceBtn" type="button" aria-label="Voice input" title="Voice input" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
         <button class="stop" id="stopBtn" type="button" hidden aria-label="Stop">Stop</button>
         <button class="send" id="send" type="button" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12 20 4l-4.5 16-4-6.5L4 12Z"/></svg></button>
@@ -150,8 +152,8 @@
 
 <noscript><p class="hint">The chat needs JavaScript. You can still read the entries at <a href="/articles/">the library</a>.</p></noscript>
 
-<script type="module" src="/assets/js/build-watch.js?v=5.26.0-78f0767"></script>
-<script type="module" src="/assets/js/chat-page.js?v=5.26.0-78f0767"></script>
+<script type="module" src="/assets/js/build-watch.js?v=5.26.0-1d82d90"></script>
+<script type="module" src="/assets/js/chat-page.js?v=5.26.0-1d82d90"></script>
   <nav class="bottom-nav" aria-label="Primary (phone)">
     <a href="/#/ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h9"/></svg><span>Ask</span></a>
     <a href="/#/explore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M15 9l-2 4-4 2 2-4z"/></svg><span>Explore</span></a>

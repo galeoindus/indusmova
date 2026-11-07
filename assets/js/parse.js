@@ -102,7 +102,7 @@ const ABBREV = /\b(?:Mr|Mrs|Ms|Dr|Prof|St|vs|etc|e\.g|i\.e|No|Fig|approx|ca|cf|S
  * the change — only the presentation.
  */
 export function paragraphsToPoints(root) {
-  const skip = 'figure, figcaption, table, .infobox, .thumb, .reflist, .references, .navbox, blockquote';
+  const skip = 'figure, figcaption, table, .infobox, .thumb, .gallery, .gallerybox, .article-gallery-grid, .reflist, .references, .navbox, blockquote';
 
   for (const p of [...root.querySelectorAll('p')]) {
     if (p.closest(skip)) continue;

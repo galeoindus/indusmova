@@ -455,6 +455,7 @@ function articleSection({ html, title, id, number }) {
   body.innerHTML = html;
   // The infobox becomes the facts box; it is not repeated in the text.
   body.querySelectorAll('table.infobox, .infobox').forEach((node) => node.remove());
+  arrangeArticleMedia(body);
   paragraphsToPoints(body);
   // A wide table scrolls on its own rather than breaking the column.
   body.querySelectorAll('table').forEach((table) => {
@@ -464,6 +465,36 @@ function articleSection({ html, title, id, number }) {
   });
   section.append(body);
   return section;
+}
+
+/**
+ * Wikipedia can return a series of neighbouring image figures rather than a
+ * formal gallery list. Keep their source order and captions, but present a
+ * run of two or more media blocks as one responsive grid instead of a tall,
+ * narrow vertical stack.
+ */
+function arrangeArticleMedia(root) {
+  root.querySelectorAll('ul.gallery, .mw-gallery-traditional, .mw-gallery-packed')
+    .forEach((gallery) => gallery.classList.add('article-gallery-grid'));
+
+  for (const parent of [root, ...root.querySelectorAll('div, section')]) {
+    const children = [...parent.children];
+    let run = [];
+    const flush = () => {
+      if (run.length > 1) {
+        const grid = el('div', { class: 'article-gallery-grid' });
+        run[0].before(grid);
+        run.forEach((item) => grid.append(item));
+      }
+      run = [];
+    };
+    for (const child of children) {
+      const isMedia = child.matches('figure, .thumb, .gallerybox') && child.querySelector('img');
+      if (isMedia) run.push(child);
+      else flush();
+    }
+    flush();
+  }
 }
 
 /* ---------------------------------------------------------- pictures */

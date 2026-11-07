@@ -2704,14 +2704,6 @@ html, body { max-width: 100%; overflow-x: hidden; }
 }
 .credit-sarvam-logo img { display: block; width: 100%; height: 100%; object-fit: contain; background: #fff; }
 .credit-sarvam-fallback { display: none; font-size: 23px; font-weight: 780; letter-spacing: -.04em; }
-/* Until written permission exists, the name is set as type rather than in a
-   white logo tile, so nothing here can read as an official Sarvam lockup. */
-.credit-sarvam-logo.is-wordmark-text {
-  border: 1px dashed var(--border-2);
-  background: var(--surface-2);
-  color: var(--text);
-}
-.credit-sarvam-logo.is-wordmark-text .credit-sarvam-fallback { font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
 .credit-sarvam-logo:not(.has-image) .credit-sarvam-fallback { display: block; }
 .credit-sarvam-copy { min-width: 0; }
 .credit-role-chip-featured { max-width: none; margin-bottom: 8px; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface-2)); }
