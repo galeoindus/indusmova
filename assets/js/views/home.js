@@ -12,7 +12,6 @@ import { t } from '../i18n.js';
 import { CATEGORIES, QUICK_CHIPS, EXAMPLE_PROMPTS, ASK_CHIPS } from '../config.js';
 import { sectionHead, bandHead, card, qCard, catCard, skeletonGrid, rowCta } from '../components.js';
 import { composerForm, depthControl, chipRow, attachSuggest } from '../composer.js';
-import { articleHref } from '../router.js';
 
 const POPULAR = [
   { question: 'Who was Ashoka?', title: 'Ashoka', tag: 'History' },

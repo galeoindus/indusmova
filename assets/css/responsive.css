@@ -49,10 +49,7 @@ h2 { font-size: var(--fluid-h2); }
   .chip:hover { transform: none; }
   /* the delete/overflow controls are hover-only on a desktop; on touch they
      must always be visible or they cannot be used at all */
-  .thread-del,
-  .card-actions,
-  .hover-only { opacity: 1 !important; }
-}
+  }
 
 /* ── phone ────────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
@@ -96,8 +93,7 @@ h2 { font-size: var(--fluid-h2); }
 @media (max-height: 520px) and (orientation: landscape) {
   .dash-hero { padding-block: 18px; }
   .dash-hero h1 { font-size: clamp(1.5rem, 4vh, 2.2rem); }
-  .gc-hello { padding-top: 2vh; }
-}
+  }
 
 /* ── print: the entries are worth keeping ─────────────────────────────── */
 @media print {

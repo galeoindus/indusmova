@@ -861,10 +861,6 @@ body.rail-hidden .rail {
   display: flex; flex-wrap: wrap; gap: 7px;
   max-width: 100%;
 }
-.src-chips > *, .a-sources > * {
-  max-width: 100%;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
 
 /* The composer: one surface, no tray, and it stays put while the answer
    scrolls. The seam under it was the dock's padding showing through.
