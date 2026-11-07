@@ -74,11 +74,19 @@
     writeMode(next);
     return paint();
   }
+  // A control that exists but sits inside a container the current breakpoint
+  // hides (the header's text nav collapses on a phone) is not a control the
+  // reader can use, so it does not count as one.
+  function visibleControl() {
+    return [...document.querySelectorAll('#themeBtn,[data-action="theme"],[data-theme-toggle]')]
+      .find((el) => el.getClientRects().length > 0);
+  }
   function addMissingControl() {
-    if (document.querySelector('#themeBtn,[data-action="theme"],[data-theme-toggle]')) return;
+    if (visibleControl()) return;
     const button = document.createElement('button');
     button.type = 'button';
-    button.id = 'themeBtn';
+    if (!document.getElementById('themeBtn')) button.id = 'themeBtn';
+    button.setAttribute('data-theme-toggle', '');
     button.className = 'im-theme-toggle';
     button.setAttribute('aria-label', 'Change theme');
     button.title = 'Change theme';
@@ -104,6 +112,13 @@
   if (typeof media.addEventListener === 'function') media.addEventListener('change', mediaChange);
   else if (typeof media.addListener === 'function') media.addListener(mediaChange);
   document.addEventListener('DOMContentLoaded', () => { addMissingControl(); paint(); });
+  // A resize can hide the control the reader was using (or reveal one that was
+  // hidden), so re-check on a size change rather than only at load.
+  let resizeTimer = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { addMissingControl(); paint(); }, 150);
+  });
   window.IndusTheme = { paint, sync: paint, set(mode) { if (!MODES.includes(mode)) return paint(); writeMode(mode); return paint(); }, cycle, get mode() { return readMode(); } };
   // Resolve the theme before the first contentful paint, including on static pages.
   paint();

@@ -1,0 +1,67 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const read = (path) => readFile(resolve(ROOT, path), 'utf8');
+const [view, css, headers, pkg] = await Promise.all([
+  read('assets/js/views/pages.js'),
+  read('assets/css/app.css'),
+  read('_headers'),
+  read('package.json'),
+]);
+
+ test('credits page shows Indusmova identity and India-first context without implying government endorsement', () => {
+  assert.match(view, /credit-identity/);
+  assert.match(view, /assets\/img\/mark\.svg/);
+  // The chip names the project's India-first framing in words. It used to carry
+  // a flag emoji, which renders as two empty boxes wherever the platform has no
+  // emoji font, so the words alone carry the meaning now.
+  assert.match(view, /India-first knowledge project/);
+  assert.doesNotMatch(view, /\u{1F1EE}\u{1F1F3}/u);
+  assert.match(view, /not endorsed by or affiliated with[\s\S]*Government of India/);
+});
+
+test('Sarvam AI appears in both credits areas with its official mark and a specific development contribution', () => {
+  assert.match(view, /https:\/\/web\.sarvam\.dev\/assets\/brand\/guidelines\/wordmark-on-light\.png/);
+  assert.match(view, /AI development contributor/);
+  assert.match(view, /name: 'Sarvam AI'.*AI-assisted development contribution/s);
+  assert.match(view, /AI-assisted work on parts of the code, writing and project audits/);
+  assert.match(view, /does not mean the website is “powered by Sarvam AI”/);
+  assert.match(view, /brand-guidelines/);
+  assert.match(headers, /img-src[^\n]*https:\/\/web\.sarvam\.dev/);
+});
+
+test('every technology card includes a logo slot, a role, a description, a licence and an external destination', () => {
+  assert.match(view, /function creditGroupCard\(item\)/);
+  assert.match(view, /creditLogo\(item\)/);
+  assert.match(view, /credit-role-chip/);
+  assert.match(view, /credit-stack-description/);
+  assert.match(view, /credit-stack-licence/);
+  assert.match(view, /rel: 'noopener noreferrer'/);
+  assert.match(view, /function creditLogo\(item/);
+  assert.match(view, /image\.addEventListener\('error'/);
+});
+
+test('people and project automation appear as visual cards with an avatar/logo fallback', () => {
+  assert.match(view, /credit-people-grid/);
+  assert.match(view, /GitHub Actions/);
+  assert.match(view, /Dependabot/);
+  assert.match(view, /credit-person-avatar-v2/);
+  assert.match(view, /credit-person-initials/);
+});
+
+test('credits redesign follows global theme tokens and has mobile and reduced-motion rules', () => {
+  assert.match(css, /\.credit-stack-card[\s\S]*var\(--surface\)/);
+  assert.match(css, /\.credit-sarvam-card/);
+  assert.match(css, /@media \(max-width: 700px\)/);
+  assert.match(css, /@media \(max-width: 480px\)/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+});
+
+test('release metadata is updated for the credits redesign', () => {
+  assert.equal(JSON.parse(pkg).version, '5.26.0');
+  assert.match(view, /Sarvam AI/);
+});

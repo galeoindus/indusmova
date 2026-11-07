@@ -2622,3 +2622,132 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .credit-people li { grid-template-columns: 1fr auto; }
   .credit-person-role { grid-column: 1 / -1; }
 }
+/* ------------------------------------------------------------------------
+   Credits & contributions — brand-led editorial redesign (v2)
+   Keeps third-party marks inside neutral logo wells and gives every entry
+   one clear role, description and destination. All colours follow the global
+   theme tokens; no third-party mark is recoloured or shadowed.
+   ------------------------------------------------------------------------ */
+.credits-page { max-width: 1040px; }
+.credits-page > .article-head { margin-bottom: 20px; }
+.credit-identity {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: clamp(20px, 3.4vw, 32px);
+  margin: 4px 0 18px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 92% 0%, color-mix(in srgb, var(--copper) 16%, transparent), transparent 34%),
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, var(--surface)), var(--surface));
+  box-shadow: var(--im-clay-shadow, var(--shadow-sm));
+}
+.credit-identity-brand { display: flex; align-items: center; gap: 18px; min-width: 0; flex: 1 1 440px; }
+.credit-identity-mark { width: 76px; height: 76px; flex: 0 0 auto; border-radius: 23px; box-shadow: 0 7px 20px rgba(20, 48, 35, .13); }
+.credit-identity-copy { min-width: 0; }
+.credit-identity-copy .kicker { display: block; margin-bottom: 5px; font-size: 10.5px; letter-spacing: .13em; }
+.credit-identity-copy h2 { margin: 0 0 5px; font-family: var(--font-head); font-size: clamp(25px, 4vw, 34px); line-height: 1.05; color: var(--text); }
+.credit-identity-copy p { margin: 0; max-width: 56ch; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.credit-identity-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.credit-origin-chip, .credit-identity-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 6px 11px;
+  border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text);
+  font-size: 11.5px; font-weight: 650; white-space: nowrap;
+}
+.credit-origin-chip { border-color: color-mix(in srgb, #16834a 28%, var(--border)); background: color-mix(in srgb, #16834a 8%, var(--surface)); }
+.credit-maker-v2 { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 18px 22px; padding: 20px 22px; }
+.credit-maker-v2 .credit-avatar { width: 84px; height: 84px; }
+.credit-maker-v2 .credit-who .kicker { font-size: 10.5px; letter-spacing: .13em; }
+.credit-maker-v2 .credit-name { font-size: clamp(22px, 3vw, 28px); }
+.credit-maker-v2 .credit-links { margin: 8px 0 0; }
+.credit-facts-v2 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.credit-facts-v2 > div { min-height: 78px; display: flex; flex-direction: column; justify-content: center; border: 1px solid var(--border); box-shadow: none; }
+.credit-section { margin-top: 34px; }
+.credit-section-intro { max-width: 72ch; margin: -4px 0 18px; color: var(--muted); font-size: 14px; line-height: 1.65; }
+.credit-stack-group { margin: 22px 0 26px; }
+.credit-stack-group-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 5px 18px; margin-bottom: 12px; }
+.credit-stack-group-heading h3 { margin: 0; color: var(--text); font-size: 16px; font-weight: 750; }
+.credit-stack-group-heading p { margin: 0; max-width: 62ch; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+.credit-stack-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(228px, 1fr)); gap: 12px; }
+.credit-stack-card {
+  display: flex; flex-direction: column; min-width: 0; min-height: 220px; padding: 16px;
+  border: 1px solid var(--border); border-radius: 19px; background: var(--surface); color: var(--text);
+  text-decoration: none; box-shadow: var(--shadow-sm);
+  transition: transform .2s var(--im-motion), border-color .2s, box-shadow .2s;
+}
+.credit-stack-card:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--accent) 38%, var(--border)); box-shadow: var(--shadow); text-decoration: none; }
+.credit-stack-card:focus-visible, .credit-person-card:focus-visible, .credit-sarvam-logo:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.credit-stack-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.credit-logo-frame {
+  position: relative; display: grid; place-items: center; flex: 0 0 auto; width: 54px; height: 54px; overflow: hidden;
+  border: 1px solid rgba(20, 42, 30, .08); border-radius: 15px; background: #fff; color: #26342c;
+}
+.credit-logo-fallback { display: grid; place-items: center; width: 100%; height: 100%; font-size: 12px; font-weight: 800; letter-spacing: .02em; }
+.credit-logo-image { position: absolute; inset: 0; width: 100%; height: 100%; padding: 6px; object-fit: contain; background: #fff; }
+.credit-role-chip { display: inline-flex; align-items: center; max-width: 65%; padding: 5px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 10px; font-weight: 700; line-height: 1.25; text-align: right; }
+.credit-stack-name { margin: 0 0 6px; font-size: 15.5px; line-height: 1.3; font-weight: 750; }
+.credit-stack-description { flex: 1; margin: 0 0 12px; color: var(--muted); font-size: 12.8px; line-height: 1.58; }
+.credit-stack-licence { display: block; padding-top: 9px; border-top: 1px solid var(--border); color: var(--faint); font-size: 11px; line-height: 1.45; }
+.credit-stack-open { margin-top: 7px; color: var(--accent); font-size: 11px; font-weight: 700; }
+.credit-sarvam-card {
+  display: grid; grid-template-columns: minmax(150px, 190px) minmax(0, 1fr); align-items: center; gap: 22px;
+  padding: clamp(16px, 2.5vw, 24px); border: 1px solid var(--border); border-radius: 22px; background: var(--surface); box-shadow: var(--shadow-sm);
+}
+.credit-sarvam-logo {
+  position: relative; display: grid; place-items: center; width: 100%; aspect-ratio: 16 / 9; overflow: hidden;
+  border: 1px solid rgba(20, 42, 30, .08); border-radius: 15px; background: #fff; color: #171717; text-decoration: none;
+}
+.credit-sarvam-logo img { display: block; width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.credit-sarvam-fallback { display: none; font-size: 23px; font-weight: 780; letter-spacing: -.04em; }
+.credit-sarvam-logo:not(.has-image) .credit-sarvam-fallback { display: block; }
+.credit-sarvam-copy { min-width: 0; }
+.credit-role-chip-featured { max-width: none; margin-bottom: 8px; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface-2)); }
+.credit-sarvam-copy h3 { margin: 0 0 7px; font-size: 21px; }
+.credit-sarvam-copy p { margin: 0 0 10px; max-width: 67ch; color: var(--muted); font-size: 13.5px; line-height: 1.65; }
+.credit-official-link { color: var(--accent); font-size: 12.5px; font-weight: 700; text-decoration: none; }
+.credit-official-link:hover { text-decoration: underline; }
+.credit-disclosure-note { margin: 12px 0 0; padding: 11px 13px; border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0; background: var(--surface-2); color: var(--muted); font-size: 12px; line-height: 1.6; }
+.credit-people-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.credit-person-card {
+  display: grid; grid-template-columns: 54px minmax(0, 1fr); grid-template-rows: auto auto 1fr auto; align-items: start; gap: 2px 12px;
+  min-width: 0; min-height: 168px; padding: 15px; border: 1px solid var(--border); border-radius: 18px;
+  background: var(--surface); color: var(--text); text-decoration: none; box-shadow: var(--shadow-sm);
+  transition: transform .2s var(--im-motion), border-color .2s, box-shadow .2s;
+}
+.credit-person-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); box-shadow: var(--shadow); text-decoration: none; }
+.credit-person-avatar-v2 { grid-column: 1; grid-row: 1 / span 3; position: relative; width: 54px; height: 54px; border-radius: 16px; background: var(--surface-2); color: var(--text); }
+.credit-person-avatar-v2 img { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; padding: 4px; border-radius: inherit; object-fit: contain; background: var(--surface); }
+.credit-person-avatar-v2:has(img[src*="galeoindus"]) img { object-fit: cover; padding: 0; }
+.credit-person-kind { grid-column: 2; align-self: center; color: var(--accent); font-size: 10px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
+.credit-person-card .credit-person-name { grid-column: 2; margin: 2px 0 4px; font-size: 14px; line-height: 1.35; }
+.credit-person-card .credit-person-role { grid-column: 2; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+.credit-person-open { grid-column: 2; margin-top: 8px; color: var(--accent); font-size: 11px; font-weight: 700; }
+.credits-page .line-list { display: grid; gap: 8px; }
+.credits-page .line-list > li { font-size: 13px; line-height: 1.6; }
+
+@media (max-width: 700px) {
+  .credit-identity { align-items: flex-start; }
+  .credit-identity-brand { flex-basis: 100%; gap: 13px; }
+  .credit-identity-mark { width: 62px; height: 62px; border-radius: 18px; }
+  .credit-identity-tags { width: 100%; }
+  .credit-facts-v2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .credit-sarvam-card { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .credit-sarvam-logo { max-width: 190px; }
+}
+@media (max-width: 480px) {
+  .credit-maker-v2 { grid-template-columns: 1fr; }
+  .credit-maker-v2 .credit-avatar { width: 72px; height: 72px; }
+  .credit-stack-grid, .credit-people-grid { grid-template-columns: 1fr; }
+  .credit-stack-card { min-height: 0; }
+  .credit-person-card { min-height: 0; }
+  .credit-identity-copy p { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .credit-stack-card, .credit-person-card { transition: none; }
+  .credit-stack-card:hover, .credit-person-card:hover { transform: none; }
+}

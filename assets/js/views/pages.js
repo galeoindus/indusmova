@@ -249,10 +249,8 @@ export function renderHistory(ctx) {
  * the honest thing is to name the service and link to it until the owner
  * supplies the official files.
  *
- * Marks come from the repository's own provider files where they exist, and
- * from each service's public profile image where they do not. Nothing here is
- * copied artwork, and every tile keeps a drawn initials fallback underneath,
- * so a blocked or missing remote image never leaves an empty hole.
+ * Brand images use local marks where available and official public profile
+ * images where appropriate; initials remain visible if a remote mark fails.
  */
 const PROVIDERS = '/assets/img/providers';
 const CREDITS = [
@@ -261,9 +259,9 @@ const CREDITS = [
   { name: 'Wikidata', role: 'Facts and identifiers', href: 'https://www.wikidata.org', initials: 'WD', logo: `${PROVIDERS}/wikidata.svg` },
   { name: 'Wikimedia Commons', role: 'Images and their licences', href: 'https://commons.wikimedia.org', initials: 'WC', logo: `${PROVIDERS}/commons.png` },
   { name: 'Cloudflare Pages', role: 'Hosting and delivery', href: 'https://www.cloudflare.com', initials: 'CF', logo: `${PROVIDERS}/cloudflare.png` },
-  { name: 'Workers AI', role: 'Answers when OpenRouter is unavailable', href: 'https://developers.cloudflare.com/workers-ai/',
-    logo: `${PROVIDERS}/cloudflare.png`, initials: 'AI', logo: `${PROVIDERS}/cloudflare.png` },
+  { name: 'Workers AI', role: 'Answers when OpenRouter is unavailable', href: 'https://developers.cloudflare.com/workers-ai/', initials: 'AI', logo: `${PROVIDERS}/cloudflare.png` },
   { name: 'OpenRouter', role: 'The language model behind chat answers', href: 'https://openrouter.ai', initials: 'OR', logo: 'https://openrouter.ai/favicon.ico' },
+  { name: 'Sarvam AI', role: 'AI-assisted development contribution for parts of the code, writing and audits; not the live chat backend', href: 'https://www.sarvam.ai', initials: 'SA', logo: 'https://web.sarvam.dev/assets/brand/guidelines/logomark-on-light.png' },
   { name: 'Google Translate', role: 'Machine translation of articles', href: 'https://translate.google.com', initials: 'GT', logo: `${PROVIDERS}/translate.png` },
   { name: 'MyMemory', role: 'Fallback translation service', href: 'https://mymemory.translated.net', initials: 'MM', logo: 'https://mymemory.translated.net/favicon.ico' },
 ];
@@ -277,11 +275,10 @@ function creditsSection() {
   if (owner) {
     const card = el('div', { class: 'credit-owner' });
     const avatar = el('div', { class: 'credit-avatar', 'aria-hidden': 'true' });
-    avatar.append(el('span', { class: 'credit-initials', text: owner.initials }));
     if (owner.avatar) {
       const img = el('img', { src: owner.avatar, alt: '', loading: 'lazy', decoding: 'async' });
       img.addEventListener('error', () => img.remove());
-      avatar.append(img);
+      avatar.append(img, el('span', { class: 'credit-initials', text: owner.initials }));
     }
     card.append(avatar);
     const text = el('div');
@@ -456,136 +453,137 @@ export function renderStatic(name) {
  * business calling the GitHub API to tell you its own history.
  */
 
-const CREDITS_ASOF = '6 November 2026';
+const CREDITS_ASOF = '7 November 2026';
 
 const CREDIT_TIMELINE = [
   { date: '20 October 2026', title: 'The first commit', detail: 'The design system is scaffolded and indusmova starts as a folder of plain HTML, CSS and ES modules.' },
   { date: '23 October 2026', title: 'v3.0.0, first public release', detail: 'Ask, Search, Article, On this day, Explore and the Sources page go live on Cloudflare Pages.' },
-  { date: '6 November 2026', title: `v${SITE.version}`, detail: '265 commits later: the chat surface, reading progress, thirteen published article pages and the audit fixes.' },
+  { date: '7 November 2026', title: `v${SITE.version}`, detail: 'A unified theme system, responsive multimorphism, clearer source attribution and an expanded contributors experience.' },
 ];
 
-const CREDIT_STACK = [
+const CREDIT_GROUPS = [
   {
-    name: 'Wikipedia',
-    what: 'Every sentence the site shows is quoted from a published article. Search, article text and images are fetched live in the browser.',
-    licence: 'Text CC BY-SA 4.0 · images per file',
-    href: 'https://www.wikipedia.org/',
-    logo: `${PROVIDERS}/wikipedia.png`,
+    title: 'Knowledge and open data',
+    intro: 'The public knowledge layer: article text, structured facts, images and citations.',
+    items: [
+      { name: 'Wikipedia', what: 'Article text, article summaries, page images and references are searched and read live. The original article remains one click away.', detail: 'Knowledge source', licence: 'Text: CC BY-SA 4.0 · images: per-file licence', href: 'https://www.wikipedia.org/', logo: `${PROVIDERS}/wikipedia.png`, initials: 'W' },
+      { name: 'Wikidata', what: 'Structured facts, identifiers, labels and cross-language links help connect related knowledge.', detail: 'Structured data', licence: 'CC0 1.0', href: 'https://www.wikidata.org/', logo: `${PROVIDERS}/wikidata.svg`, initials: 'WD' },
+      { name: 'Wikimedia Commons', what: 'Hosts many of the article images. Each file keeps its own author credit and licence information.', detail: 'Open media library', licence: 'Per-file licence', href: 'https://commons.wikimedia.org/', logo: `${PROVIDERS}/commons.png`, initials: 'WC' },
+    ],
   },
   {
-    name: 'Wikidata',
-    what: 'The facts, labels and cross-language titles behind the article cards and the factbox.',
-    licence: 'CC0 1.0',
-    href: 'https://www.wikidata.org/',
-    logo: `${PROVIDERS}/wikidata.svg`,
+    title: 'Infrastructure and engineering',
+    intro: 'The services that host the site, run its server-side function and maintain the source code.',
+    items: [
+      { name: 'Cloudflare Pages', what: 'Serves the static website, custom headers and deployment output close to readers.', detail: 'Hosting and delivery', licence: 'Platform service', href: 'https://pages.cloudflare.com/', logo: `${PROVIDERS}/cloudflare.png`, initials: 'CF' },
+      { name: 'Cloudflare Workers AI', what: 'Optional server-side answer generation when that binding is configured. Provider credentials stay on the server.', detail: 'Optional AI runtime', licence: 'Platform service', href: 'https://developers.cloudflare.com/workers-ai/', logo: `${PROVIDERS}/cloudflare.png`, initials: 'AI' },
+      { name: 'OpenRouter', what: 'Configurable language-model gateway used by the optional chat-answer endpoint. It is not the owner of indusmova.', detail: 'AI model gateway', licence: 'Platform service', href: 'https://openrouter.ai/', logo: 'https://openrouter.ai/favicon.ico', initials: 'OR' },
+      { name: 'GitHub', what: 'The public source repository, issue history, review trail and automation workflows used to maintain the project.', detail: 'Source collaboration', licence: 'Project code: MIT', href: SITE.repo, logo: 'https://github.com/favicon.ico', initials: 'GH' },
+    ],
   },
   {
-    name: 'Wikimedia Commons',
-    what: 'Article images, each shown with the licence it carries on Commons.',
-    licence: 'Per file',
-    href: 'https://commons.wikimedia.org/',
-    logo: `${PROVIDERS}/commons.png`,
-  },
-  {
-    name: 'Cloudflare Pages',
-    what: 'Hosting, headers and the /api/ask function. The site is static, so there is no build step to deploy.',
-    licence: 'Service',
-    href: 'https://pages.cloudflare.com/',
-    logo: `${PROVIDERS}/cloudflare.png`,
-  },
-  {
-    name: 'Cloudflare Workers AI',
-    what: 'The optional chat explanation. When it is bound, Cloudflare runs the model and no API key reaches the browser.',
-    licence: 'Service',
-    href: 'https://developers.cloudflare.com/workers-ai/',
-  },
-  {
-    name: 'OpenRouter',
-    what: 'The other, configurable provider for the same optional chat. Its credentials are Cloudflare encrypted secrets.',
-    licence: 'Service',
-    href: 'https://openrouter.ai/',
-    logo: 'https://openrouter.ai/favicon.ico',
-  },
-  {
-    name: 'Transformers.js',
-    what: 'Runs the small sentence-embedding model for “Understand meaning” entirely on the reader’s device.',
-    licence: 'Apache-2.0',
-    href: 'https://github.com/huggingface/transformers.js',
-    logo: 'https://github.com/huggingface.png?size=96',
-  },
-  {
-    name: 'Xenova/all-MiniLM-L6-v2',
-    what: 'The roughly 23 MB embedding model that re-orders sentences by meaning. Nothing is generated; only the order changes.',
-    licence: 'Apache-2.0',
-    href: 'https://huggingface.co/Xenova/all-MiniLM-L6-v2',
-    logo: 'https://huggingface.co/favicon.ico',
-  },
-  {
-    name: 'Google Translate & MyMemory',
-    what: 'The optional Translate button. Article text goes from the browser straight to one of these services, and back translated.',
-    licence: 'Service',
-    href: 'https://translate.google.com/',
-    logo: `${PROVIDERS}/translate.png`,
-  },
-  {
-    name: 'GitHub',
-    what: 'The public repository, the issue and pull-request trail, and the Actions that stamp the build and deploy it.',
-    licence: 'Service · code MIT',
-    href: SITE.repo,
-    logo: 'https://github.com/favicon.ico',
+    title: 'Language and on-device research',
+    intro: 'Translation and semantic tools that help readers work across languages and understand article meaning.',
+    items: [
+      { name: 'Google Translate', what: 'An optional translation route for readers. Translation requests are sent to the service only when that feature is used.', detail: 'Machine translation', licence: 'External service', href: 'https://translate.google.com/', logo: `${PROVIDERS}/translate.png`, initials: 'GT' },
+      { name: 'MyMemory', what: 'The fallback translation service used when the primary translation route is unavailable.', detail: 'Translation fallback', licence: 'External service', href: 'https://mymemory.translated.net/', logo: 'https://mymemory.translated.net/favicon.ico', initials: 'MM' },
+      { name: 'Transformers.js', what: 'Runs a compact sentence-embedding model in the reader’s browser for local semantic re-ordering.', detail: 'Browser-side ML library', licence: 'Apache-2.0', href: 'https://github.com/huggingface/transformers.js', logo: 'https://github.com/huggingface.png?size=96', initials: 'TJ' },
+      { name: 'all-MiniLM-L6-v2', what: 'The sentence-embedding model used by the “Understand meaning” feature. It re-orders relevant sentences; it does not write new facts.', detail: 'Semantic model', licence: 'Apache-2.0', href: 'https://huggingface.co/Xenova/all-MiniLM-L6-v2', logo: 'https://huggingface.co/favicon.ico', initials: 'ML' },
+    ],
   },
 ];
 
 const CREDIT_PEOPLE = [
-  { name: 'Bhola Kumar', role: 'Design, code, writing and maintenance', commits: '122 commits', href: 'https://github.com/galeoindus', avatar: 'https://github.com/galeoindus.png?size=96', initials: 'BK' },
-  { name: 'indusmova audit', role: 'The repository’s own audit passes, committed by the maintainer', commits: '22 commits', avatar: '/assets/img/mark.svg', initials: 'IA' },
-  { name: 'github-actions[bot]', role: 'Stamps the build version on every push to main', commits: '110 commits', avatar: 'https://github.com/github-actions.png?size=96', initials: 'GH' },
-  { name: 'dependabot[bot]', role: 'Dependency updates', commits: '1 commit', avatar: 'https://github.com/dependabot.png?size=96', initials: 'DB' },
+  { name: 'Bhola Kumar', role: 'Project creator and maintainer. Responsible for product direction, design, code, writing, review and releases.', kind: 'Human maintainer', href: 'https://github.com/galeoindus', avatar: 'https://github.com/galeoindus.png?size=128', initials: 'BK' },
+  { name: 'indusmova project mark', role: 'The site’s own identity and visual system. This is the project mark, not a separate human contributor.', kind: 'Project identity', avatar: '/assets/img/mark.svg', initials: 'IM' },
+  { name: 'GitHub Actions', role: 'Automates build stamping and deployment workflows when changes are pushed to the repository.', kind: 'Repository automation', href: 'https://github.com/features/actions', avatar: 'https://github.com/github-actions.png?size=128', initials: 'GA' },
+  { name: 'Dependabot', role: 'Keeps dependency update proposals visible so project dependencies can be reviewed and maintained.', kind: 'Dependency automation', href: 'https://github.com/dependabot', avatar: 'https://github.com/dependabot.png?size=128', initials: 'DB' },
 ];
 
+function creditLogo(item, className = '') {
+  const initials = item.initials || item.name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
+  const frame = el('span', { class: `credit-logo-frame ${className}`.trim(), 'aria-hidden': 'true' });
+  frame.append(el('span', { class: 'credit-logo-fallback', text: initials }));
+  if (item.logo) {
+    const image = el('img', { class: 'credit-logo-image', src: item.logo, alt: '', loading: 'lazy', decoding: 'async' });
+    image.addEventListener('load', () => frame.classList.add('has-image'));
+    image.addEventListener('error', () => { image.remove(); frame.classList.remove('has-image'); });
+    frame.append(image);
+  }
+  return frame;
+}
+
+function creditGroupCard(item) {
+  const card = el('a', {
+    class: 'credit-stack-card', href: item.href, target: '_blank', rel: 'noopener noreferrer',
+    'aria-label': `${item.name}: ${item.what}`,
+  });
+  const top = el('div', { class: 'credit-stack-card-top' });
+  top.append(creditLogo(item));
+  top.append(el('span', { class: 'credit-role-chip', text: item.detail }));
+  card.append(top);
+  card.append(el('h3', { class: 'credit-stack-name', text: item.name }));
+  card.append(el('p', { class: 'credit-stack-description', text: item.what }));
+  card.append(el('span', { class: 'credit-stack-licence', text: item.licence }));
+  card.append(el('span', { class: 'credit-stack-open', text: 'Visit official website ↗', 'aria-hidden': 'true' }));
+  return card;
+}
+
 export function renderCredits() {
-  const wrap = el('div', { class: 'wrap-narrow' });
-  wrap.append(head(t('credits'), 'Who made indusmova, when, and what it stands on.'));
+  const wrap = el('div', { class: 'wrap-narrow credits-page' });
+  wrap.append(head(t('credits'), 'The people, tools and open-knowledge projects behind indusmova.'));
+
+  /* --- project identity ------------------------------------------------ */
+  const identity = el('section', { class: 'credit-identity' });
+  const identityBrand = el('div', { class: 'credit-identity-brand' });
+  const mark = el('img', { class: 'credit-identity-mark', src: '/assets/img/mark.svg', alt: 'indusmova project logo', width: '76', height: '76', decoding: 'async' });
+  identityBrand.append(mark);
+  const identityCopy = el('div', { class: 'credit-identity-copy' });
+  identityCopy.append(el('span', { class: 'kicker', text: 'AN INDEPENDENT KNOWLEDGE PROJECT' }));
+  identityCopy.append(el('h2', { text: 'indusmova' }));
+  identityCopy.append(el('p', { text: 'A reader and research interface for open knowledge — bringing Wikipedia articles, references and optional AI explanations into one calm workspace.' }));
+  identityBrand.append(identityCopy);
+  identity.append(identityBrand);
+  const identityTags = el('div', { class: 'credit-identity-tags' });
+  identityTags.append(el('span', { class: 'credit-origin-chip', text: 'India-first knowledge project' }));
+  identityTags.append(el('span', { class: 'credit-identity-chip', text: `Version ${SITE.version}` }));
+  identityTags.append(el('span', { class: 'credit-identity-chip', text: 'Open source · MIT' }));
+  identity.append(identityTags);
+  wrap.append(identity);
 
   /* --- the maker ------------------------------------------------------- */
-  const maker = el('section', { class: 'credit-maker' });
+  const maker = el('section', { class: 'credit-maker credit-maker-v2' });
   const avatar = el('div', { class: 'credit-avatar', 'aria-hidden': 'true' });
-  // The maintainer's public GitHub profile image, not an invented portrait and
-  // not a file the repository does not contain. The initials stay underneath,
-  // so a blocked request still leaves a finished circle.
   const photo = el('img', { src: 'https://github.com/galeoindus.png?size=192', alt: '', width: '96', height: '96', loading: 'lazy', decoding: 'async' });
   photo.addEventListener('error', () => photo.remove());
   avatar.append(photo, el('span', { class: 'credit-initials', text: 'BK' }));
   maker.append(avatar);
-
   const who = el('div', { class: 'credit-who' });
-  who.append(el('span', { class: 'kicker', text: 'Built and maintained by' }));
+  who.append(el('span', { class: 'kicker', text: 'CREATED AND MAINTAINED BY' }));
   who.append(el('h2', { class: 'credit-name', text: 'Bhola Kumar' }));
-  who.append(el('p', { text: 'One person, writing in the open. The site is a reader for free knowledge, not a business: no accounts, no tracking, no advertising.' }));
+  who.append(el('p', { text: 'The project is independently designed, written and maintained by its creator. The maintainer reviews and takes responsibility for the site’s code, content presentation and releases.' }));
   const links = el('p', { class: 'credit-links' });
-  links.append(el('a', { href: SITE.repo, target: '_blank', rel: 'noopener noreferrer', text: 'Source on GitHub' }));
+  links.append(el('a', { href: SITE.repo, target: '_blank', rel: 'noopener noreferrer', text: 'Explore source code ↗' }));
   links.append(el('span', { text: ' · ' }));
   links.append(el('a', { href: '#/feedback', text: 'Send a correction' }));
   who.append(links);
   maker.append(who);
   wrap.append(maker);
 
-  /* --- the facts ------------------------------------------------------- */
-  const facts = el('dl', { class: 'credit-facts' });
+  /* --- project facts --------------------------------------------------- */
+  const facts = el('dl', { class: 'credit-facts credit-facts-v2' });
   for (const [label, value] of [
     ['Started', '20 October 2026'],
-    ['First public release', 'v3.0.0, 23 October 2026'],
-    ['Running now', `v${SITE.version}`],
-    ['Commits', '265'],
+    ['First public release', 'v3.0.0 · 23 October 2026'],
+    ['Current release', `v${SITE.version}`],
     ['Code licence', 'MIT'],
-  ]) {
-    facts.append(el('div', {}, [el('dt', { text: label }), el('dd', { text: value })]));
-  }
+  ]) facts.append(el('div', {}, [el('dt', { text: label }), el('dd', { text: value })]));
   wrap.append(facts);
 
   /* --- the timeline ---------------------------------------------------- */
-  const history = el('section', { class: 'sec' });
+  const history = el('section', { class: 'sec credit-section' });
   history.append(sectionHead({ title: 'How it was made' }));
+  history.append(el('p', { class: 'credit-section-intro', text: 'A short history of the project, from its first files to the current release.' }));
   const ol = el('ol', { class: 'credit-timeline' });
   for (const step of CREDIT_TIMELINE) {
     const li = el('li');
@@ -597,75 +595,89 @@ export function renderCredits() {
   history.append(ol);
   wrap.append(history);
 
-  /* --- the stack ------------------------------------------------------- */
-  const stack = el('section', { class: 'sec' });
-  stack.append(sectionHead({ title: 'What it stands on' }));
-  stack.append(el('p', { text: 'indusmova writes none of its own facts. Everything below is a project or a service the site actually uses, and each is credited for what it actually does.' }));
-  const grid = el('div', { class: 'src-grid' });
-  for (const item of CREDIT_STACK) {
-    const group = el('div', { class: 'src-group' });
-    const brand = el('div', { class: 'src-brand' });
-    const mark = el('span', { class: 'src-brand-mark', 'aria-hidden': 'true' });
-    const initials = item.name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
-    mark.append(el('span', { class: 'src-brand-initials', text: initials }));
-    if (item.logo) {
-      const image = el('img', { src: item.logo, alt: '', loading: 'lazy', decoding: 'async' });
-      image.addEventListener('error', () => image.remove());
-      mark.append(image);
-    }
-    brand.append(mark);
-    brand.append(el('h3', { html: `<a href="${item.href}" target="_blank" rel="noopener noreferrer">${esc(item.name)}</a>` }));
-    group.append(brand);
-    group.append(el('p', { text: item.what }));
-    group.append(el('p', { class: 'credit-licence', text: item.licence }));
-    grid.append(group);
+  /* --- providers and source projects ---------------------------------- */
+  const stack = el('section', { class: 'sec credit-section' });
+  stack.append(sectionHead({ title: 'The technology and knowledge behind the site' }));
+  stack.append(el('p', { class: 'credit-section-intro', text: 'Each logo links to its owner’s official website. The descriptions explain the actual role each project or service has in indusmova.' }));
+  for (const groupData of CREDIT_GROUPS) {
+    const group = el('section', { class: 'credit-stack-group' });
+    const heading = el('div', { class: 'credit-stack-group-heading' });
+    heading.append(el('h3', { text: groupData.title }));
+    heading.append(el('p', { text: groupData.intro }));
+    group.append(heading);
+    const grid = el('div', { class: 'credit-stack-grid' });
+    groupData.items.forEach((item) => grid.append(creditGroupCard(item)));
+    group.append(grid);
+    stack.append(group);
   }
-  stack.append(grid);
   wrap.append(stack);
 
-  /* --- AI assistance --------------------------------------------------- */
-  const ai = el('section', { class: 'sec' });
-  ai.append(sectionHead({ title: 'AI assistance, stated plainly' }));
-  ai.append(el('p', { text: 'Parts of the code, the copy and the audits were written with AI assistants, including Sarvam AI. Every change was read, tested and accepted by the maintainer before it was committed, and the maintainer is the author of record and takes responsibility for what the site says.' }));
-  ai.append(el('p', { text: 'The AI is credited here for the work it did. It is not credited as an author, because it cannot check a claim, answer for a mistake, or hold a licence.' }));
+  /* --- Sarvam AI: development acknowledgement ------------------------ */
+  const ai = el('section', { class: 'sec credit-section' });
+  ai.append(sectionHead({ title: 'AI-assisted development' }));
+  ai.append(el('p', { class: 'credit-section-intro', text: 'AI tools assisted parts of the project’s development. The maintainer reviewed, tested and accepted the changes and remains responsible for the final product.' }));
+  const sarvam = el('article', { class: 'credit-sarvam-card' });
+  const sarvamLogo = el('a', { class: 'credit-sarvam-logo', href: 'https://www.sarvam.ai/', target: '_blank', rel: 'noopener noreferrer', 'aria-label': 'Sarvam AI official website' });
+  const sarvamFallback = el('span', { class: 'credit-sarvam-fallback', text: 'Sarvam AI' });
+  sarvamLogo.append(sarvamFallback);
+  const sarvamImage = el('img', {
+    src: 'https://web.sarvam.dev/assets/brand/guidelines/wordmark-on-light.png',
+    alt: 'Sarvam wordmark', loading: 'lazy', decoding: 'async',
+  });
+  sarvamImage.addEventListener('load', () => sarvamLogo.classList.add('has-image'));
+  sarvamImage.addEventListener('error', () => { sarvamImage.remove(); sarvamLogo.classList.remove('has-image'); });
+  sarvamLogo.append(sarvamImage);
+  sarvam.append(sarvamLogo);
+  const sarvamCopy = el('div', { class: 'credit-sarvam-copy' });
+  sarvamCopy.append(el('span', { class: 'credit-role-chip credit-role-chip-featured', text: 'AI development contributor' }));
+  sarvamCopy.append(el('h3', { text: 'Sarvam AI' }));
+  sarvamCopy.append(el('p', { text: 'Acknowledged for AI-assisted work on parts of the code, writing and project audits. Sarvam AI is an Indic-language AI company building AI from India; this credit recognises development assistance, not authorship of the site.' }));
+  sarvamCopy.append(el('a', { class: 'credit-official-link', href: 'https://www.sarvam.ai/brand-guidelines', target: '_blank', rel: 'noopener noreferrer', text: 'Official brand and logo guidelines ↗' }));
+  sarvam.append(sarvamCopy);
+  ai.append(sarvam);
+  ai.append(el('p', { class: 'credit-disclosure-note', text: 'Attribution note: this acknowledgement does not mean the website is “powered by Sarvam AI”, sponsored by Sarvam, or endorsed by the company. The current chat runtime is configured separately through Cloudflare Workers AI and/or OpenRouter.' }));
   wrap.append(ai);
 
-  /* --- the people ------------------------------------------------------ */
-  const people = el('section', { class: 'sec' });
-  people.append(sectionHead({ title: 'Everyone who has contributed' }));
-  people.append(el('p', { text: `Read off the repository’s own history on ${CREDITS_ASOF}. Most of the entries are automation; no outside human has contributed code yet.` }));
-  const list = el('ul', { class: 'credit-people' });
+  /* --- contributors ---------------------------------------------------- */
+  const people = el('section', { class: 'sec credit-section' });
+  people.append(sectionHead({ title: 'People and project contributors' }));
+  people.append(el('p', { class: 'credit-section-intro', text: `A transparent snapshot of the human, project and automation roles recorded in the repository as of ${CREDITS_ASOF}. Automation accounts are identified as tools, not as people.` }));
+  const peopleGrid = el('div', { class: 'credit-people-grid' });
   for (const person of CREDIT_PEOPLE) {
-    const li = el('li');
-    const name = person.href
-      ? el('a', { href: person.href, target: '_blank', rel: 'noopener noreferrer', text: person.name })
-      : el('strong', { text: person.name });
-    const personAvatar = el('span', { class: 'credit-person-avatar', 'aria-hidden': 'true' });
+    const tag = person.href ? 'a' : 'article';
+    const attrs = person.href
+      ? { class: 'credit-person-card', href: person.href, target: '_blank', rel: 'noopener noreferrer' }
+      : { class: 'credit-person-card' };
+    const card = el(tag, attrs);
+    const personAvatar = el('span', { class: 'credit-person-avatar credit-person-avatar-v2', 'aria-hidden': 'true' });
     personAvatar.append(el('span', { class: 'credit-person-initials', text: person.initials }));
     if (person.avatar) {
       const image = el('img', { src: person.avatar, alt: '', loading: 'lazy', decoding: 'async' });
       image.addEventListener('error', () => image.remove());
+      card.dataset.hasAvatar = 'true';
       personAvatar.append(image);
     }
-    li.append(personAvatar);
-    li.append(el('span', { class: 'credit-person-name' }, [name]));
-    li.append(el('span', { class: 'credit-person-role', text: person.role }));
-    li.append(el('span', { class: 'credit-person-count', text: person.commits }));
-    list.append(li);
+    card.append(personAvatar);
+    card.append(el('span', { class: 'credit-person-kind', text: person.kind }));
+    card.append(el('h3', { class: 'credit-person-name', text: person.name }));
+    card.append(el('p', { class: 'credit-person-role', text: person.role }));
+    if (person.href) card.append(el('span', { class: 'credit-person-open', text: 'Profile / project ↗', 'aria-hidden': 'true' }));
+    peopleGrid.append(card);
   }
-  people.append(list);
-  people.append(el('p', { class: 'ask-note', text: 'A pull request that lands is credited in the commit history and can be added to this list on request. Nobody is listed here without agreeing to it, and anyone can ask to be removed.' }));
+  people.append(peopleGrid);
+  people.append(el('p', { class: 'ask-note', text: 'An accepted pull request or a confirmed contribution can be added here. People are not listed as contributors without a genuine contribution and appropriate attribution.' }));
   wrap.append(people);
 
-  /* --- licences and independence --------------------------------------- */
-  const legal = el('section', { class: 'sec' });
-  legal.append(sectionHead({ title: 'Licences and independence' }));
+  /* --- licences and independence -------------------------------------- */
+  const legal = el('section', { class: 'sec credit-section' });
+  legal.append(sectionHead({ title: 'Licences, attribution and independence' }));
   legal.append(el('ul', { class: 'line-list', html: [
-    '<li><strong>indusmova’s own code</strong> — MIT. Copy it, change it, ship it; keep the notice.</li>',
-    '<li><strong>Wikipedia article text</strong> — CC BY-SA 4.0, and it stays under that licence wherever you reuse it.</li>',
+    '<li><strong>indusmova code</strong> — MIT. Reuse and modify it while keeping the licence notice.</li>',
+    '<li><strong>Wikipedia article text</strong> — CC BY-SA 4.0. Keep attribution and share-alike requirements when reusing it.</li>',
     '<li><strong>Wikidata</strong> — CC0 1.0.</li>',
-    '<li><strong>Wikimedia Commons files</strong> — each file’s own licence, shown with the image.</li>',
-    '<li><strong>Not affiliated</strong> — indusmova is an independent reader. It is not endorsed by or connected to the Wikimedia Foundation, Cloudflare, OpenRouter or any AI provider named above.</li>',
+    '<li><strong>Wikimedia Commons images</strong> — each file carries its own author credit and licence.</li>',
+    '<li><strong>Brand marks</strong> — logos remain the property of their respective owners and are shown to identify the relevant project or service. Follow the owner’s current brand rules and get any required permission before publication.</li>',
+    '<li><strong>Independent project</strong> — indusmova is not endorsed by or affiliated with the Wikimedia Foundation, Sarvam AI, Cloudflare, OpenRouter, GitHub or the Government of India.</li>',
   ].join('') }));
   legal.append(el('p', { class: 'ask-note', text: 'Something missing, wrong, or listed without permission? Use the Feedback page and it will be corrected.' }));
   wrap.append(legal);
