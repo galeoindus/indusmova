@@ -25,7 +25,8 @@ It is a **static single-page application** — plain HTML, CSS and ES modules wi
 | **Sources** — every source, what it is, and under which licence | `#/sources` |
 | **Markdown export** — copy or download any answer or article as Markdown | answer & article views |
 | **Two languages of chrome** — English and हिन्दी, plus 12 content languages | header buttons |
-| **Light / dark / system theme**, reading comfort, reading-progress bar | header buttons |
+| **Light / dark / system theme**, one preference shared by every page; reading comfort and a reading-progress bar | header button on every route |
+| **Credits** — a logo-led attribution page: project identity, maker, the knowledge and infrastructure it runs on, AI-development acknowledgement, contributors and the licences | `#/credits` |
 | **Voice search**, where the browser supports it | composer |
 | **Chat** — ask in your own words, Quick / Detailed / Deep answers, numbered citations, saved answers, local history, voice input and read-aloud | `/chat/` |
 | **PWA** — installable; the shell loads offline (no service worker: caching is done with `_headers`) | `manifest.webmanifest`, `_headers` |
@@ -201,11 +202,13 @@ indusmova/
 ├── robots.txt · sitemap.xml
 ├── _headers · _redirects      Cloudflare Pages configuration
 ├── assets/
-│   ├── css/styles.css         the design system (kept intact)
-│   ├── css/app.css            additions and corrections on top of it
+│   ├── css/styles.css         the base design language (kept intact)
+│   ├── css/app.css            components and corrections on top of it
+│   ├── css/design-system.css  the shared tokens every layer reads (loaded last)
 │   ├── img/                   favicon, icons, Open Graph image
 │   └── js/
 │       ├── app.js             entry point: context, header, router, rail
+│       ├── global-theme.js    the one theme controller, on every route
 │       ├── config.js          site constants, categories, depths, sources
 │       ├── api.js             the Wikimedia client (cache, retry, errors)
 │       ├── parse.js           clean Wikipedia HTML, split into parts
@@ -214,7 +217,7 @@ indusmova/
 │       ├── markdown.js        Markdown export
 │       ├── i18n.js            English + Hindi chrome strings
 │       ├── store.js           localStorage: bookmarks, history, prefs
-│       ├── theme.js           theme, comfort, reading progress
+│       ├── theme.js           reading comfort and progress (theme lives in global-theme.js)
 │       ├── router.js          hash router
 │       ├── answerui.js        the shared answer architecture
 │       ├── ui.js · icons.js · components.js · composer.js

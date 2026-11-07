@@ -1,17 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="Indus AI assistant mark">
   <defs>
     <linearGradient id="base" x1="9" y1="7" x2="88" y2="91" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#6CE7DA"/>
-      <stop offset=".48" stop-color="#4F9CEB"/>
-      <stop offset="1" stop-color="#8168D8"/>
+      <stop stop-color="#83D4A8"/>
+      <stop offset=".48" stop-color="#A5DFBB"/>
+      <stop offset="1" stop-color="#E2A978"/>
     </linearGradient>
     <linearGradient id="face" x1="26" y1="22" x2="71" y2="77" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#172C3A"/>
-      <stop offset="1" stop-color="#101B2A"/>
+      <stop stop-color="#111B18"/>
+      <stop offset="1" stop-color="#0B1110"/>
     </linearGradient>
     <linearGradient id="eye" x1="34" y1="42" x2="64" y2="57" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#8CF5E7"/>
-      <stop offset="1" stop-color="#91B9FF"/>
+      <stop stop-color="#C8F2DC"/>
+      <stop offset="1" stop-color="#A5DFBB"/>
     </linearGradient>
     <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
       <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
@@ -20,18 +20,18 @@
       <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
-  <rect x="3" y="3" width="90" height="90" rx="29" fill="#0C1723"/>
+  <rect x="3" y="3" width="90" height="90" rx="29" fill="#0B1110"/>
   <rect x="3.75" y="3.75" width="88.5" height="88.5" rx="28.25" stroke="url(#base)" stroke-opacity=".55" stroke-width="1.5"/>
   <circle cx="72" cy="23" r="10" fill="url(#base)" opacity=".18"/>
   <path d="M48 13v8" stroke="url(#base)" stroke-width="4" stroke-linecap="round"/>
   <circle cx="48" cy="12" r="5.5" fill="url(#base)"/>
   <g filter="url(#shadow)">
     <rect x="19" y="26" width="58" height="52" rx="21" fill="url(#face)" stroke="url(#base)" stroke-width="2.4"/>
-    <path d="M30 31.5c5.4-5.4 12.2-8.1 20.1-8.1 7.7 0 13.5 2.6 17.9 7.2" fill="none" stroke="#B7FFF6" stroke-opacity=".34" stroke-width="2" stroke-linecap="round"/>
+    <path d="M30 31.5c5.4-5.4 12.2-8.1 20.1-8.1 7.7 0 13.5 2.6 17.9 7.2" fill="none" stroke="#D6F5E5" stroke-opacity=".34" stroke-width="2" stroke-linecap="round"/>
     <rect x="31" y="43" width="10" height="12" rx="5" fill="url(#eye)"/>
     <rect x="55" y="43" width="10" height="12" rx="5" fill="url(#eye)"/>
-    <path d="M38 65c2.7 2.4 6 3.6 10 3.6s7.3-1.2 10-3.6" fill="none" stroke="#8CEDE2" stroke-width="3" stroke-linecap="round"/>
+    <path d="M38 65c2.7 2.4 6 3.6 10 3.6s7.3-1.2 10-3.6" fill="none" stroke="#B9EFD2" stroke-width="3" stroke-linecap="round"/>
   </g>
-  <path d="m78 48 2.2 4.6 4.8 2.2-4.8 2.2L78 63.5l-2.2-4.5-4.8-2.2 4.8-2.2L78 48Z" fill="#D9D1FF"/>
-  <circle cx="17" cy="69" r="3" fill="#6CE7DA" opacity=".75"/>
+  <path d="m78 48 2.2 4.6 4.8 2.2-4.8 2.2L78 63.5l-2.2-4.5-4.8-2.2 4.8-2.2L78 48Z" fill="#F0D3B6"/>
+  <circle cx="17" cy="69" r="3" fill="#83D4A8" opacity=".75"/>
 </svg>
