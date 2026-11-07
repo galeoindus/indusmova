@@ -85,6 +85,7 @@ const wikiImageUrl = (value) => {
 };
 
 const THREAD_KEY = 'indusmova:chat:thread:v4';
+const MODEL_KEY = 'indusmova:chat:model';
 const RECENT_KEY = 'indusmova:chat:recent:v1';
 const SAVED_KEY = 'indusmova:chat:saved:v3';
 const API = (lang) => `https://${lang}.wikipedia.org/w/api.php`;
@@ -220,6 +221,9 @@ async function askAI(question, passages, depth, signal, { mode = 'grounded', his
       question,
       depth,
       mode,
+      // Empty means "let the server pick the cheapest model that fits" — the
+      // menu only sends an id the server has already published as allowed.
+      model: chosenModel(),
       history: mode === 'chat' ? history : [],
       passages: passages.map((p) => ({ title: p.title, text: p.text, url: p.url })),
     }),
@@ -597,6 +601,10 @@ function renderNote(title, body, retryQuestion, depth) {
 }
 
 function scrollDown() {
+  // On the welcome screen the scroller is centred, and scrolling it to the
+  // bottom pushed the greeting up under the header — the mark was cut in half
+  // on a phone. There is nothing to follow down until a question is asked.
+  if (document.body.classList.contains('is-empty')) return;
   const main = $('#main');
   main.scrollTop = main.scrollHeight;
 }
@@ -1192,7 +1200,85 @@ function paintOptions() {
   if (!optionsBtn) return;
   const depth = $('#answerDepth')?.selectedOptions?.[0]?.textContent || 'Detailed';
   const source = $('#contentLanguage')?.selectedOptions?.[0]?.textContent || 'English';
-  optionsBtn.textContent = `${depth} · ${source}`;
+  const model = chosenModel();
+  optionsBtn.textContent = model ? `${depth} · ${source} · ${modelLabelFor(model)}` : `${depth} · ${source}`;
+}
+
+/* ── the model menu ──────────────────────────────────────────────────────
+ * The server decides which models exist and what they cost; this side only
+ * draws the list it is given. "Auto" is the default and means the cheapest
+ * model that can answer at the chosen depth — a reader who does not care
+ * about models never pays for a big one by accident. */
+let modelMenu = { auto: '', autoLabel: '', models: [], loaded: false };
+
+const chosenModel = () => {
+  const value = $('#modelChoice')?.value || 'auto';
+  return value === 'auto' ? '' : value;
+};
+
+function modelLabelFor(id) {
+  if (!id) return 'Auto';
+  return modelMenu.models.find((m) => m.id === id)?.label || id;
+}
+
+function priceText(price) {
+  if (!price || price.inputPerMillion == null || price.outputPerMillion == null) return '';
+  const fmt = (n) => (n < 0.1 ? `$${n.toFixed(3)}` : `$${n.toFixed(2)}`);
+  return `${fmt(price.inputPerMillion)} in / ${fmt(price.outputPerMillion)} out per 1M tokens`;
+}
+
+function paintRailModel() {
+  const line = $('#railModel');
+  if (!line) return;
+  const id = chosenModel();
+  line.textContent = modelMenu.loaded
+    ? `${id ? modelLabelFor(id) : `Auto · ${modelMenu.autoLabel || 'cheapest'}`} · grounded in Wikipedia`
+    : 'Ready · answers grounded in Wikipedia';
+}
+
+function paintModelNote() {
+  const note = $('#modelNote');
+  if (!note) return;
+  const entry = modelMenu.models.find((m) => m.id === chosenModel());
+  const bits = [];
+  if (entry) {
+    if (entry.note) bits.push(entry.note);
+    const price = priceText(entry.price);
+    if (price) bits.push(price);
+  } else if (modelMenu.autoLabel) {
+    bits.push(`Cheapest model that fits the answer depth — currently ${modelMenu.autoLabel}`);
+  }
+  note.hidden = !bits.length;
+  note.textContent = bits.join(' · ');
+}
+
+async function loadModelMenu() {
+  const select = $('#modelChoice');
+  if (!select) return;
+  try {
+    const res = await fetch('/api/models', { headers: { accept: 'application/json' } });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!Array.isArray(data?.models) || !data.models.length) return;
+    modelMenu = {
+      auto: data.auto || '',
+      autoLabel: data.autoLabel || '',
+      models: data.models,
+      loaded: true,
+    };
+    let remembered = 'auto';
+    try { remembered = localStorage.getItem(MODEL_KEY) || 'auto'; } catch { /* blocked */ }
+    const options = [new Option(`Auto — cheapest first${modelMenu.autoLabel ? ` (${modelMenu.autoLabel})` : ''}`, 'auto')];
+    for (const model of data.models) {
+      const price = priceText(model.price);
+      options.push(new Option(`${model.label}${price ? ` — ${price}` : ''}`, model.id));
+    }
+    select.replaceChildren(...options);
+    select.value = data.models.some((m) => m.id === remembered) ? remembered : 'auto';
+    paintModelNote();
+    paintOptions();
+    paintRailModel();
+  } catch { /* the menu is optional: Auto still answers without it */ }
 }
 function setOptions(open) {
   if (!optionsPanel) return;
@@ -1211,7 +1297,17 @@ document.addEventListener('click', (event) => {
 ['#answerDepth', '#contentLanguage', '#uiLanguage'].forEach((sel) => {
   $(sel)?.addEventListener('change', paintOptions);
 });
+$('#modelChoice')?.addEventListener('change', () => {
+  try { localStorage.setItem(MODEL_KEY, chosenModel() || 'auto'); } catch { /* blocked */ }
+  paintModelNote();
+  paintOptions();
+  paintRailModel();
+});
+// The status line in the rail opens the same panel, so "which model?" is one
+// tap from anywhere in the chat.
+$('.rail-foot')?.addEventListener('click', () => setOptions(true));
 paintOptions();
+paintRailModel();
 
 $('#deleteChatBtn')?.addEventListener('click', () => {
   const item = recent.find((r) => r.q === activeQuestion);
@@ -1301,6 +1397,7 @@ if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) $('
 applyCopy();
 initJumpButton();
 renderRail();
+loadModelMenu();
 renderThread();
 syncConnection();
 autoGrow();

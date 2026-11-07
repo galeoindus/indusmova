@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="en" data-theme="dark">
 <head>
-  <meta name="indusmova-build" content="5.26.0-1d82d90">
-  <meta name="indusmova-version" content="5.26.0">
+  <meta name="indusmova-build" content="5.26.1-7e6fecf">
+  <meta name="indusmova-version" content="5.26.1">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Amigo — indusmova</title>
@@ -21,17 +21,18 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://indusmova.pages.dev/assets/img/og.png">
   <link rel="icon" href="/assets/img/mark.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/assets/css/chat-page.css?v=5.26.0-1d82d90">
-  <link rel="stylesheet" href="/assets/css/system.css?v=5.26.0-1d82d90">
-  <link rel="stylesheet" href="/assets/css/article-layout.css?v=5.26.0-1d82d90">
-  <link rel="stylesheet" href="/assets/css/mobile.css?v=5.26.0-1d82d90">
-  <script src="/assets/js/image-fallback.js?v=5.26.0-1d82d90"></script>
-  <link rel="stylesheet" href="/assets/css/polish.css?v=5.26.0-1d82d90">
-  <link rel="stylesheet" href="/assets/css/chat-redesign.css?v=5.26.0-1d82d90">
-  <link rel="stylesheet" href="/assets/css/design-system.css?v=5.26.0-1d82d90">
-  <link rel="stylesheet" href="/assets/css/amigo-ui.css?v=5.26.0-1d82d90">
-  <link rel="stylesheet" href="/assets/css/amigo-chat.css?v=5.26.0-1d82d90">
-  <script src="/assets/js/global-theme.js?v=5.26.0-1d82d90"></script>
+  <link rel="stylesheet" href="/assets/css/chat-page.css?v=5.26.1-7e6fecf">
+  <link rel="stylesheet" href="/assets/css/system.css?v=5.26.1-7e6fecf">
+  <link rel="stylesheet" href="/assets/css/article-layout.css?v=5.26.1-7e6fecf">
+  <link rel="stylesheet" href="/assets/css/mobile.css?v=5.26.1-7e6fecf">
+  <script src="/assets/js/image-fallback.js?v=5.26.1-7e6fecf"></script>
+  <link rel="stylesheet" href="/assets/css/polish.css?v=5.26.1-7e6fecf">
+  <link rel="stylesheet" href="/assets/css/chat-redesign.css?v=5.26.1-7e6fecf">
+  <link rel="stylesheet" href="/assets/css/design-system.css?v=5.26.1-7e6fecf">
+  <link rel="stylesheet" href="/assets/css/amigo-ui.css?v=5.26.1-7e6fecf">
+  <link rel="stylesheet" href="/assets/css/amigo-chat.css?v=5.26.1-7e6fecf">
+  <link rel="stylesheet" href="/assets/css/squircle.css?v=5.26.1-7e6fecf">
+  <script src="/assets/js/global-theme.js?v=5.26.1-7e6fecf"></script>
 </head>
 <body class="is-empty amigo-chat">
 <a class="skip-link" href="#prompt">Skip to the question box</a>
@@ -100,8 +101,9 @@
       </div>
       <div class="thread" id="thread" role="log" aria-live="polite" aria-label="Conversation"></div>
     </div>
+  </div>
 
-    <div class="dock" id="dock">
+  <div class="dock" id="dock">
     <div class="dock-in">
       <p class="offline" id="offline" role="status" hidden>You are offline. Answers need a connection.</p>
       <form class="composer" id="composer" autocomplete="off" action="javascript:void(0)" novalidate>
@@ -133,6 +135,12 @@
             <option value="en">English</option><option value="hi">हिंदी</option>
           </select>
         </label>
+        <label class="opt opt-model"><span>Model</span>
+          <select id="modelChoice" aria-label="AI model">
+            <option value="auto" selected>Auto — cheapest first</option>
+          </select>
+        </label>
+        <p class="opt-note" id="modelNote" hidden></p>
       </div>
       <div class="meta-row">
         <button type="button" class="mchip" id="optionsBtn" aria-expanded="false" aria-controls="optionsPanel">Detailed · English</button>
@@ -147,13 +155,12 @@
       </p>
     </div>
   </div>
-  </div>
 </div>
 
 <noscript><p class="hint">The chat needs JavaScript. You can still read the entries at <a href="/articles/">the library</a>.</p></noscript>
 
-<script type="module" src="/assets/js/build-watch.js?v=5.26.0-1d82d90"></script>
-<script type="module" src="/assets/js/chat-page.js?v=5.26.0-1d82d90"></script>
+<script type="module" src="/assets/js/build-watch.js?v=5.26.1-7e6fecf"></script>
+<script type="module" src="/assets/js/chat-page.js?v=5.26.1-7e6fecf"></script>
   <nav class="bottom-nav" aria-label="Primary (phone)">
     <a href="/#/ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h9"/></svg><span>Ask</span></a>
     <a href="/#/explore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M15 9l-2 4-4 2 2-4z"/></svg><span>Explore</span></a>

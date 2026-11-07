@@ -63,7 +63,13 @@ test('credits redesign follows global theme tokens and has mobile and reduced-mo
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
-test('release metadata is updated for the credits redesign', () => {
-  assert.equal(JSON.parse(pkg).version, '5.26.0');
+test('release metadata agrees with the stamped build', async () => {
+  // A hard-coded version here failed every release instead of catching a real
+  // problem. What matters is that package.json and assets/version.json — the
+  // file the footer and the cache-bust URLs are stamped from — never disagree.
+  const version = JSON.parse(pkg).version;
+  const stamped = JSON.parse(await read('assets/version.json')).version;
+  assert.match(version, /^\d+\.\d+\.\d+$/);
+  assert.equal(stamped, version);
   assert.match(view, /Sarvam AI/);
 });

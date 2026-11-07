@@ -9,10 +9,45 @@
  * OpenRouter credentials are server-side Cloudflare Secrets only:
  * OPENROUTER_API_KEY_1 .. OPENROUTER_API_KEY_6
  *
+ * Model choice, in order of precedence:
+ *   OPENROUTER_MODEL       one pinned model, always used (operator override)
+ *   OPENROUTER_MODELS      comma list of models the reader may pick between
+ *   OPENROUTER_MODEL_TIER  cheap | balanced | deep — the automatic floor
+ *   request body .model    a reader's pick, honoured only if it is allowed
+ * With none of these set the endpoint answers with the cheapest model
+ * OpenRouter actually serves, so a new deployment never starts on an
+ * expensive default.
+ *
  * Never expose these values to the browser or put them in wrangler.toml.
  */
 
 const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-4o-mini';
+
+/* ── the model menu ───────────────────────────────────────────────────────
+ * Ordered cheapest first, because that is the order the endpoint spends in.
+ * `tier` is a cost band, not a quality claim: cheap answers a quick question,
+ * deep is worth paying for on a long one. Prices are never hard-coded here —
+ * /api/models reads them live from OpenRouter, and a model missing from the
+ * account's catalogue is dropped from the menu instead of failing later.
+ */
+const MODEL_CATALOG = Object.freeze([
+  { id: 'meta-llama/llama-3.2-3b-instruct', label: 'Llama 3.2 3B', tier: 'cheap', maxDepth: 'quick', note: 'Fastest, lowest cost' },
+  { id: 'google/gemini-2.0-flash-lite-001', label: 'Gemini 2.0 Flash Lite', tier: 'cheap', maxDepth: 'quick', note: 'Low cost, long context' },
+  { id: 'openai/gpt-4o-mini', label: 'GPT-4o mini', tier: 'cheap', maxDepth: 'detailed', note: 'Low cost, reliable citations' },
+  { id: 'mistralai/mistral-small-24b-instruct', label: 'Mistral Small', tier: 'cheap', maxDepth: 'detailed', note: 'Low cost, open weights' },
+  { id: 'anthropic/claude-3.5-haiku', label: 'Claude 3.5 Haiku', tier: 'balanced', maxDepth: 'deep', note: 'Balanced' },
+  { id: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 Flash', tier: 'balanced', maxDepth: 'deep', note: 'Balanced' },
+  { id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B', tier: 'balanced', maxDepth: 'deep', note: 'Balanced, open weights' },
+  { id: 'deepseek/deepseek-chat', label: 'DeepSeek Chat', tier: 'balanced', maxDepth: 'deep', note: 'Balanced' },
+  { id: 'qwen/qwen-2.5-72b-instruct', label: 'Qwen 2.5 72B', tier: 'balanced', maxDepth: 'deep', note: 'Balanced, strong on Indic text' },
+  { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet', tier: 'deep', maxDepth: 'deep', note: 'Highest quality, highest cost' },
+]);
+const TIER_ORDER = Object.freeze({ cheap: 0, balanced: 1, deep: 2 });
+const TIER_CEILING = Object.freeze({ quick: 'cheap', detailed: 'balanced', deep: 'deep' });
+// The cheapest band a depth may use. Quick and Detailed are answered by cheap
+// models; Deep needs a mid-cost model to hold a long cited answer together.
+const TIER_FLOOR = Object.freeze({ quick: 'cheap', detailed: 'cheap', deep: 'balanced' });
+const DEPTH_RANK = Object.freeze({ quick: 0, detailed: 1, deep: 2 });
 const DEFAULT_WORKERS_AI_MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8';
 // Tried in order after the configured model. Both were verified to answer a
 // grounded question with a citation on this account.
@@ -248,19 +283,6 @@ function isRetryableStatus(status) {
  */
 const MODELS_ENDPOINT = 'https://openrouter.ai/api/v1/models';
 const MODELS_TTL_MS = 60 * 60 * 1000;
-// Preference order for the automatic pick. First match that exists wins.
-const MODEL_PREFERENCES = [
-  'openai/gpt-4o-mini',
-  'openai/gpt-4.1-mini',
-  'anthropic/claude-3.5-haiku',
-  'anthropic/claude-3.5-sonnet',
-  'google/gemini-flash-1.5',
-  'google/gemini-2.0-flash-001',
-  'meta-llama/llama-3.3-70b-instruct',
-  'mistralai/mistral-small-24b-instruct',
-  'qwen/qwen-2.5-72b-instruct',
-  'deepseek/deepseek-chat',
-];
 
 let modelCache = { at: 0, ids: [], key: '' };
 
@@ -294,25 +316,154 @@ async function listOpenRouterModels(env, signal) {
   }
 }
 
-/** The models to try, best first. */
-async function resolveModels(env, signal) {
-  const available = await listOpenRouterModels(env, signal);
-  const configured = text(env?.OPENROUTER_MODEL, 120);
-  const out = [];
+/** The ids the operator allows the reader to choose between, or null for all. */
+function allowedModelIds(env) {
+  const raw = String(env?.OPENROUTER_MODELS || '').trim();
+  if (!raw) return null;
+  const ids = raw.split(/[,\s]+/).map((id) => id.trim()).filter(Boolean).slice(0, 24);
+  return ids.length ? ids : null;
+}
 
-  if (configured) {
-    // Trust the operator when the catalogue is unreachable, but not when it
-    // proves the model is gone.
-    if (!available.length || available.includes(configured)) out.push(configured);
+/**
+ * The model menu: cheapest band first, allowlist applied, catalogue entries
+ * that OpenRouter does not serve dropped. `available` is the live id list and
+ * may be empty when the catalogue could not be read — then the menu is what
+ * the operator allowed, unverified.
+ */
+function modelCatalog(env, available = []) {
+  const allow = allowedModelIds(env);
+  const seen = new Set();
+  const out = [];
+  const known = available.length ? new Set(available) : null;
+
+  for (const entry of MODEL_CATALOG) {
+    if (allow && !allow.includes(entry.id)) continue;
+    if (known && !known.has(entry.id)) continue;
+    if (seen.has(entry.id)) continue;
+    seen.add(entry.id);
+    out.push({ ...entry });
   }
-  for (const pref of MODEL_PREFERENCES) {
-    if (available.includes(pref) && !out.includes(pref)) out.push(pref);
-    if (out.length >= 3) break;
+  // An operator may allow an id this file has never heard of; it still works.
+  for (const id of allow || []) {
+    if (seen.has(id) || (known && !known.has(id))) continue;
+    seen.add(id);
+    out.push({ id, label: id, tier: 'balanced', note: 'Operator choice' });
   }
-  if (!out.length && available.length) out.push(available[0]);
-  if (!out.length && configured) out.push(configured);
+  return out.sort((a, b) => (TIER_ORDER[a.tier] ?? 1) - (TIER_ORDER[b.tier] ?? 1));
+}
+
+/** The automatic pick for a depth: the cheapest model in the allowed band. */
+function autoModel(env, depth, available = []) {
+  const pinned = text(env?.OPENROUTER_MODEL, 120);
+  if (pinned) return pinned;
+  const ceiling = TIER_CEILING[depth] || 'balanced';
+  const configuredFloor = String(env?.OPENROUTER_MODEL_TIER || '').toLowerCase();
+  // The operator's floor can only raise the bar, never lower it below what
+  // the chosen depth needs.
+  const depthFloor = TIER_FLOOR[depth] || 'cheap';
+  const minTier = Object.hasOwn(TIER_ORDER, configuredFloor)
+    && TIER_ORDER[configuredFloor] > TIER_ORDER[depthFloor]
+    ? configuredFloor
+    : depthFloor;
+  const menu = modelCatalog(env, available);
+  // `maxDepth` keeps the tiniest model out of a detailed answer that needs
+  // citations, while `tier` keeps cost inside the operator's band. The first
+  // surviving entry is the cheapest one that can do this job.
+  const wanted = menu.filter((m) => TIER_ORDER[m.tier] >= TIER_ORDER[minTier]
+    && TIER_ORDER[m.tier] <= TIER_ORDER[ceiling]
+    && (DEPTH_RANK[m.maxDepth] ?? 2) >= (DEPTH_RANK[depth] ?? 1));
+  return wanted[0]?.id || menu[0]?.id || DEFAULT_OPENROUTER_MODEL;
+}
+
+/** Is this a model the operator lets a reader ask for? */
+function isAllowedModel(env, id) {
+  const value = text(id, 120);
+  if (!value) return false;
+  return modelCatalog(env).some((m) => m.id === value);
+}
+
+/** The models to try, cheapest first — the requested one leads the queue. */
+async function resolveModels(env, signal, { depth = 'detailed', requested = '' } = {}) {
+  const available = await listOpenRouterModels(env, signal);
+  const pinned = text(env?.OPENROUTER_MODEL, 120);
+  const first = isAllowedModel(env, requested) ? text(requested, 120) : autoModel(env, depth, available);
+  const out = [first];
+
+  for (const entry of modelCatalog(env, available)) {
+    if (entry.id === pinned || !out.includes(entry.id)) out.push(entry.id);
+    if (out.length >= 4) break;
+  }
+  // Trust the operator when the catalogue is unreachable, but never when it
+  // proves the model is gone.
+  if (!available.length && pinned && !out.includes(pinned)) out.unshift(pinned);
   if (!out.length) out.push(DEFAULT_OPENROUTER_MODEL);
-  return out.slice(0, 4);
+  return out.filter(Boolean).slice(0, 4);
+}
+
+/* ── live prices ──────────────────────────────────────────────────────────
+ * "Cheapest" has to mean cheapest today, and only OpenRouter knows that. Its
+ * /models response carries a per-token price for every model; it is converted
+ * to a per-million figure here and cached with the id list. A price that
+ * cannot be read is reported as null, never guessed.
+ */
+let pricingCache = { at: 0, map: new Map(), key: '' };
+
+async function listOpenRouterPricing(env) {
+  const key = getOpenRouterKeys(env)[0] || '';
+  if (pricingCache.map.size && Date.now() - pricingCache.at < MODELS_TTL_MS && pricingCache.key === key) {
+    return pricingCache.map;
+  }
+  try {
+    const res = await fetch(MODELS_ENDPOINT, { headers: key ? { authorization: `Bearer ${key}` } : {} });
+    if (!res.ok) return pricingCache.map;
+    const data = await res.json();
+    const map = new Map();
+    for (const entry of data?.data || []) {
+      const input = Number(entry?.pricing?.prompt);
+      const output = Number(entry?.pricing?.completion);
+      map.set(String(entry?.id || ''), {
+        inputPerMillion: Number.isFinite(input) ? Math.round(input * 1e6 * 100) / 100 : null,
+        outputPerMillion: Number.isFinite(output) ? Math.round(output * 1e6 * 100) / 100 : null,
+      });
+    }
+    if (map.size) pricingCache = { at: Date.now(), map, key };
+    return map;
+  } catch {
+    return pricingCache.map;
+  }
+}
+
+/**
+ * What /api/models publishes, and the single source of truth the chat UI
+ * reads. Ordered cheapest band first so "Auto" is the first sensible entry.
+ */
+export async function modelMenu(env = {}) {
+  const [available, pricing] = await Promise.all([
+    listOpenRouterModels(env),
+    listOpenRouterPricing(env),
+  ]);
+  const models = modelCatalog(env, available).map((entry) => ({
+    id: entry.id,
+    label: entry.label,
+    tier: entry.tier,
+    note: entry.note,
+    maxDepth: entry.maxDepth,
+    price: pricing.get(entry.id) || null,
+  }));
+  const auto = autoModel(env, 'detailed', available);
+  const providerMode = ['auto', 'openrouter', 'workers-ai'].includes(String(env.AI_PROVIDER || '').toLowerCase())
+    ? String(env.AI_PROVIDER || 'auto').toLowerCase()
+    : 'auto';
+  return {
+    ok: true,
+    auto,
+    autoLabel: models.find((m) => m.id === auto)?.label || auto,
+    models,
+    providerMode,
+    openrouterConfigured: getOpenRouterKeys(env).length > 0,
+    workersAIConfigured: Boolean(env.AI && typeof env.AI.run === 'function'),
+    // No keys, no secrets, nothing about the caller.
+  };
 }
 
 async function runOpenRouter(question, passages, depth, env, opts = {}) {
@@ -328,10 +479,12 @@ async function runOpenRouter(question, passages, depth, env, opts = {}) {
   let lastStatus = 0;
   let lastReason = 'keys_exhausted';
 
-  // Start with the model the operator named (or the default) and only ask the
-  // catalogue for alternatives if that one turns out not to exist. This keeps
-  // the normal request to a single round trip.
-  const queue = [text(opts.model || env?.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL, 120)];
+  // Start with the reader's pick when it is allowed, otherwise the cheapest
+  // model for this depth, and only ask the catalogue for alternatives if that
+  // one turns out not to exist. This keeps the normal request to one round
+  // trip and never opens an expensive model by default.
+  const requested = text(opts.model, 120);
+  const queue = [isAllowedModel(env, requested) ? requested : autoModel(env, depth)];
   const tried = new Set();
   let discovered = false;
 
@@ -394,7 +547,7 @@ async function runOpenRouter(question, passages, depth, env, opts = {}) {
 
       if (modelMissing && !discovered) {
         discovered = true;
-        const others = await resolveModels(env, controller.signal);
+        const others = await resolveModels(env, controller.signal, { depth, requested });
         for (const candidate of others) {
           if (!tried.has(candidate) && !queue.includes(candidate)) queue.push(candidate);
         }
@@ -583,6 +736,10 @@ export async function onRequestPost({ request, env = {} }) {
   const depth = Object.hasOwn(DEPTHS, body?.depth) ? body.depth : 'detailed';
   const mode = body?.mode === 'chat' ? 'chat' : 'grounded';
   const history = Array.isArray(body?.history) ? body.history.slice(-CHAT_HISTORY_TURNS) : [];
+  // A reader may name a model, but only one the operator allows. Anything else
+  // falls back to the automatic cheap-first pick — a request body is not a
+  // place to choose an expensive model with someone else's key.
+  const requestedModel = isAllowedModel(env, body?.model) ? text(body?.model, 120) : '';
   if (!question) return json({ error: 'bad_request', message: 'A question is required.' }, 400);
   if (mode === 'grounded' && !passages.length) {
     return json({ error: 'no_sources', message: 'At least one valid Wikipedia source passage is required.' }, 400);
@@ -611,7 +768,7 @@ export async function onRequestPost({ request, env = {} }) {
   // part of the answer.
   if (mode === 'chat') {
     const messages = makeChatMessages(question, history);
-    const lightModel = text(env?.CHAT_MODEL, 120);
+    const lightModel = requestedModel || text(env?.CHAT_MODEL, 120);
     const opts = { messages, maxTokens: CHAT_MAX_TOKENS, model: lightModel };
     let reply = { ok: false, reason: 'not_configured' };
     if (providerMode !== 'workers-ai') {
@@ -648,6 +805,9 @@ export async function onRequestPost({ request, env = {} }) {
     v: PROMPT_VERSION,
     q: question.toLowerCase().replace(/\s+/g, ' ').trim(),
     d: depth,
+    // The model is part of the key: otherwise a quick answer from a cheap
+    // model would be served to a reader who asked for a deeper one.
+    m: requestedModel || 'auto',
     s: passages.map((p) => [p.n, p.title, p.url, p.text]),
   }));
   const cacheKey = new Request(`https://indusmova-cache.internal/ask?k=${digest}`, { method: 'GET' });
@@ -666,7 +826,7 @@ export async function onRequestPost({ request, env = {} }) {
   // two is kept.
   let result = { ok: false, reason: 'not_configured' };
   if (providerMode !== 'workers-ai') {
-    result = await runOpenRouter(question, passages, depth, env);
+    result = await runOpenRouter(question, passages, depth, env, { model: requestedModel });
   }
   // `thin` is decided on citations that map to a real passage, so [99] no
   // longer counts as a cited answer.
@@ -699,6 +859,7 @@ export async function onRequestPost({ request, env = {} }) {
     answer: cleanAnswer,
     provider: result.provider,
     model: result.model,
+    modelLabel: modelCatalog(env).find((m) => m.id === result.model)?.label || result.model,
     depth,
     sources: passages.map((p) => ({
       n: p.n,
@@ -727,6 +888,8 @@ export async function onRequestGet({ env = {} }) {
       : 'auto',
     openrouterConfigured: getOpenRouterKeys(env).length > 0,
     workersAIConfigured: Boolean(env.AI && typeof env.AI.run === 'function'),
+    autoModel: autoModel(env, 'detailed'),
+    modelCount: modelCatalog(env).length,
     // Do not return model keys, secret values, provider errors or request data.
   });
 }
@@ -740,6 +903,11 @@ export async function onRequest({ request, env = {} }) {
 export const __test = Object.freeze({
   normalizePassages,
   resolveModels,
+  modelCatalog,
+  autoModel,
+  isAllowedModel,
+  allowedModelIds,
+  modelMenu,
   isChatModel,
   getOpenRouterKeys,
   citedNumbers,
