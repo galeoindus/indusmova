@@ -249,9 +249,9 @@ export function renderHistory(ctx) {
  * the honest thing is to name the service and link to it until the owner
  * supplies the official files.
  *
- * The owner's photo is a CSS layer: the picture at /assets/img/owner.jpg sits
- * on top of the gradient, so the block looks finished whether or not the file
- * has been added yet — no broken-image icon, nothing to wire up later.
+ * The owner's avatar is the brand gradient in CSS: /assets/img/owner.jpg is not
+ * in the repository, so no picture is requested and the card still looks
+ * finished, with nothing to wire up until the file is added.
  */
 const PROVIDERS = '/assets/img/providers';
 const CREDITS = [

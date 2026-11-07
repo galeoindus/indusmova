@@ -628,9 +628,10 @@ form.panel .searchbar {
 
 /* ── credits ─────────────────────────────────────────────────────────────
    One card for the person who made the site, and a grid of the services it
-   runs on. The owner's photo is layered over the brand gradient, so the block
-   looks finished before the file exists and simply shows the picture when it
-   does: no broken-image icon, no code to change later. */
+   runs on. The owner's avatar is the brand gradient on its own: a url() layer
+   for /assets/img/owner.jpg used to sit in front of it, but the file was never
+   added, so every visit to this page fetched a 404 and logged it to the
+   console. Put the picture back as the first background layer when it exists. */
 
 .credit-owner {
   display: flex;
@@ -647,10 +648,10 @@ form.panel .searchbar {
   width: 68px;
   height: 68px;
   border-radius: 50%;
-  background-image: url("/assets/img/owner.jpg"), linear-gradient(135deg, #173b32, #b46a45);
-  background-size: cover, cover;
-  background-position: center, center;
-  background-repeat: no-repeat, no-repeat;
+  background-image: linear-gradient(135deg, #173b32, #b46a45);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 10%, transparent);
 }
 .credit-owner h3 { margin: 0 0 3px; font-size: 17px; font-family: var(--font-body); font-weight: 650; }
